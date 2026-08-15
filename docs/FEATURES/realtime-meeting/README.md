@@ -8,7 +8,7 @@
 >
 > 상태: 구현 전 계획
 >
-> 관련 Issue / PR / Discussion: GitHub Project의 LiveKit 서버·클라이언트 Draft Item 연결 예정
+> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
 
 ## 해결하려는 문제
 
@@ -41,6 +41,8 @@ apps/client/src/
 `Meeting Lab`은 별도 배포 서비스가 아니다. 메인 Client 내부의 개발·데모 전용 경로로 두어, 실제 Client 환경·Shared 타입·Server 토큰 API를 그대로 검증한다.
 
 ## 연결 흐름
+
+P0 파이프라인의 책임 경계, 오류 상태, 후속 Agent 연결 지점은 [Realtime Meeting Pipeline](./PIPELINE.md)을 따른다.
 
 ```mermaid
 sequenceDiagram
@@ -110,6 +112,7 @@ Client에는 공개 가능한 LiveKit 서버 URL만 전달한다. `LIVEKIT_API_S
 
 ## 참고 자료
 
+- [Realtime Meeting Pipeline](./PIPELINE.md)
 - [LiveKit React Room Context](https://docs.livekit.io/reference/components/react/concepts/livekit-room-component/)
 - [LiveKit Access Tokens and Grants](https://docs.livekit.io/frontends/reference/tokens-grants/)
 - [LiveKit JavaScript Server SDK](https://docs.livekit.io/reference/server-sdk-js/)
