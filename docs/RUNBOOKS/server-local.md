@@ -37,6 +37,7 @@ LIVEKIT_API_SECRET=
 ```
 
 서버는 시작할 때 `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` 값을 검증한다.
+`LIVEKIT_URL`은 `wss://`로 시작해야 한다.
 
 ## 검증
 
@@ -51,4 +52,25 @@ pnpm build
 pnpm dev:server
 ```
 
-기본 포트는 `4000`이다. 정상 실행 후 `GET /health`로 서버 상태를 확인한다.
+`dev:server`는 서버를 띄우기 전에 `packages/shared`를 빌드해 런타임 계약을 최신 상태로 맞춘다. 기본 포트는 `4000`이다. 정상 실행 후 `GET /health`로 서버 상태를 확인한다.
+
+## LiveKit token API 확인
+
+Meeting Lab용 room 이름은 `lab-<team>-<yyyymmdd>-<slug>` 형식을 사용한다.
+
+```powershell
+$body = @{
+  roomName = "lab-likelion-20260815-test"
+  participantName = "Tester"
+  participantIdentity = "tester-20260815"
+  preferredLanguage = "ko"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:4000/meeting/token" `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+응답에는 LiveKit join token이 포함된다. token과 API secret은 로그, PR, 문서에 붙여 넣지 않는다.
