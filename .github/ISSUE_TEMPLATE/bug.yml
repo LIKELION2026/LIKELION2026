@@ -1,0 +1,43 @@
+name: 버그 제보
+description: 재현 가능한 오류와 사용자 영향을 기록합니다.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        비밀 키, 토큰, 개인 정보가 포함된 로그나 화면은 작성하지 않습니다.
+  - type: textarea
+    id: problem
+    attributes:
+      label: 발생한 문제
+      description: 실제 결과와 사용자가 받은 영향을 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 절차
+      description: 다른 팀원이 같은 오류를 재현할 수 있도록 순서대로 작성합니다.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 결과
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 증거와 환경
+      description: 브라우저, 기기, 시간, 오류 메시지, 화면 자료를 작성합니다. 민감 정보는 제거합니다.
+  - type: input
+    id: owner
+    attributes:
+      label: 확인 담당자

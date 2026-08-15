@@ -1,0 +1,45 @@
+name: 기능 제안
+description: 사용자 문제를 해결하는 기능 작업을 등록합니다.
+title: "[Feature] "
+labels:
+  - feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        구현 전에 문제와 완료 기준을 합의합니다. 민감한 정보와 비밀 키는 작성하지 않습니다.
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결하려는 문제
+      description: 누가 어떤 상황에서 무엇을 어려워하는지 작성합니다.
+      placeholder: 해외 팀원이 회의 발언을 즉시 이해하기 어려워 결정사항을 다시 확인한다.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 작업 범위
+      description: 포함할 동작과 명시적으로 제외할 범위를 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 완료 기준
+      description: 확인 가능한 결과를 체크리스트로 작성합니다.
+      placeholder: |
+        - [ ] 참여자가 자막 언어를 선택할 수 있다.
+        - [ ] 원문과 번역문이 함께 표시된다.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: 관련 자료
+      description: PRD, Figma, Discussion, 회의록, API 문서 링크를 작성합니다.
+  - type: input
+    id: assignee
+    attributes:
+      label: 담당자
+      description: GitHub Assignee 설정이 어려운 경우 이름 또는 역할을 작성합니다.

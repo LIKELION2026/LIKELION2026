@@ -162,7 +162,11 @@ git config core.hooksPath .githooks
 
 ### 병합 전략
 
-협업과 구현 기록을 보존해야 하는 기능 PR은 기본적으로 `Rebase and merge`를 사용한다. 의미 있는 개별 커밋을 하나로 합치는 `Squash and merge`는 팀이 별도로 합의한 경우에만 사용한다.
+모든 PR은 기본적으로 GitHub의 `Create a merge commit` 방식, 즉 `Merge pull request`를 사용한다. 이 방식으로 PR 단위와 개별 커밋의 협업·구현 기록을 함께 보존한다.
+
+- `Rebase and merge`와 `Squash and merge`는 기본 병합 방식으로 사용하지 않는다.
+- 병합 전 PR 제목, 설명, 연결 Issue, 검증 결과가 실제 변경사항과 일치하는지 확인한다.
+- 병합 뒤에는 관련 Issue와 GitHub Project 상태를 업데이트한다.
 
 ## 6. Pull Request 규칙
 
@@ -183,6 +187,8 @@ PR 설명에는 아래 항목을 포함한다.
 
 ## 남은 작업 및 제한사항
 ```
+
+저장소의 `.github/pull_request_template.md`를 사용해 위 내용을 작성한다. Issue는 작업 성격에 맞는 `.github/ISSUE_TEMPLATE` 양식을 사용한다.
 
 - 기능 PR은 최소 1명 이상이 리뷰한다.
 - 화면이 바뀌면 이미지, GIF 또는 짧은 영상 링크를 첨부한다.
