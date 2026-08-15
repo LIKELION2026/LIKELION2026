@@ -1,0 +1,4 @@
+interface:
+  display_name: "Commit Convention"
+  short_description: "Prepare and verify traceable project commits."
+  default_prompt: "Use the commit convention skill to prepare this project commit."

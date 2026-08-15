@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Workflow"
+  short_description: "Build project features with documented team collaboration."
+  default_prompt: "Use the project workflow to plan or implement a feature with traceable collaboration records."
