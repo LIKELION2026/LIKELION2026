@@ -146,6 +146,10 @@ label = 사용자에게 보일 이름
 
 디자인 팀이 준비해야 할 장면, 상태, Figma 산출물, Phaser 에셋 전달 기준은 [design-handoff.md](design-handoff.md)를 따른다.
 
+## 학습 기록
+
+Phaser, 실시간 상태 동기화, Tiled 맵, 화상회의 연결을 조사하며 확인한 내용과 다음 검증 항목은 [learning-log.md](learning-log.md)에 남긴다.
+
 ## 검증 시나리오
 
 | 시나리오 | 확인 결과 |
@@ -157,19 +161,19 @@ label = 사용자에게 보일 이름
 | 회의실 진입 | 회의실 UI가 열리지만 명시적 참여 전에는 카메라·마이크를 요청하지 않는다. |
 | 전체화면 회의 | Phaser 키보드 입력이 회의 UI 조작과 충돌하지 않는다. |
 
-## Moyo 조사에서 채택한 점
+## 구조 조사에서 채택한 원칙
 
-- Tiled 맵의 tileset과 Object Layer를 Phaser Scene에서 읽는 방식
-- 위치 정보를 일반 사용자 상태와 분리해 빈번한 React 갱신을 피하는 방식
-- 원격 아바타를 연결 식별자 기준으로 보관해 생성·갱신·제거하는 방식. 우리 서비스에서는 재접속 안정성을 위해 인증 사용자 기준 `memberId`를 사용한다.
-- Phaser Canvas 위에 React 기반 LiveKit UI를 올리는 방식
+- 타일 맵의 시각 요소와 상호작용 영역을 분리해 관리한다.
+- 위치 정보를 일반 사용자 상태와 분리해 빈번한 화면 갱신을 피한다.
+- 원격 아바타를 인증 사용자 기준 `memberId`로 생성·갱신·제거한다.
+- 2D 오피스 화면과 화상회의 UI의 책임을 분리한다.
 
-Moyo의 근접 접촉 판정, 복수 공간의 타이머·노크 기능, 매 프레임 수준의 이동 전송은 MVP 범위에 포함하지 않는다.
+근접 접촉 판정, 복수 공간의 타이머·노크 기능, 매 프레임 수준의 이동 전송은 MVP 범위에 포함하지 않는다.
 
-## 참고 코드
+## 참고 자료
 
-- Moyo `GameScene`: `apps/client/src/features/game/core/game-scene.ts`
-- Moyo 원격 아바타 렌더링: `apps/client/src/features/game/renderers/avatar.renderer.ts`
-- Moyo Socket Provider: `apps/client/src/features/socket/model/WebSocketProvider.tsx`
-- Moyo LiveKit 오버레이: `apps/client/src/widgets/video-conference/ui/VideoConference.tsx`
+- [Phaser Scenes](https://docs.phaser.io/phaser/concepts/scenes)
+- [Socket.IO Rooms](https://socket.io/docs/v4/rooms/)
+- [Tiled Documentation](https://doc.mapeditor.org/)
+- [LiveKit React Room](https://docs.livekit.io/reference/components/react/concepts/livekit-room-component/)
 - [Realtime Meeting 계획](../realtime-meeting/README.md)
