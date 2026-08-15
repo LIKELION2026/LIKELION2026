@@ -17,6 +17,10 @@ class UnsupportedLanguageError(TranslationPipelineError):
         )
 
 
+class GlossaryError(TranslationPipelineError):
+    """관용구 사전을 읽거나 해석하지 못했을 때 발생한다."""
+
+
 class UnknownParticipantError(TranslationPipelineError):
     """언어를 등록하지 않은 참가자를 조회했을 때 발생한다."""
 

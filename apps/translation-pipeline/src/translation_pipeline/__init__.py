@@ -5,9 +5,16 @@ LiveKit 연동 전에 STT, 관용구 매칭, 번역 로직을 단독으로 검�
 """
 
 from .errors import (
+    GlossaryError,
     TranslationPipelineError,
     UnknownParticipantError,
     UnsupportedLanguageError,
+)
+from .glossary import (
+    DEFAULT_GLOSSARY_PATH,
+    Glossary,
+    GlossaryEntry,
+    GlossaryMatch,
 )
 from .languages import (
     LANGUAGE_NAMES,
@@ -20,8 +27,13 @@ from .languages import (
 from .participants import ParticipantRegistry
 
 __all__ = [
+    "DEFAULT_GLOSSARY_PATH",
     "LANGUAGE_NAMES",
     "SUPPORTED_LANGUAGES",
+    "Glossary",
+    "GlossaryEntry",
+    "GlossaryError",
+    "GlossaryMatch",
     "ParticipantRegistry",
     "TranslationPipelineError",
     "UnknownParticipantError",
