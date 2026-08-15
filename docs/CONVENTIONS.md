@@ -243,6 +243,7 @@ docs/
 ├── DESIGN_SYSTEM.md
 ├── DOCUMENTATION_GUIDE.md
 ├── PROJECT_STRUCTURE_GUIDE.md
+├── STRUCTURE.md
 ├── AI_AGENT_WORKFLOW.md
 ├── ARCHITECTURE.md
 ├── FEATURES/
@@ -256,6 +257,8 @@ docs/
 기능별 구현 문서와 학습 기록의 분리 기준은 `docs/DOCUMENTATION_GUIDE.md`를 따른다.
 
 팀원이 초기 구조와 작업 흐름을 빠르게 확인할 때는 `docs/PROJECT_STRUCTURE_GUIDE.md`를 먼저 읽는다.
+
+monorepo의 실제 폴더 책임과 의존성은 `docs/STRUCTURE.md`를 따른다.
 
 문서 첫 부분에는 가능한 한 아래 메타데이터를 작성한다.
 

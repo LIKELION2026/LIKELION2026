@@ -31,6 +31,8 @@
 
 프로젝트는 pnpm monorepo로 구성한다. 각 앱은 다른 앱의 내부 코드를 직접 가져오지 않고, 공유 계약은 `packages/shared`를 통해 사용한다.
 
+실제 폴더 책임과 기능 배치 기준은 [STRUCTURE.md](STRUCTURE.md)를 따른다.
+
 ```text
 .
 ├── apps/
