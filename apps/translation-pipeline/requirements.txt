@@ -1,0 +1,9 @@
+# 1단계에서 실제로 사용하는 의존성.
+# pythonpath 설정을 쓰므로 pytest 7.0 이상이 필요하다.
+pytest>=7.0
+
+# 이후 단계에서 추가한다. 실제로 설치한 버전을 확인한 뒤 고정한다.
+#   2·6단계 Deepgram STT: deepgram-sdk
+#   4단계 Claude 번역: anthropic
+#   API 키 로딩: python-dotenv
+#   6단계 마이크 입력: 스트리밍 구현 시 확정

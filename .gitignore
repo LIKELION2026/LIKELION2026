@@ -53,3 +53,10 @@ pnpm-debug.log*
 !.vscode/extensions.json
 !.vscode/settings.json
 .eslintcache
+
+# Python (apps/translation-pipeline)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/

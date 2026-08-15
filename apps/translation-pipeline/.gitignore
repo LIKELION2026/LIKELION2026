@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# 테스트용 녹음 파일은 커밋하지 않는다.
+audio/
+*.wav

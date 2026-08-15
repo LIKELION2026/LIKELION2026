@@ -1,0 +1,12 @@
+{
+  "ko_vi": [
+    { "ko": "고생하셨습니다", "natural_vi": "Cảm ơn anh/chị đã vất vả." },
+    { "ko": "고생 많으셨습니다", "natural_vi": "Anh/chị đã vất vả nhiều rồi." },
+    { "ko": "오늘도 고생하셨습니다", "natural_vi": "Hôm nay anh/chị đã vất vả rồi." }
+  ],
+  "vi_ko": [
+    { "vi": "Anh/chị đã vất vả rồi", "natural_ko": "고생하셨습니다" },
+    { "vi": "Cảm ơn vì đã vất vả", "natural_ko": "고생 많으셨습니다" },
+    { "vi": "Mọi người đã vất vả rồi", "natural_ko": "모두 고생하셨습니다" }
+  ]
+}
