@@ -188,7 +188,7 @@ PR 설명에는 아래 항목을 포함한다.
 ## 남은 작업 및 제한사항
 ```
 
-저장소의 `.github/pull_request_template.md`를 사용해 위 내용을 작성한다. Issue는 작업 성격에 맞는 `.github/ISSUE_TEMPLATE` 양식을 사용한다.
+저장소의 `.github/pull_request_template.md`를 사용해 위 내용을 작성한다. 디자인 PR은 `.github/PULL_REQUEST_TEMPLATE/design.md`, 개발 PR은 `.github/PULL_REQUEST_TEMPLATE/development.md`를 선택해 작성한다. Issue는 작업 성격에 맞는 `.github/ISSUE_TEMPLATE` 양식을 사용한다.
 
 - 기능 PR은 최소 1명 이상이 리뷰한다.
 - 화면이 바뀌면 이미지, GIF 또는 짧은 영상 링크를 첨부한다.

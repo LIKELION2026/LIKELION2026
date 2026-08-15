@@ -1,0 +1,48 @@
+name: 디자인 작업
+description: 사용자 흐름, 화면, 디자인 시스템, 자산 작업을 등록합니다.
+title: "[Design] "
+labels:
+  - design
+body:
+  - type: markdown
+    attributes:
+      value: |
+        구현 전 사용자 문제와 화면 기준을 합의합니다. 개인 정보가 포함된 화면 자료는 올리지 않습니다.
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결하려는 사용자 문제
+      description: 사용자가 어떤 상황에서 무엇을 어렵게 느끼는지 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 디자인 작업 범위
+      description: 화면, 사용자 흐름, 컴포넌트, 자산과 제외 범위를 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: 완료 기준
+      description: 리뷰 가능한 결과를 체크리스트로 작성합니다.
+      placeholder: |
+        - [ ] 주요 사용자 흐름이 Figma에 연결되어 있다.
+        - [ ] 컴포넌트 상태와 반응형 기준이 정리되어 있다.
+    validations:
+      required: true
+  - type: textarea
+    id: handoff
+    attributes:
+      label: 개발 핸드오프 항목
+      description: 토큰, 자산, 인터랙션, 예외 상태, 다국어 문구 영향을 작성합니다.
+  - type: textarea
+    id: references
+    attributes:
+      label: 관련 자료
+      description: PRD, Figma, Discussion, 선행 Issue 링크를 작성합니다.
+  - type: input
+    id: assignee
+    attributes:
+      label: 담당자
