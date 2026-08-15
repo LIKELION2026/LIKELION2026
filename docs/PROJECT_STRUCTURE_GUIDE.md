@@ -14,7 +14,7 @@
 
 ## 지금 저장소에 있는 것
 
-현재는 앱 구현 전 초기 협업 환경을 정리한 단계다. `apps`, `packages`와 실제 기능 코드는 앱 구조를 세팅할 때 추가한다.
+현재는 초기 협업 환경 위에 `packages/shared`와 `apps/server`의 백엔드 기반 구조를 추가한 단계다. Client 앱과 실제 기능 코드는 구현 범위가 생길 때 순서대로 추가한다.
 
 ```text
 .
@@ -24,6 +24,8 @@
 ├── .githooks/commit-msg          # 커밋 메시지 형식 검사
 ├── .github/                      # PR·Issue 템플릿
 ├── docs/                         # 제품, 기술, 협업 기록
+├── packages/shared/              # 공통 타입, DTO, Socket 이벤트 계약 초안
+├── apps/server/                  # NestJS 서버 초기 세팅과 meeting 토큰 API
 └── README.md                     # 저장소 첫 안내
 ```
 
