@@ -5,35 +5,16 @@ labels:
   - task
 body:
   - type: textarea
-    id: purpose
+    id: work
     attributes:
-      label: 작업 목적
-      description: 왜 지금 이 작업이 필요한지 작성합니다.
-    validations:
-      required: true
-  - type: textarea
-    id: scope
-    attributes:
-      label: 작업 범위
-      description: 생성하거나 변경할 결과물과 제외 범위를 작성합니다.
+      label: 할 일
+      description: 작업할 내용을 작성합니다.
     validations:
       required: true
   - type: textarea
     id: done
     attributes:
       label: 완료 기준
-      description: 검토 가능한 결과를 체크리스트로 작성합니다.
-      placeholder: |
-        - [ ] 문서 또는 코드가 업데이트된다.
-        - [ ] 관련 팀원이 결과를 확인한다.
+      description: 완료됐다고 판단할 기준을 작성합니다.
     validations:
       required: true
-  - type: textarea
-    id: references
-    attributes:
-      label: 관련 자료
-      description: PRD, Figma, Discussion, 회의록 또는 선행 Issue 링크를 작성합니다.
-  - type: input
-    id: assignee
-    attributes:
-      label: 담당자
