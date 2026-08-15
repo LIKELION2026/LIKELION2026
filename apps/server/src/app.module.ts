@@ -13,7 +13,12 @@ import { PresenceModule } from "./modules/presence/presence.module";
   controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ["apps/server/.env.local", "apps/server/.env"],
+      envFilePath: [
+        ".env.local",
+        ".env",
+        "apps/server/.env.local",
+        "apps/server/.env"
+      ],
       isGlobal: true,
       load: [configuration],
       validate: validateEnvironment
