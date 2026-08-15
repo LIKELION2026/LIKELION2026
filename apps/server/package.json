@@ -7,7 +7,7 @@
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch",
+    "start:dev": "pnpm --filter @likelion2026/shared build && nest start --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

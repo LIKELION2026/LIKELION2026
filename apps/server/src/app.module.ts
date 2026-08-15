@@ -12,7 +12,12 @@ import { MeetingModule } from "./modules/meeting/meeting.module";
   controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ["apps/server/.env.local", "apps/server/.env"],
+      envFilePath: [
+        "apps/server/.env.local",
+        "apps/server/.env",
+        ".env.local",
+        ".env"
+      ],
       isGlobal: true,
       load: [configuration],
       validate: validateEnvironment
