@@ -20,6 +20,11 @@ export function validateEnvironment(
     throw new Error("[config] PORT must be an integer between 1 and 65535");
   }
 
+  const liveKitUrl = String(config.LIVEKIT_URL ?? "").trim();
+  if (!liveKitUrl.startsWith("wss://")) {
+    throw new Error("[config] LIVEKIT_URL must start with wss://");
+  }
+
   const tokenTtlSeconds = Number(config.LIVEKIT_TOKEN_TTL_SECONDS ?? 900);
   if (!Number.isInteger(tokenTtlSeconds) || tokenTtlSeconds < 60) {
     throw new Error(
@@ -29,6 +34,7 @@ export function validateEnvironment(
 
   return {
     ...config,
+    LIVEKIT_URL: liveKitUrl,
     LIVEKIT_TOKEN_TTL_SECONDS: tokenTtlSeconds,
     NODE_ENV: config.NODE_ENV ?? "development",
     PORT: port
