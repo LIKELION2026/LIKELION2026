@@ -8,3 +8,10 @@ coverage/
 
 *.log
 pnpm-debug.log*
+
+# Python (apps/translation-pipeline)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
