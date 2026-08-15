@@ -60,7 +60,7 @@
 3. [CONVENTIONS.md](CONVENTIONS.md)에서 브랜치, 커밋, PR 규칙을 확인한다.
 4. 작업 성격에 맞는 GitHub Issue를 만든다.
 5. Issue에 적은 범위만 담은 브랜치를 만들고 작업한다.
-6. PR을 열어 팀원 리뷰 후 `Merge pull request`로 병합한다.
+6. PR의 병합 대상을 `dev`로 지정하고, 팀원 리뷰 후 `Merge pull request`로 병합한다.
 
 ## 작업별로 어디에 기록할지
 
@@ -104,6 +104,8 @@ PR에는 실제로 변경한 내용, 관련 Issue·Figma·Discussion, 실제 확
 ### 병합
 
 - 최소 한 명의 팀원에게 리뷰를 받는다.
+- 기능, 문서, 디자인 작업 PR은 `dev`에 병합한다.
+- `main`은 배포 가능한 상태만 유지하며, 릴리스 시점에 `dev`를 반영한다.
 - 리뷰 반영과 검증이 끝나면 `Merge pull request`를 사용한다.
 - 병합한 뒤 관련 Issue와 GitHub Project 상태를 업데이트한다.
 
