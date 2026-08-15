@@ -3,7 +3,7 @@ import type { JSX } from "react";
 import Phaser from "phaser";
 
 import { getDevelopmentIdentity } from "../../../shared/lib/development-identity";
-import { OFFICE_SCENE_KEY, OfficeScene } from "../core/office-scene";
+import { OfficeScene } from "../core/office-scene";
 import { useOfficeStore } from "../model/office-store";
 import { useOfficeSocket } from "../model/use-office-socket";
 import { OfficeHud } from "./OfficeHud";
@@ -15,7 +15,9 @@ interface VirtualOfficeProps {
 export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
+  const sceneRef = useRef<OfficeScene | null>(null);
   const [isInsideMeetingRoom, setIsInsideMeetingRoom] = useState(false);
+  const [isSceneReady, setIsSceneReady] = useState(false);
   const identity = useMemo(getDevelopmentIdentity, []);
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
@@ -28,7 +30,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       return;
     }
 
-    const scene = new OfficeScene({ onLocalMovement: sendMove });
+    const scene = new OfficeScene({
+      onLocalMovement: sendMove,
+      onMeetingRoomState: setIsInsideMeetingRoom,
+      onReady: () => setIsSceneReady(true)
+    });
+    sceneRef.current = scene;
+    setIsSceneReady(false);
     const game = new Phaser.Game({
       backgroundColor: "#dbe5ef",
       parent: container,
@@ -52,34 +60,31 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     });
     gameRef.current = game;
 
-    const handleMeetingRoomState = (isInside: boolean) => setIsInsideMeetingRoom(isInside);
-    scene.events.on("meeting-room-state", handleMeetingRoomState);
-
     return () => {
-      scene.events.off("meeting-room-state", handleMeetingRoomState);
       game.destroy(true);
       gameRef.current = null;
+      sceneRef.current = null;
+      setIsSceneReady(false);
     };
   }, [sendMove]);
 
   useEffect(() => {
-    const game = gameRef.current;
-    if (!game) {
+    const scene = sceneRef.current;
+    if (!scene || !isSceneReady) {
       return;
     }
 
-    const scene = game.scene.getScene(OFFICE_SCENE_KEY) as OfficeScene;
     scene.syncRemoteMembers(members, self?.memberId);
-  }, [members, self?.memberId]);
+  }, [isSceneReady, members, self?.memberId]);
 
   useEffect(() => {
-    if (!self || !gameRef.current) {
+    const scene = sceneRef.current;
+    if (!self || !scene || !isSceneReady) {
       return;
     }
 
-    const scene = gameRef.current.scene.getScene(OFFICE_SCENE_KEY) as OfficeScene;
     scene.setLocalPosition(self.avatar.x, self.avatar.y);
-  }, [self]);
+  }, [isSceneReady, self]);
 
   return (
     <section className="virtual-office" aria-label="가상 오피스">

@@ -21,6 +21,8 @@ const MEETING_ROOM = {
 
 interface OfficeSceneCallbacks {
   onLocalMovement: (payload: PresenceMovePayload) => void;
+  onMeetingRoomState: (isInside: boolean) => void;
+  onReady: () => void;
 }
 
 interface RemoteAvatar {
@@ -54,6 +56,7 @@ export class OfficeScene extends Phaser.Scene {
     this.createLocalAvatar();
     this.createObstacles();
     this.createInput();
+    this.callbacks.onReady();
   }
 
   update(): void {
@@ -211,7 +214,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     this.inMeetingRoom = isInside;
-    this.events.emit("meeting-room-state", isInside);
+    this.callbacks.onMeetingRoomState(isInside);
   }
 
   private updateRemoteAvatars(): void {
