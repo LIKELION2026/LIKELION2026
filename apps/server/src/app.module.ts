@@ -7,6 +7,7 @@ import { configuration } from "./config/configuration";
 import { validateEnvironment } from "./config/environment";
 import { HealthController } from "./health.controller";
 import { MeetingModule } from "./modules/meeting/meeting.module";
+import { PresenceModule } from "./modules/presence/presence.module";
 
 @Module({
   controllers: [HealthController],
@@ -17,7 +18,8 @@ import { MeetingModule } from "./modules/meeting/meeting.module";
       load: [configuration],
       validate: validateEnvironment
     }),
-    MeetingModule
+    MeetingModule,
+    PresenceModule
   ],
   providers: [
     {
