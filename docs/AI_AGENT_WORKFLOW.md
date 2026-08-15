@@ -91,3 +91,14 @@
 
 - `data/glossary.json`의 베트남어 표현은 AI 초안이며 베트남어 사용자 검토 전까지 확정이 아니다.
 - 코드 리뷰는 PR #5에서 진행 예정이다.
+
+### 2026-08-15 - Virtual Office Client와 Presence 통합 기반
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 담당자가 결합 테스트를 시작할 수 있는 Client 진입점과 실시간 오피스 상태 동기화 기반 구성
+- 입력 맥락: `docs/PRD.md`, Virtual Office 구현 계획, 기존 LiveKit 토큰 API와 공유 계약
+- AI 제안 또는 산출물: React + Vite Client, Phaser 임시 Scene, Socket.IO Presence Gateway, `/office` 및 `/meeting-lab` 경로, 로컬 실행 Runbook
+- 팀원 검토·수정 내용: 실제 에셋·영상·음성·번역 자막 범위를 제외하고, 회의 담당자의 소유 경계를 분리
+- 검증 결과: 전체 typecheck/build, Server health 및 토큰 API 호출, 두 Socket 클라이언트의 입장·이동·상태 이벤트 수동 통합 검증 통과
+- 관련 Issue / PR / Discussion: Issue #9, PR #7

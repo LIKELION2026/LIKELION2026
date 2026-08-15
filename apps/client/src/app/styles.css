@@ -1,0 +1,271 @@
+:root {
+  color: #18212f;
+  font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #edf1f5;
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #dce3ea;
+  display: flex;
+  height: 56px;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.brand {
+  color: #172235;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-decoration: none;
+}
+
+.app-navigation {
+  display: flex;
+  gap: 8px;
+}
+
+.app-navigation a {
+  border-radius: 4px;
+  color: #627084;
+  font-size: 14px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.app-navigation a.active {
+  background: #e8f0ff;
+  color: #1558d6;
+  font-weight: 700;
+}
+
+.app-main {
+  min-height: calc(100vh - 56px);
+}
+
+.office-page {
+  height: calc(100vh - 56px);
+  min-height: 620px;
+  padding: 20px;
+}
+
+.virtual-office {
+  background: #1d2530;
+  border: 1px solid #cad3dd;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.office-canvas {
+  height: 100%;
+  width: 100%;
+}
+
+.office-hud {
+  display: flex;
+  gap: 10px;
+  left: 16px;
+  position: absolute;
+  top: 16px;
+  z-index: 1;
+}
+
+.hud-panel {
+  background: rgb(255 255 255 / 94%);
+  border: 1px solid #cbd5df;
+  box-shadow: 0 6px 18px rgb(28 39 53 / 12%);
+  max-width: 300px;
+  padding: 12px;
+}
+
+.hud-title {
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.hud-meta {
+  color: #58687c;
+  font-size: 12px;
+  margin: 0;
+}
+
+.connection-state {
+  align-items: center;
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.connection-dot {
+  background: #9aa7b6;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.connection-dot.connected {
+  background: #1a9c63;
+}
+
+.connection-dot.connecting,
+.connection-dot.reconnecting {
+  background: #db8b16;
+}
+
+.status-control {
+  border: 1px solid #cbd5df;
+  border-radius: 4px;
+  color: #172235;
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 6px;
+  width: 100%;
+}
+
+.meeting-prompt {
+  background: #ffffff;
+  border: 1px solid #a9bdde;
+  bottom: 24px;
+  box-shadow: 0 10px 28px rgb(28 39 53 / 18%);
+  max-width: 360px;
+  padding: 18px;
+  position: absolute;
+  right: 24px;
+  z-index: 2;
+}
+
+.meeting-prompt h2 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.meeting-prompt p {
+  color: #55657a;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+}
+
+.primary-button {
+  background: #1558d6;
+  border: 1px solid #1558d6;
+  border-radius: 4px;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 9px 12px;
+}
+
+.meeting-lab-page {
+  margin: 0 auto;
+  max-width: 640px;
+  padding: 48px 20px;
+}
+
+.meeting-lab-card {
+  background: #ffffff;
+  border: 1px solid #d6dee7;
+  padding: 28px;
+}
+
+.meeting-lab-card h1 {
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+.meeting-lab-card p {
+  color: #58687c;
+  line-height: 1.5;
+}
+
+.meeting-lab-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.meeting-lab-form label {
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 6px;
+}
+
+.meeting-lab-form input {
+  border: 1px solid #bcc8d5;
+  border-radius: 4px;
+  padding: 9px 10px;
+}
+
+.result-message {
+  background: #edf8f2;
+  border: 1px solid #aad7bd;
+  color: #22633f;
+  font-size: 13px;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+.error-message {
+  background: #fff0f0;
+  border: 1px solid #f0b5b5;
+  color: #a33030;
+  font-size: 13px;
+  margin-top: 16px;
+  padding: 12px;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 16px;
+  }
+
+  .office-page {
+    min-height: 560px;
+    padding: 0;
+  }
+
+  .office-hud {
+    left: 10px;
+    top: 10px;
+  }
+
+  .hud-panel {
+    max-width: 220px;
+  }
+
+  .meeting-prompt {
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+  }
+}
