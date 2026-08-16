@@ -467,6 +467,16 @@
 - 검증 결과: Shared·Server·Client typecheck, Server·Client production build 통과. Phaser 초기 번들 크기 경고는 기존 과제로 유지
 - 관련 Issue / PR / Discussion: Issue #58, PR 작성 예정
 
+### 2026-08-16 - 원격 아바타 시간 기반 위치 보간
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 협업 오피스에서 상대 아바타가 저주기 Socket 좌표 갱신 사이에 계단형으로 움직이는 문제를 줄임
+- 입력 맥락: 두 브라우저 테스트 영상, `presence.move` 80ms 전송 제한, Phaser 고정 비율 Lerp 렌더링
+- AI 제안 또는 산출물: 최근 좌표 샘플을 수신 시각과 함께 보관하고 120ms 표시 지연 안에서 시간 기반으로 보간하는 Scene 로직, 60ms 이동 전송 간격
+- 팀원 검토·수정 내용: Server Socket payload와 1초 Supabase 위치 영속화는 변경하지 않는다. 실제 두 브라우저의 체감 품질은 배포 환경에서 사람이 확인한다.
+- 검증 결과: Client typecheck·build 및 두 브라우저 수동 검증 예정
+- 관련 Issue / PR / Discussion: Issue #63
+
 ### 2026-08-16 - Production 배포 테스트 시나리오
 
 - 사용한 Agent / Skill: Codex / Project Workflow Skill

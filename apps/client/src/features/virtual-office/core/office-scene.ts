@@ -19,6 +19,9 @@ const MEETING_ROOM = {
   y: 120
 } as const;
 
+const REMOTE_INTERPOLATION_DELAY_MS = 120;
+const MAX_REMOTE_POSITION_SAMPLES = 4;
+
 interface OfficeSceneCallbacks {
   onLocalMovement: (payload: PresenceMovePayload) => void;
   onMeetingRoomState: (isInside: boolean) => void;
@@ -28,8 +31,13 @@ interface OfficeSceneCallbacks {
 interface RemoteAvatar {
   container: Phaser.GameObjects.Container;
   label: Phaser.GameObjects.Text;
-  targetX: number;
-  targetY: number;
+  positionSamples: RemotePositionSample[];
+}
+
+interface RemotePositionSample {
+  receivedAt: number;
+  x: number;
+  y: number;
 }
 
 export class OfficeScene extends Phaser.Scene {
@@ -218,9 +226,36 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private updateRemoteAvatars(): void {
+    const renderAt = this.time.now - REMOTE_INTERPOLATION_DELAY_MS;
+
     for (const avatar of this.remoteAvatars.values()) {
-      avatar.container.x = Phaser.Math.Linear(avatar.container.x, avatar.targetX, 0.22);
-      avatar.container.y = Phaser.Math.Linear(avatar.container.y, avatar.targetY, 0.22);
+      while (
+        avatar.positionSamples.length > 1 &&
+        avatar.positionSamples[1]!.receivedAt <= renderAt
+      ) {
+        avatar.positionSamples.shift();
+      }
+
+      const current = avatar.positionSamples[0];
+      const next = avatar.positionSamples[1];
+      if (!current) {
+        continue;
+      }
+
+      if (next) {
+        const elapsed = next.receivedAt - current.receivedAt;
+        const progress = Phaser.Math.Clamp(
+          (renderAt - current.receivedAt) / Math.max(elapsed, 1),
+          0,
+          1
+        );
+        avatar.container.setPosition(
+          Phaser.Math.Linear(current.x, next.x, progress),
+          Phaser.Math.Linear(current.y, next.y, progress)
+        );
+      } else {
+        avatar.container.setPosition(current.x, current.y);
+      }
       avatar.container.setDepth(avatar.container.y);
     }
   }
@@ -228,8 +263,7 @@ export class OfficeScene extends Phaser.Scene {
   private upsertRemoteAvatar(member: OfficeMemberPresence): void {
     const existing = this.remoteAvatars.get(member.memberId);
     if (existing) {
-      existing.targetX = member.avatar.x;
-      existing.targetY = member.avatar.y;
+      this.addRemotePositionSample(existing, member.avatar.x, member.avatar.y);
       existing.label.setText(getRemoteLabel(member));
       existing.container.setAlpha(getRemoteAvatarAlpha(member));
       return;
@@ -252,9 +286,26 @@ export class OfficeScene extends Phaser.Scene {
     this.remoteAvatars.set(member.memberId, {
       container,
       label,
-      targetX: member.avatar.x,
-      targetY: member.avatar.y
+      positionSamples: [
+        {
+          receivedAt: this.time.now,
+          x: member.avatar.x,
+          y: member.avatar.y
+        }
+      ]
     });
+  }
+
+  private addRemotePositionSample(avatar: RemoteAvatar, x: number, y: number): void {
+    const latest = avatar.positionSamples.at(-1);
+    if (latest?.x === x && latest.y === y) {
+      return;
+    }
+
+    avatar.positionSamples.push({ receivedAt: this.time.now, x, y });
+    if (avatar.positionSamples.length > MAX_REMOTE_POSITION_SAMPLES) {
+      avatar.positionSamples.shift();
+    }
   }
 }
 
