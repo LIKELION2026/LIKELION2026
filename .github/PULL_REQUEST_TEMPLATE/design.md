@@ -4,7 +4,11 @@
 
 ## 관련 자료
 
-<!-- Figma, Issue, PRD 링크 -->
+<!-- 구현·디자인 작업 Issue를 closing keyword로 연결합니다. 예: Closes #123 -->
+
+Closes #
+
+<!-- Figma, PRD 링크 -->
 
 ## 확인할 내용
 

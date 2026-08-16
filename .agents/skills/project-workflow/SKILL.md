@@ -38,7 +38,9 @@ For AI features:
 1. Check type contracts, error states, and affected user flow.
 2. Run the smallest relevant validation command available.
 3. Update product or technical documentation when a decision or contract changed.
-4. Prepare a focused commit and PR with actual verification evidence.
+4. Link the implementation Issue in the PR body with `Closes #<issue-number>`, not `Refs`, so GitHub closes it when the PR is merged into `dev`.
+5. Prepare a focused commit and PR with actual verification evidence.
+6. Verify that the linked Issue is closed after the PR merge, then update its Project status.
 
 ## Resource
 

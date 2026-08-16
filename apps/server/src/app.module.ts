@@ -7,6 +7,7 @@ import { configuration } from "./config/configuration";
 import { validateEnvironment } from "./config/environment";
 import { HealthController } from "./health.controller";
 import { MeetingModule } from "./modules/meeting/meeting.module";
+import { OfficeModule } from "./modules/office/office.module";
 import { PresenceModule } from "./modules/presence/presence.module";
 
 @Module({
@@ -24,6 +25,7 @@ import { PresenceModule } from "./modules/presence/presence.module";
       validate: validateEnvironment
     }),
     MeetingModule,
+    OfficeModule,
     PresenceModule
   ],
   providers: [

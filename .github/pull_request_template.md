@@ -4,7 +4,11 @@
 
 ## 관련 자료
 
-<!-- 예: Closes #123, Figma 또는 Discussion 링크 -->
+<!-- 구현·버그·설정·문서화 작업은 closing keyword로 Issue를 연결합니다. -->
+
+Closes #
+
+<!-- Figma, Discussion 등 참고 링크는 아래에 추가합니다. 조사 전용 PR은 `Issue 없음: <사유>`를 작성합니다. -->
 
 ## 확인
 
