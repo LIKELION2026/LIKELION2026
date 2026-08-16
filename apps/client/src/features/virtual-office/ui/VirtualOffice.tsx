@@ -22,7 +22,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
-  const { sendMove, updateStatus } = useOfficeSocket(identity);
+  const { sendMove, updateAttendance, updateStatus } = useOfficeSocket(identity);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -92,7 +92,9 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       <OfficeHud
         connectionState={connectionState}
         memberCount={members.length}
+        onAttendanceChange={updateAttendance}
         onStatusChange={updateStatus}
+        selfAttendanceStatus={self?.officePresence?.attendanceStatus}
         selfStatus={self?.status}
       />
       {isInsideMeetingRoom ? (

@@ -231,6 +231,7 @@ export class OfficeScene extends Phaser.Scene {
       existing.targetX = member.avatar.x;
       existing.targetY = member.avatar.y;
       existing.label.setText(getRemoteLabel(member));
+      existing.container.setAlpha(getRemoteAvatarAlpha(member));
       return;
     }
 
@@ -246,6 +247,7 @@ export class OfficeScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 1);
     const container = this.add.container(member.avatar.x, member.avatar.y, [circle, label]);
+    container.setAlpha(getRemoteAvatarAlpha(member));
 
     this.remoteAvatars.set(member.memberId, {
       container,
@@ -263,5 +265,17 @@ function getMemberColor(memberId: string): number {
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {
-  return `${member.displayName}\n${MEMBER_STATUS_LABELS[member.status]}`;
+  const displayMode = member.officePresence?.displayMode;
+  const detail =
+    displayMode === "ghost"
+      ? "연결 해제"
+      : displayMode === "sleeping"
+        ? "퇴근"
+        : MEMBER_STATUS_LABELS[member.status];
+  return `${member.displayName}\n${detail}`;
+}
+
+function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {
+  const displayMode = member.officePresence?.displayMode;
+  return displayMode === "ghost" || displayMode === "sleeping" ? 0.45 : 1;
 }
