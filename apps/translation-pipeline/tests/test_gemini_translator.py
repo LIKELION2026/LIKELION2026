@@ -72,8 +72,8 @@ def test_uses_the_default_model():
 
 
 def test_model_can_be_overridden():
-    # 지연이 문제일 때 lite로 바꿔 끼울 수 있어야 한다.
-    override = "gemini-3.1-flash-lite"
+    # 할당량이나 품질 문제로 다른 모델로 바꿔 끼울 수 있어야 한다.
+    override = "gemini-3-flash-preview"
     assert override != DEFAULT_MODEL
 
     translator = make_translator(["Cảm ơn."], model=override)
