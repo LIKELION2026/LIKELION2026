@@ -14,3 +14,13 @@ export interface MeetingJoinedPayload {
   participant: MeetingParticipant;
   occurredAt: string;
 }
+
+export interface MeetingRoomSubscriptionRequest {
+  roomName: string;
+}
+
+export interface MeetingRoomSubscriptionPayload {
+  roomName: string;
+  socketId: string;
+  occurredAt: string;
+}

@@ -6,7 +6,7 @@ import { getDevelopmentIdentity } from "../../shared/lib/development-identity";
 
 export function MeetingLabPage(): JSX.Element {
   const identity = getDevelopmentIdentity();
-  const [roomName, setRoomName] = useState("demo-meeting-room");
+  const [roomName, setRoomName] = useState("lab-likelion-20260816-client");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,9 +19,8 @@ export function MeetingLabPage(): JSX.Element {
 
     try {
       const response = await createMeetingToken({
-        participantIdentity: identity.memberId,
+        participantCountry: identity.language === "vi" ? "vn" : "kr",
         participantName: identity.displayName,
-        preferredLanguage: identity.language,
         roomName
       });
       setMessage(`${response.roomName} 토큰을 받았습니다. 만료 시각: ${new Date(response.expiresAt).toLocaleTimeString()}`);

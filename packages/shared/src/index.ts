@@ -1,6 +1,7 @@
 export * from "./constants/socket-events";
 export * from "./contracts/http/meeting";
 export * from "./contracts/socket/briefing";
+export * from "./contracts/socket/events";
 export * from "./contracts/socket/meeting";
 export * from "./contracts/socket/office-lifecycle";
 export * from "./contracts/socket/presence";
