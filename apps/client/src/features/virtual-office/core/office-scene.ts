@@ -88,6 +88,25 @@ export class OfficeScene extends Phaser.Scene {
     desiredMembers.forEach((member) => this.upsertRemoteAvatar(member));
   }
 
+  focusMember(memberId: string, selfMemberId: string | undefined): boolean {
+    const target =
+      memberId === selfMemberId
+        ? this.player
+        : this.remoteAvatars.get(memberId)?.container;
+    if (!target) {
+      return false;
+    }
+
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(target.x, target.y, 320, "Sine.easeInOut");
+    this.time.delayedCall(900, () => {
+      if (this.player?.active) {
+        this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+      }
+    });
+    return true;
+  }
+
   private createInput(): void {
     const keyboard = this.input.keyboard;
     if (!keyboard) {
