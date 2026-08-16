@@ -271,6 +271,8 @@ P0에서는 이 책임을 구현하지 않는다. 단, `subtitleId`, `revision`,
 - Token API accepts only `participantName` and `participantCountry` for participant input, then returns the server-derived `participantIdentity` and `preferredLanguage`.
 - Manual token API smoke verifies `kr -> ko` with `kr-guest-<uuid>` and `vn -> vi` with `vn-guest-<uuid>`.
 - Client token request smoke uses a section-derived room name such as `lab-likelion-<yyyymmdd>-meeting-room`.
+- `pnpm smoke:meeting-subtitle` posts partial/final Mock subtitle payloads to a running server and verifies that the room buffer keeps the final highest-revision subtitle.
+- Meeting Lab P0 demo verifies two browser sessions in the same section-derived room, local/remote media rendering, mic/camera toggles, Mock subtitle display, and disconnect cleanup.
 
 ## 오픈 질문
 

@@ -4,6 +4,7 @@ import {
   MEETING_PARTICIPANT_COUNTRIES,
   type MeetingParticipantCountry
 } from "@likelion2026/shared";
+import { Track } from "livekit-client";
 
 import { createMeetingToken } from "../../features/realtime-meeting/api/create-meeting-token";
 import {
@@ -14,8 +15,12 @@ import {
 import { resolveMeetingRoomSection } from "../../features/realtime-meeting/model/meeting-room-section";
 import {
   useLiveKitMeetingSession,
+  type LiveKitMeetingMediaTrack,
   type LiveKitMeetingSessionStatus
 } from "../../features/realtime-meeting/model/use-livekit-meeting-session";
+import { useMeetingSubtitles } from "../../features/realtime-meeting/model/use-meeting-subtitles";
+import { MeetingMediaTrackElement } from "../../features/realtime-meeting/ui/MeetingMediaTrackElement";
+import { MeetingSubtitlePanel } from "../../features/realtime-meeting/ui/MeetingSubtitlePanel";
 import {
   getDevelopmentIdentity,
   saveDevelopmentProfile
@@ -60,13 +65,31 @@ export function MeetingLabPage(): JSX.Element {
   const [devicePreflight, setDevicePreflight] = useState(
     INITIAL_MEETING_DEVICE_PREFLIGHT_STATE
   );
-  const { connect, disconnect, session } = useLiveKitMeetingSession();
+  const {
+    connect,
+    disconnect,
+    session,
+    setCameraEnabled,
+    setMicrophoneEnabled
+  } = useLiveKitMeetingSession();
   const isCheckingDevices = devicePreflight.status === "checking";
   const isDeviceReady = devicePreflight.status === "ready";
   const isSessionBusy =
     session.status === "connecting" ||
     session.status === "publishing" ||
     session.status === "reconnecting";
+  const canControlMedia =
+    session.status === "connected" || session.status === "reconnecting";
+  const subtitleState = useMeetingSubtitles(
+    canControlMedia ? session.roomName : undefined
+  );
+  const videoTracks = session.mediaTracks.filter(
+    (mediaTrack) => mediaTrack.kind === Track.Kind.Video
+  );
+  const remoteAudioTracks = session.mediaTracks.filter(
+    (mediaTrack) =>
+      mediaTrack.kind === Track.Kind.Audio && !mediaTrack.isLocal
+  );
 
   const handleDevicePreflight = useCallback(async () => {
     setError(null);
@@ -195,6 +218,23 @@ export function MeetingLabPage(): JSX.Element {
             {isSubmitting || isSessionBusy ? "회의 연결 중" : "회의 연결"}
           </button>
         </form>
+        <MeetingMediaStage
+          canControlMedia={canControlMedia}
+          onCameraToggle={() => {
+            void setCameraEnabled(!session.isCameraEnabled);
+          }}
+          onMicrophoneToggle={() => {
+            void setMicrophoneEnabled(!session.isMicrophoneEnabled);
+          }}
+          remoteAudioTracks={remoteAudioTracks}
+          session={session}
+          videoTracks={videoTracks}
+        />
+        <MeetingSubtitlePanel
+          errorMessage={subtitleState.errorMessage}
+          status={subtitleState.status}
+          subtitles={subtitleState.subtitles}
+        />
         <div className="meeting-session-status" aria-live="polite">
           <div>
             <span>LiveKit 상태</span>
@@ -210,6 +250,7 @@ export function MeetingLabPage(): JSX.Element {
             <div className="meeting-device-counts">
               <span>Published camera {session.videoTrackCount}</span>
               <span>Published mic {session.audioTrackCount}</span>
+              <span>Remote participants {session.remoteParticipantCount}</span>
             </div>
           ) : null}
           {session.errorMessage ? (
@@ -232,5 +273,80 @@ export function MeetingLabPage(): JSX.Element {
         {error ? <div className="error-message">{error}</div> : null}
       </div>
     </section>
+  );
+}
+
+interface MeetingMediaStageProps {
+  canControlMedia: boolean;
+  onCameraToggle: () => void;
+  onMicrophoneToggle: () => void;
+  remoteAudioTracks: LiveKitMeetingMediaTrack[];
+  session: ReturnType<typeof useLiveKitMeetingSession>["session"];
+  videoTracks: LiveKitMeetingMediaTrack[];
+}
+
+function MeetingMediaStage({
+  canControlMedia,
+  onCameraToggle,
+  onMicrophoneToggle,
+  remoteAudioTracks,
+  session,
+  videoTracks
+}: MeetingMediaStageProps): JSX.Element | null {
+  if (session.status === "idle" || session.status === "failed") {
+    return null;
+  }
+
+  return (
+    <div className="meeting-media-stage">
+      {videoTracks.length > 0 ? (
+        <div className="meeting-media-grid">
+          {videoTracks.map((mediaTrack) => (
+            <article className="meeting-media-tile" key={mediaTrack.id}>
+              <MeetingMediaTrackElement mediaTrack={mediaTrack} />
+              <div className="meeting-media-overlay">
+                <strong>
+                  {mediaTrack.participantName}
+                  {mediaTrack.isLocal ? " (나)" : ""}
+                </strong>
+                <span>
+                  {mediaTrack.isMuted ? "카메라 꺼짐" : mediaTrack.source}
+                </span>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="meeting-media-empty">
+          아직 표시할 카메라 영상이 없습니다.
+        </div>
+      )}
+      <div className="meeting-audio-sinks" aria-hidden="true">
+        {remoteAudioTracks.map((mediaTrack) => (
+          <MeetingMediaTrackElement
+            key={mediaTrack.id}
+            mediaTrack={mediaTrack}
+          />
+        ))}
+      </div>
+      <div className="meeting-media-controls">
+        <button
+          className="secondary-button"
+          disabled={!canControlMedia || session.isMicrophoneUpdating}
+          onClick={onMicrophoneToggle}
+          type="button"
+        >
+          {session.isMicrophoneEnabled ? "마이크 끄기" : "마이크 켜기"}
+        </button>
+        <button
+          className="secondary-button"
+          disabled={!canControlMedia || session.isCameraUpdating}
+          onClick={onCameraToggle}
+          type="button"
+        >
+          {session.isCameraEnabled ? "카메라 끄기" : "카메라 켜기"}
+        </button>
+      </div>
+    </div>
   );
 }
