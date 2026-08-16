@@ -357,3 +357,14 @@
 - 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/34
+
+### 2026-08-16 - Meeting Lab LiveKit room connect
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Token API 응답의 `serverUrl`과 `token`으로 LiveKit Cloud room에 연결하고 local camera/mic track publish 흐름 구성
+- 입력 맥락: Issue #35, LiveKit client SDK v2.21.0 README와 로컬 타입 정의, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `Room.connect`, `localParticipant.enableCameraAndMicrophone`, 연결/게시/재연결/실패/종료 상태 hook, `room.disconnect(true)` 기반 cleanup
+- 사용자 검토/수정 내용: 실제 브라우저 camera/mic 연결 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/35
