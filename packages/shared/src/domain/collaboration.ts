@@ -114,6 +114,7 @@ export interface PublicOfficeTodo extends OfficeTodo {
 }
 
 export interface OfficeCalendarEvent {
+  createdByMemberId?: string;
   endsAt: string;
   eventType: CalendarEventType;
   id: string;
@@ -122,4 +123,13 @@ export interface OfficeCalendarEvent {
   startsAt: string;
   title: string;
   workspaceId: string;
+}
+
+export interface CalendarMemberStatus {
+  availabilityStatus: AvailabilityStatus;
+  displayMode: AvatarDisplayMode;
+  endsAt: string;
+  eventId: string;
+  eventType: CalendarEventType;
+  memberId: string;
 }

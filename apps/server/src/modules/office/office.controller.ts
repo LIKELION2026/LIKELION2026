@@ -1,5 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query
+} from "@nestjs/common";
 import type {
+  CalendarEventListResponse,
+  CalendarMemberStatusListResponse,
   GuestOfficeSessionResponse,
   OfficeCollaborationPresence,
   OfficeTodoListResponse,
@@ -8,10 +21,15 @@ import type {
 
 import { CreateGuestOfficeSessionDto } from "./dto/create-guest-office-session.dto";
 import { CreateOfficeTodoDto } from "./dto/create-office-todo.dto";
+import { CreateOfficeCalendarEventDto } from "./dto/create-office-calendar-event.dto";
+import { DeleteOfficeCalendarEventQueryDto } from "./dto/delete-office-calendar-event-query.dto";
+import { GetCalendarMemberStatusesQueryDto } from "./dto/get-calendar-member-statuses-query.dto";
 import { GetMemberTodosQueryDto } from "./dto/get-member-todos-query.dto";
+import { GetWorkspaceCalendarEventsQueryDto } from "./dto/get-workspace-calendar-events-query.dto";
 import { UpdateOfficeAttendanceDto } from "./dto/update-office-attendance.dto";
 import { UpdateOfficePresenceDto } from "./dto/update-office-presence.dto";
 import { UpdateOfficeTodoDto } from "./dto/update-office-todo.dto";
+import { UpdateOfficeCalendarEventDto } from "./dto/update-office-calendar-event.dto";
 import { OfficeService } from "./office.service";
 
 @Controller("office")
@@ -70,5 +88,51 @@ export class OfficeController {
     @Body() request: UpdateOfficeTodoDto
   ): Promise<OfficeTodoListResponse> {
     return { todos: [await this.officeService.updateTodo(todoId, request)] };
+  }
+
+  @Post("members/:memberId/calendar-events")
+  async createCalendarEvent(
+    @Param("memberId") memberId: string,
+    @Body() request: CreateOfficeCalendarEventDto
+  ): Promise<CalendarEventListResponse> {
+    return { events: [await this.officeService.createCalendarEvent(memberId, request)] };
+  }
+
+  @Get("workspaces/:workspaceId/calendar-events")
+  async getWorkspaceCalendarEvents(
+    @Param("workspaceId") workspaceId: string,
+    @Query() query: GetWorkspaceCalendarEventsQueryDto
+  ): Promise<CalendarEventListResponse> {
+    return { events: await this.officeService.getWorkspaceCalendarEvents(workspaceId, query) };
+  }
+
+  @Get("workspaces/:workspaceId/calendar-statuses")
+  async getCalendarMemberStatuses(
+    @Param("workspaceId") workspaceId: string,
+    @Query() query: GetCalendarMemberStatusesQueryDto
+  ): Promise<CalendarMemberStatusListResponse> {
+    return {
+      statuses: await this.officeService.getCalendarMemberStatuses(
+        workspaceId,
+        query.at ?? new Date().toISOString()
+      )
+    };
+  }
+
+  @Patch("calendar-events/:eventId")
+  async updateCalendarEvent(
+    @Param("eventId") eventId: string,
+    @Body() request: UpdateOfficeCalendarEventDto
+  ): Promise<CalendarEventListResponse> {
+    return { events: [await this.officeService.updateCalendarEvent(eventId, request)] };
+  }
+
+  @Delete("calendar-events/:eventId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteCalendarEvent(
+    @Param("eventId") eventId: string,
+    @Query() query: DeleteOfficeCalendarEventQueryDto
+  ): Promise<void> {
+    await this.officeService.deleteCalendarEvent(eventId, query.guestToken);
   }
 }

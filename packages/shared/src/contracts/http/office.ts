@@ -1,8 +1,11 @@
 import type {
   AttendanceStatus,
   AvailabilityStatus,
+  CalendarMemberStatus,
+  CalendarEventType,
   CountryCode,
   OfficeCollaborationPresence,
+  OfficeCalendarEvent,
   OfficeDesk,
   OfficeMember,
   OfficeTodo,
@@ -59,4 +62,39 @@ export interface OfficeTodoListResponse {
 
 export interface PublicOfficeTodoListResponse {
   todos: PublicOfficeTodo[];
+}
+
+export interface CreateOfficeCalendarEventRequest {
+  endsAt: string;
+  eventType: CalendarEventType;
+  guestToken: string;
+  isAllDay?: boolean;
+  startsAt: string;
+  title: string;
+}
+
+export interface UpdateOfficeCalendarEventRequest {
+  endsAt?: string;
+  eventType?: CalendarEventType;
+  guestToken: string;
+  isAllDay?: boolean;
+  startsAt?: string;
+  title?: string;
+}
+
+export interface DeleteOfficeCalendarEventRequest {
+  guestToken: string;
+}
+
+export interface GetWorkspaceCalendarEventsQuery {
+  endsAt: string;
+  startsAt: string;
+}
+
+export interface CalendarEventListResponse {
+  events: OfficeCalendarEvent[];
+}
+
+export interface CalendarMemberStatusListResponse {
+  statuses: CalendarMemberStatus[];
 }
