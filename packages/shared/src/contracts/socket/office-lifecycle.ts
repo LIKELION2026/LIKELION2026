@@ -11,7 +11,6 @@ export interface OfficeAttendanceUpdatePayload {
 
 export interface OfficeHeartbeatPayload {
   avatar?: OfficeAvatarState;
-  occurredAt: string;
 }
 
 export interface OfficeLifecycleUpdatedPayload {
