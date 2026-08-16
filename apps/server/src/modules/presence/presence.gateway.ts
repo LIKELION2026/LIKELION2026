@@ -10,6 +10,8 @@ import {
   SOCKET_EVENT_NAMES,
   isLanguageCode,
   type MemberStatusUpdatePayload,
+  type OfficeAttendanceUpdatePayload,
+  type OfficeHeartbeatPayload,
   type OfficeJoinPayload,
   type PresenceMovePayload
 } from "@likelion2026/shared";
@@ -31,14 +33,15 @@ export class PresenceGateway implements OnGatewayDisconnect {
 
   async handleDisconnect(client: Socket): Promise<void> {
     const teamId = this.presenceService.getTeamId(client.id);
-    const member = this.presenceService.leave(client.id);
+    const member = await this.presenceService.leave(client.id);
     if (!teamId || !member) {
       return;
     }
 
-    this.server.to(getTeamRoom(teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_MEMBER_LEFT, {
+    this.server.to(getTeamRoom(teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, {
       memberId: member.memberId,
       occurredAt: new Date().toISOString(),
+      presence: member.officePresence,
       teamId
     });
   }
@@ -56,36 +59,36 @@ export class PresenceGateway implements OnGatewayDisconnect {
     const previousTeamId = this.presenceService.getTeamId(client.id);
     if (previousTeamId && previousTeamId !== payload.teamId) {
       await client.leave(getTeamRoom(previousTeamId));
-      this.presenceService.leave(client.id);
+      await this.presenceService.leave(client.id);
     }
 
-    const member = this.presenceService.join(client.id, payload);
+    const { members, self } = await this.presenceService.join(client.id, payload);
     const teamRoom = getTeamRoom(payload.teamId);
     await client.join(teamRoom);
 
     client.emit(SOCKET_EVENT_NAMES.OFFICE_SNAPSHOT, {
-      members: this.presenceService.getMembers(payload.teamId),
+      members,
       occurredAt: new Date().toISOString(),
-      self: member,
+      self,
       teamId: payload.teamId
     });
     client.to(teamRoom).emit(SOCKET_EVENT_NAMES.OFFICE_MEMBER_JOINED, {
-      member,
+      member: self,
       occurredAt: new Date().toISOString(),
       teamId: payload.teamId
     });
   }
 
   @SubscribeMessage(SOCKET_EVENT_NAMES.PRESENCE_MOVE)
-  handlePresenceMove(
+  async handlePresenceMove(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: unknown
-  ): void {
+  ): Promise<void> {
     if (!isPresenceMovePayload(payload)) {
       return;
     }
 
-    const member = this.presenceService.move(client.id, payload);
+    const member = await this.presenceService.move(client.id, payload);
     const teamId = this.presenceService.getTeamId(client.id);
     if (!member || !teamId) {
       return;
@@ -100,15 +103,15 @@ export class PresenceGateway implements OnGatewayDisconnect {
   }
 
   @SubscribeMessage(SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATE)
-  handleMemberStatusUpdate(
+  async handleMemberStatusUpdate(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: unknown
-  ): void {
+  ): Promise<void> {
     if (!isMemberStatusUpdatePayload(payload)) {
       return;
     }
 
-    const update = this.presenceService.updateStatus(client.id, payload);
+    const update = await this.presenceService.updateStatus(client.id, payload);
     const teamId = this.presenceService.getTeamId(client.id);
     if (!update || !teamId) {
       return;
@@ -118,6 +121,52 @@ export class PresenceGateway implements OnGatewayDisconnect {
       member: update.member,
       occurredAt: new Date().toISOString(),
       previousStatus: update.previousStatus,
+      teamId
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_HEARTBEAT)
+  async handleOfficeHeartbeat(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: unknown
+  ): Promise<void> {
+    if (!isOfficeHeartbeatPayload(payload)) {
+      return;
+    }
+
+    const member = await this.presenceService.heartbeat(client.id, payload);
+    const teamId = this.presenceService.getTeamId(client.id);
+    if (!member?.officePresence || !teamId) {
+      return;
+    }
+
+    client.to(getTeamRoom(teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, {
+      memberId: member.memberId,
+      occurredAt: new Date().toISOString(),
+      presence: member.officePresence,
+      teamId
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_ATTENDANCE_UPDATE)
+  async handleOfficeAttendanceUpdate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: unknown
+  ): Promise<void> {
+    if (!isOfficeAttendanceUpdatePayload(payload)) {
+      return;
+    }
+
+    const member = await this.presenceService.updateAttendance(client.id, payload);
+    const teamId = this.presenceService.getTeamId(client.id);
+    if (!member?.officePresence || !teamId) {
+      return;
+    }
+
+    this.server.to(getTeamRoom(teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, {
+      memberId: member.memberId,
+      occurredAt: new Date().toISOString(),
+      presence: member.officePresence,
       teamId
     });
   }
@@ -135,10 +184,30 @@ function isOfficeJoinPayload(value: unknown): value is OfficeJoinPayload {
   return (
     isIdentifier(value.teamId) &&
     isIdentifier(value.memberId) &&
+    isIdentifier(value.workspaceId) &&
+    value.teamId === value.workspaceId &&
+    isGuestToken(value.guestToken) &&
     typeof value.displayName === "string" &&
     value.displayName.trim().length > 0 &&
     typeof value.language === "string" &&
     isLanguageCode(value.language)
+  );
+}
+
+function isOfficeHeartbeatPayload(value: unknown): value is OfficeHeartbeatPayload {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return value.avatar === undefined || isAvatarState(value.avatar);
+}
+
+function isOfficeAttendanceUpdatePayload(
+  value: unknown
+): value is OfficeAttendanceUpdatePayload {
+  return (
+    isRecord(value) &&
+    (value.attendanceStatus === "working" || value.attendanceStatus === "checked_out")
   );
 }
 
@@ -170,6 +239,26 @@ function isIdentifier(value: unknown): value is string {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isGuestToken(value: unknown): value is string {
+  return typeof value === "string" && /^guest_[a-zA-Z0-9]{16,64}$/.test(value);
+}
+
+function isAvatarState(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    isFiniteNumber(value.x) &&
+    isFiniteNumber(value.y) &&
+    (value.direction === "up" ||
+      value.direction === "down" ||
+      value.direction === "left" ||
+      value.direction === "right") &&
+    (value.animation === "idle" || value.animation === "walk")
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -7,6 +7,7 @@ import { OfficeService } from "./office.service";
 @Module({
   controllers: [OfficeController],
   imports: [SupabaseModule],
+  exports: [OfficeService],
   providers: [OfficeService]
 })
 export class OfficeModule {}

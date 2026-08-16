@@ -335,3 +335,18 @@
 - `stt.py`의 스트리밍 루프에는 단위 테스트가 없다. 마이크와 웹소켓이 필요해서이며, 실제 음성으로만 확인했다.
 - 늦게 도착한 번역을 버리는 처리가 없다 (Issue #11).
 - 무료 티어 할당량이 실제 회의 분량을 감당하지 못할 수 있다 (Issue #11).
+
+### 2026-08-16 - 오피스 영속 Presence 동기화
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 팀원이 실제 근무 화면을 공유하지 않아도 접속·퇴근·마지막 위치를 확인할 수 있도록, 게스트 세션과 Socket.IO Presence를 연결
+- 입력 맥락: Issue #29, PR #26의 게스트 세션·Supabase ERD, 기존 Phaser 오피스 Gateway, `docs/FEATURES/virtual-office/contracts.md`
+- AI 제안 또는 산출물:
+  - `member_presence`를 기준으로 한 workspace snapshot, heartbeat, disconnect, 위치 flush 흐름
+  - guest token을 room broadcast에서 제외하는 Socket 계약
+  - 이동은 Socket으로 즉시 중계하고 1초마다 마지막 좌표만 DB에 저장하는 경계
+  - Phaser ghost/sleeping 표현과 PresenceService 단위 테스트 초안
+- 팀원 검토·수정 내용: 실제 화면 감시가 아닌 사용자가 선택한 상태와 서비스 연결 상태만 공유하며, 휴가·재택 자동 판정과 TODO UI는 후속 Issue로 분리
+- 검증 결과: `corepack pnpm typecheck`, `corepack pnpm build` 통과. 실제 Supabase와 두 브라우저 연결 검증은 Server 환경 변수를 설정한 뒤 수행 필요
+- 관련 Issue / PR / Discussion: Issue #29, PR 작성 예정

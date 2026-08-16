@@ -152,6 +152,18 @@ button {
   width: 100%;
 }
 
+.attendance-button {
+  background: #1558d6;
+  border: 1px solid #1558d6;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
 .meeting-prompt {
   background: #ffffff;
   border: 1px solid #a9bdde;

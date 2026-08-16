@@ -21,18 +21,21 @@
 | 협업 가능 상태 | `available`, `focus`, `meeting`, `vacation`, `remote_work`, `absent` | 연락과 협업 가능 여부 |
 | 아바타 표현 | `active`, `sleeping`, `ghost`, `vacation`, `remote` | Phaser가 화면에 그릴 모습 |
 
-상태는 `OfficeCollaborationPresence`로 전달한다. `member.status`는 기존 실시간 데모 상태 계약이고, 위 계약은 영속 상태를 추가하기 위한 별도 기준이다. 두 타입을 하나로 합치는 작업은 Supabase 저장소와 Socket gateway를 실제로 연결할 때 수행한다.
+상태는 `OfficeCollaborationPresence`로 저장하고, Socket에는 기존 Phaser 표시 타입인 `OfficeMemberPresence`와 함께 `officePresence`로 전달한다. `status`는 HUD용 짧은 상태이며, `officePresence`는 출퇴근·연결·ghost 표현의 기준이다.
 
 ## Socket 이벤트 초안
 
 | 이벤트 | 방향 | 용도 |
 | --- | --- | --- |
+| `office.join` | Client → Server | `memberId`, `guestToken`, `workspaceId`로 소유권을 검증하고 오피스 room에 입장 |
+| `office.snapshot` | Server → Client | 같은 workspace의 영속 멤버·상태와 현재 사용자 반환 |
 | `office.attendance.update` | Client → Server | 출근 또는 퇴근 의도 전달 |
 | `office.attendance.updated` | Server → Room | 출퇴근 변경 전파 |
 | `office.heartbeat` | Client → Server | 연결 유지와 마지막 활동 시각 갱신 |
 | `office.lifecycle.updated` | Server → Room | 연결·출퇴근·표현 상태를 포함한 영속 상태 변경 전파 |
+| `presence.move` | Client → Server | 이동 좌표를 room에 즉시 전파하고 마지막 좌표를 주기적으로 저장 |
 
-이번 단계에서는 이벤트 이름과 payload만 선언한다. NestJS gateway 처리와 Supabase 저장은 다음 구현 Issue에서 추가한다.
+Gateway는 입장 시 DB 스냅샷을 제공하고, 이동은 Socket 우선으로 중계한다. 마지막 좌표는 1초 간격과 disconnect 시점에 DB에 저장한다. guest token은 handshake 검증에만 쓰며 다른 클라이언트에 전파하지 않는다.
 
 ## 데이터 책임
 
@@ -45,7 +48,5 @@
 
 ## 다음 구현 범위
 
-- 게스트 토큰으로 기존 멤버와 데스크를 복구하는 API
-- 출근·퇴근과 heartbeat를 처리하는 NestJS gateway
 - 현재 시간에 유효한 캘린더 일정으로 `availabilityStatus`와 `displayMode` 계산
-- 클라이언트의 퇴근·휴가·연결 해제 아바타 표현
+- 클라이언트의 TODO·캘린더 UI

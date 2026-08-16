@@ -1,4 +1,5 @@
 import type { LanguageCode } from "./language";
+import type { OfficeCollaborationPresence } from "./collaboration";
 
 export const MEMBER_STATUS_VALUES = [
   "available",
@@ -50,4 +51,5 @@ export interface OfficeAvatarState {
 
 export interface OfficeMemberPresence extends MemberPresence {
   avatar: OfficeAvatarState;
+  officePresence?: OfficeCollaborationPresence;
 }
