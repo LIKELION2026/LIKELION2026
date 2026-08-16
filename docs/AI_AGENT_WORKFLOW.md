@@ -371,3 +371,23 @@
 - 팀원 검토·수정 내용: `blocked`를 개인 평가가 아닌 지원 요청 신호로 정의. Socket 요약 전파와 UI는 후속 구현으로 분리
 - 검증 결과: Shared·Server typecheck 통과
 - 관련 Issue / PR / Discussion: Issue #48, PR 작성 예정
+
+### 2026-08-16 - TODO UI 디자인 교체 경계
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임 단계의 Figma를 확인해 상세 스타일 확정 전에도 TODO 데이터 계층과 디자인 컴포넌트를 분리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Issue #52, 공개 TODO HTTP 계약
+- AI 제안 또는 산출물: TODO API client, 세션 기반 controller hook, render function 기반 `OfficeTodoPanelSlot`, 디자인 적용 연결 문서
+- 팀원 검토·수정 내용: 임의의 시각 디자인과 에셋을 추가하지 않고, 추후 Figma 컴포넌트로 교체할 수 있는 데이터 계약만 반영
+- 검증 결과: Client typecheck와 production build 통과. Vite의 Phaser 초기 번들 크기 경고는 기존 과제로 유지
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
+
+### 2026-08-16 - Virtual Office 전체 사용자 시나리오
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임과 현재 구현 범위를 바탕으로 입장부터 상태·TODO·People·일정·회의·번역까지 연결한 서비스 전체 흐름 정리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Virtual Office 기능 문서, 구현·후속 범위
+- AI 제안 또는 산출물: 한국·베트남 협업 팀의 6개 사용자 시나리오, 해커톤 데모 4분 흐름, 신뢰·개인정보 경계, 디자인 검토 화면 목록
+- 팀원 검토·수정 내용: 실제 구현 범위와 목표 기능을 분리하고, 화면 감시가 아닌 사용자가 선택한 공개 정보만 공유한다는 원칙을 반영
+- 검증 결과: Client typecheck와 production build 통과. 문서 간 상대 경로와 `git diff --check` 확인
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
