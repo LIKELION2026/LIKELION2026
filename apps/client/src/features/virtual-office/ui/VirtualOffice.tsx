@@ -12,8 +12,10 @@ import { createOrRestoreOfficeSession } from "../api/create-office-session";
 import { OfficeScene } from "../core/office-scene";
 import { useOfficeStore } from "../model/office-store";
 import { useOfficeSocket } from "../model/use-office-socket";
+import { useOfficeTodos } from "../model/use-office-todos";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
+import { OfficeTodoPanelSlot } from "./OfficeTodoPanelSlot";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
@@ -36,6 +38,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const { sendMove, updateAttendance, updateStatus } = useOfficeSocket(session);
+  const todoController = useOfficeTodos(session);
 
   const prepareSession = useCallback(async (profile: GuestProfile) => {
     setIsPreparingSession(true);
@@ -135,6 +138,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         selfAttendanceStatus={self?.officePresence?.attendanceStatus}
         selfStatus={self?.status}
       />
+      <OfficeTodoPanelSlot controller={todoController} />
       {isInsideMeetingRoom ? (
         <aside className="meeting-prompt">
           <h2>회의실에 들어왔습니다</h2>
