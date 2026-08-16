@@ -207,7 +207,7 @@ button {
 
 .meeting-lab-page {
   margin: 0 auto;
-  max-width: 640px;
+  max-width: 960px;
   padding: 48px 20px;
 }
 
@@ -378,6 +378,81 @@ button {
 
 .meeting-session-error {
   color: #a33030;
+}
+
+.meeting-media-stage {
+  border-top: 1px solid #d6dee7;
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.meeting-media-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.meeting-media-tile {
+  aspect-ratio: 16 / 10;
+  background: #18212f;
+  border: 1px solid #243246;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.meeting-media-video {
+  background: #111827;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.meeting-media-overlay {
+  background: rgb(17 24 39 / 78%);
+  bottom: 0;
+  color: #ffffff;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  left: 0;
+  padding: 8px 10px;
+  position: absolute;
+  right: 0;
+}
+
+.meeting-media-overlay strong,
+.meeting-media-overlay span {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-media-empty {
+  align-items: center;
+  aspect-ratio: 16 / 6;
+  background: #f7f9fc;
+  border: 1px dashed #b7c4d1;
+  color: #58687c;
+  display: flex;
+  font-size: 13px;
+  justify-content: center;
+  min-height: 120px;
+  padding: 16px;
+}
+
+.meeting-audio-sinks {
+  display: none;
+}
+
+.meeting-media-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .result-message {
