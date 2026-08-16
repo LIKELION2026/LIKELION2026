@@ -21,6 +21,18 @@ const MEETING_ROOM = {
 
 const REMOTE_INTERPOLATION_DELAY_MS = 120;
 const MAX_REMOTE_POSITION_SAMPLES = 4;
+const RED_PANDA_TEXTURE_KEY = "red-panda";
+const RED_PANDA_ASSET_PATH = "/assets/red_panda.webp";
+const RED_PANDA_FRAME_WIDTH = 130;
+const RED_PANDA_FRAME_HEIGHT = 165;
+const RED_PANDA_FRAME_X_POSITIONS = [0, 140, 280, 420, 560, 700] as const;
+const RED_PANDA_SHEET_ROW_BY_DIRECTION = {
+  down: 155,
+  left: 465,
+  right: 465,
+  up: 315
+} as const;
+const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
 
 interface OfficeSceneCallbacks {
   onLocalMovement: (payload: PresenceMovePayload) => void;
@@ -32,6 +44,7 @@ interface RemoteAvatar {
   container: Phaser.GameObjects.Container;
   label: Phaser.GameObjects.Text;
   positionSamples: RemotePositionSample[];
+  sprite: Phaser.GameObjects.Sprite;
 }
 
 interface RemotePositionSample {
@@ -45,7 +58,7 @@ export class OfficeScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
   private inMeetingRoom = false;
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
   private wasd!: Record<"down" | "left" | "right" | "up", Phaser.Input.Keyboard.Key>;
@@ -55,11 +68,17 @@ export class OfficeScene extends Phaser.Scene {
     this.callbacks = callbacks;
   }
 
+  preload(): void {
+    this.load.image(RED_PANDA_TEXTURE_KEY, RED_PANDA_ASSET_PATH);
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor("#dbe5ef");
     this.cameras.main.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
     this.physics.world.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
 
+    this.createRedPandaFrames();
+    this.createRedPandaAnimations();
     this.drawOffice();
     this.createLocalAvatar();
     this.createObstacles();
@@ -112,12 +131,18 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private createLocalAvatar(): void {
-    this.player = this.add.rectangle(160, 264, 26, 34, 0x175cd3).setDepth(3);
-    this.physics.add.existing(this.player);
+    this.player = this.physics.add.sprite(
+      160,
+      264,
+      RED_PANDA_TEXTURE_KEY,
+      getRedPandaFrame("down")
+    );
+    this.player.setDisplaySize(40, 52).setOrigin(0.5, 0.72).setDepth(3);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
-    this.playerBody.setSize(22, 22);
-    this.playerBody.setOffset(2, 10);
+    this.playerBody.setSize(66, 48);
+    this.playerBody.setOffset(32, 106);
+    this.playAvatarAnimation(this.player, "down", "idle");
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setZoom(1.1);
   }
@@ -200,6 +225,7 @@ export class OfficeScene extends Phaser.Scene {
       .normalize()
       .scale(190);
     this.playerBody.setVelocity(velocity.x, velocity.y);
+    this.playAvatarAnimation(this.player, this.direction, isMoving ? "walk" : "idle");
     this.player.setDepth(this.player.y);
 
     this.callbacks.onLocalMovement({
@@ -264,14 +290,19 @@ export class OfficeScene extends Phaser.Scene {
     const existing = this.remoteAvatars.get(member.memberId);
     if (existing) {
       this.addRemotePositionSample(existing, member.avatar.x, member.avatar.y);
+      this.playAvatarAnimation(existing.sprite, member.avatar.direction, member.avatar.animation);
       existing.label.setText(getRemoteLabel(member));
       existing.container.setAlpha(getRemoteAvatarAlpha(member));
       return;
     }
 
-    const circle = this.add.circle(0, 0, 13, getMemberColor(member.memberId));
+    const sprite = this.add
+      .sprite(0, 0, RED_PANDA_TEXTURE_KEY, getRedPandaFrame(member.avatar.direction))
+      .setDisplaySize(40, 52)
+      .setOrigin(0.5, 0.72)
+      .setFlipX(member.avatar.direction === "left");
     const label = this.add
-      .text(0, -30, getRemoteLabel(member), {
+      .text(0, -38, getRemoteLabel(member), {
         align: "center",
         backgroundColor: "#172235cc",
         color: "#ffffff",
@@ -280,8 +311,9 @@ export class OfficeScene extends Phaser.Scene {
         padding: { x: 5, y: 3 }
       })
       .setOrigin(0.5, 1);
-    const container = this.add.container(member.avatar.x, member.avatar.y, [circle, label]);
+    const container = this.add.container(member.avatar.x, member.avatar.y, [sprite, label]);
     container.setAlpha(getRemoteAvatarAlpha(member));
+    this.playAvatarAnimation(sprite, member.avatar.direction, member.avatar.animation);
 
     this.remoteAvatars.set(member.memberId, {
       container,
@@ -292,7 +324,8 @@ export class OfficeScene extends Phaser.Scene {
           x: member.avatar.x,
           y: member.avatar.y
         }
-      ]
+      ],
+      sprite
     });
   }
 
@@ -307,12 +340,86 @@ export class OfficeScene extends Phaser.Scene {
       avatar.positionSamples.shift();
     }
   }
+
+  private createRedPandaFrames(): void {
+    const texture = this.textures.get(RED_PANDA_TEXTURE_KEY);
+    for (const direction of AVATAR_DIRECTIONS) {
+      const sourceDirection = direction === "left" ? "right" : direction;
+      const y = RED_PANDA_SHEET_ROW_BY_DIRECTION[sourceDirection];
+      for (const [index, x] of RED_PANDA_FRAME_X_POSITIONS.entries()) {
+        const frameName = getRedPandaWalkFrame(direction, index);
+        if (!texture.has(frameName)) {
+          texture.add(
+            frameName,
+            0,
+            x,
+            y,
+            RED_PANDA_FRAME_WIDTH,
+            RED_PANDA_FRAME_HEIGHT
+          );
+        }
+      }
+    }
+  }
+
+  private createRedPandaAnimations(): void {
+    for (const direction of AVATAR_DIRECTIONS) {
+      const walkKey = getRedPandaAnimationKey(direction, "walk");
+      if (!this.anims.exists(walkKey)) {
+        this.anims.create({
+          frameRate: 9,
+          frames: RED_PANDA_FRAME_X_POSITIONS.map((_, index) => ({
+            frame: getRedPandaWalkFrame(direction, index),
+            key: RED_PANDA_TEXTURE_KEY
+          })),
+          key: walkKey,
+          repeat: -1
+        });
+      }
+
+      const idleKey = getRedPandaAnimationKey(direction, "idle");
+      if (!this.anims.exists(idleKey)) {
+        this.anims.create({
+          frameRate: 1,
+          frames: [
+            {
+              frame: getRedPandaFrame(direction),
+              key: RED_PANDA_TEXTURE_KEY
+            }
+          ],
+          key: idleKey,
+          repeat: -1
+        });
+      }
+    }
+  }
+
+  private playAvatarAnimation(
+    sprite: Phaser.GameObjects.Sprite,
+    direction: PresenceMovePayload["direction"],
+    animation: PresenceMovePayload["animation"]
+  ): void {
+    sprite.setFlipX(direction === "left");
+    sprite.anims.play(getRedPandaAnimationKey(direction, animation), true);
+  }
 }
 
-function getMemberColor(memberId: string): number {
-  const palette = [0xe26078, 0x5d8bd5, 0x45a779, 0xd58b3d, 0x8064c6];
-  const hash = [...memberId].reduce((value, character) => value + character.charCodeAt(0), 0);
-  return palette[hash % palette.length]!;
+function getRedPandaFrame(direction: PresenceMovePayload["direction"]): string {
+  return getRedPandaWalkFrame(direction, 0);
+}
+
+function getRedPandaWalkFrame(
+  direction: PresenceMovePayload["direction"],
+  index: number
+): string {
+  return `red-panda-walk-${direction}-${index}`;
+}
+
+function getRedPandaAnimationKey(
+  direction: PresenceMovePayload["direction"],
+  animation: PresenceMovePayload["animation"]
+): string {
+  return `red-panda-${animation}-${direction}`;
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {
