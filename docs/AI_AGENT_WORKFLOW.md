@@ -390,3 +390,14 @@
 - 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/37
+
+### 2026-08-16 - Realtime Meeting P0 verification helper
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #38 범위에서 Meeting Lab P0 데모와 Mock subtitle 확인을 반복 가능한 절차로 정리
+- 입력 맥락: Issue #38, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `docs/RUNBOOKS/client-local.md`, `docs/RUNBOOKS/server-local.md`, 기존 LiveKit smoke script 패턴
+- AI 제안 또는 산출물: `pnpm smoke:meeting-subtitle`, partial/final Mock subtitle smoke script, dry-run 테스트, 두 브라우저 Meeting Lab 데모 절차
+- 사용자 검토/수정 내용: 실제 두 브라우저 카메라/마이크와 화면 표시 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server smoke:meeting-subtitle -- --dry-run` 통과, `corepack pnpm --filter @likelion2026/server test` 47개 테스트 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/38

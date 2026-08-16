@@ -122,6 +122,29 @@ Invoke-RestMethod `
 
 LiveKit `room_finished` webhook을 처리하면 해당 room의 mock subtitle buffer는 비워진다.
 
+### Meeting subtitle smoke
+
+실행 중인 서버에 같은 `subtitleId`로 partial/final Mock 자막을 보내고, buffer 조회 결과가 최종 revision을 유지하는지 확인한다. Meeting Lab 화면을 같은 room에 연결해 둔 상태에서 실행하면 자막 패널까지 함께 확인할 수 있다.
+
+```bash
+pnpm smoke:meeting-subtitle -- --dry-run
+pnpm smoke:meeting-subtitle
+```
+
+기본 roomName은 실행 날짜 기준 `lab-likelion-<yyyymmdd>-meeting-room`이다. 화면에 표시된 roomName이 다르면 환경변수로 맞춘다.
+
+```powershell
+$env:MEETING_SUBTITLE_SMOKE_ROOM_NAME = "lab-likelion-20260816-meeting-room"
+pnpm smoke:meeting-subtitle
+```
+
+원격 tunnel 또는 배포 URL을 향해 실행할 때는 아래처럼 서버 base URL을 바꾼다. localhost가 아닌 HTTP URL은 허용하지 않는다.
+
+```powershell
+$env:MEETING_SUBTITLE_SMOKE_SERVER_BASE_URL = "https://your-public-host.example"
+pnpm smoke:meeting-subtitle
+```
+
 ## LiveKit webhook
 
 ### Local signed smoke
