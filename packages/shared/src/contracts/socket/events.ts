@@ -4,7 +4,12 @@ import type {
   BriefingConfirmedPayload,
   BriefingDraftedPayload
 } from "./briefing";
-import type { MeetingJoinedPayload, MeetingRequestedPayload } from "./meeting";
+import type {
+  MeetingJoinedPayload,
+  MeetingRequestedPayload,
+  MeetingRoomSubscriptionPayload,
+  MeetingRoomSubscriptionRequest
+} from "./meeting";
 import type {
   MemberStatusUpdatedPayload,
   PresenceUpdatedPayload
@@ -15,6 +20,10 @@ export type SocketEventPayloadMap = {
   [SOCKET_EVENT_NAMES.BRIEFING_CONFIRMED]: BriefingConfirmedPayload;
   [SOCKET_EVENT_NAMES.BRIEFING_DRAFTED]: BriefingDraftedPayload;
   [SOCKET_EVENT_NAMES.MEETING_JOINED]: MeetingJoinedPayload;
+  [SOCKET_EVENT_NAMES.MEETING_ROOM_SUBSCRIBE]: MeetingRoomSubscriptionRequest;
+  [SOCKET_EVENT_NAMES.MEETING_ROOM_SUBSCRIBED]: MeetingRoomSubscriptionPayload;
+  [SOCKET_EVENT_NAMES.MEETING_ROOM_UNSUBSCRIBE]: MeetingRoomSubscriptionRequest;
+  [SOCKET_EVENT_NAMES.MEETING_ROOM_UNSUBSCRIBED]: MeetingRoomSubscriptionPayload;
   [SOCKET_EVENT_NAMES.MEETING_REQUESTED]: MeetingRequestedPayload;
   [SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATED]: MemberStatusUpdatedPayload;
   [SOCKET_EVENT_NAMES.PRESENCE_UPDATED]: PresenceUpdatedPayload;
