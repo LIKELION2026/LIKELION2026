@@ -1,6 +1,6 @@
 # Translation Pipeline
 
-> 상태: 1·3·4단계 구현 - 참가자-언어 매핑, 관용구 사전, 번역 provider
+> 상태: 마이크 실시간 통역 동작 - 1·3·4·6단계 구현
 >
 > 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3)
 
@@ -29,15 +29,19 @@ apps/translation-pipeline/
 │       ├── glossary.py         # Glossary, 매칭 결과 GlossaryMatch
 │       ├── context.py          # ConversationContext (최근 대화 버퍼)
 │       ├── translator.py       # Translator 계약, 시스템 프롬프트, FakeTranslator
+│       ├── stt.py              # Deepgram 실시간 인식, 마이크 입력
 │       ├── providers/
 │       │   └── gemini.py       # GeminiTranslator
 │       └── participants.py     # ParticipantRegistry
+├── scripts/
+│   └── live_translate.py       # 마이크 실시간 통역 실행
 └── tests/
     ├── test_languages.py
     ├── test_glossary.py
     ├── test_context.py
     ├── test_translator.py
     ├── test_gemini_translator.py
+    ├── test_stt.py
     └── test_participants.py
 ```
 
@@ -174,13 +178,54 @@ context.add("user_abc123", text, translated)
 provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`에 추가하고
 조립 지점에서 바꿔 끼우면 된다. 테스트에는 `FakeTranslator`를 쓴다.
 
+### 6단계: 마이크 실시간 통역
+
+말하면 번역이 화면에 뜬다. 파이프라인 전체가 연결되는 지점이다.
+
+```powershell
+cd C:\LIKELION2026\apps\translation-pipeline
+.venv\Scripts\python.exe -u scripts\live_translate.py              # 한국어로 말하면 베트남어
+.venv\Scripts\python.exe -u scripts\live_translate.py --source vi  # 베트남어로 말하면 한국어
+```
+
+`-u`를 빼면 출력이 버퍼링되어 보이지 않을 수 있다. Ctrl+C로 종료하면 통계가 나온다.
+
+```text
+마이크 -> Deepgram(endpointing) -> 관용구 사전 -> 번역 -> 화면
+```
+
+발화 종료는 Deepgram의 `speech_final`로 판단한다. 별도 VAD를 만들지 않았다.
+타겟 언어는 `get_target_lang()`이 화자 언어만으로 정하므로 지정하지 않는다.
+
+| 옵션 | 용도 |
+| --- | --- |
+| `--source vi` | 베트남어로 말하고 한국어를 받는다 |
+| `--model` | 번역 모델을 바꾼다 |
+| `--endpointing 600` | 문장이 잘게 쪼개질 때 무음 판정을 늘린다 |
+| `--device 17` | 마이크 장치를 지정한다 (스테레오 믹스로 시스템 소리 입력 가능) |
+| `--no-interim` | 인식 중간 결과를 숨긴다 |
+| `--timeout` | 번역 대기 시간(ms). 생략하면 모델에 맞춰 정한다 |
+
+실제 음성으로 확인한 결과다.
+
+```text
+[ko] 다들 고생하셨습니다. 내일 봬요.
+[vi] Cảm ơn anh/chị đã vất vả. Hẹn gặp lại mọi người vào ngày mai.
+  (모델, 2.1s)
+
+[ko] 고생하셨습니다
+[vi] Cảm ơn anh/chị đã vất vả.
+  (사전, 0.0s)
+```
+
+사전과 완전히 일치하는 발화는 모델을 거치지 않아 즉시 나온다.
+
 ## 다음 단계
 
 | 단계 | 내용 |
 | --- | --- |
-| 2 | Deepgram Nova-3 파일 기반 STT (wav → 텍스트) |
-| 5 | 2~4 연결, wav → JSON 엔드투엔드 |
-| 6 | Deepgram 실시간 스트리밍, endpointing으로 발화 종료 감지 |
+| 2 | Deepgram 파일 기반 STT (wav → 텍스트). 실시간 경로가 먼저 동작해 후순위가 됐다 |
+| 5 | 출력 JSON 조립, 늦게 도착한 번역 폐기 처리 |
 
 ## 알려진 제한
 
@@ -200,10 +245,12 @@ provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`�
 - 지연이 일정하지 않다. 같은 문장이 2.5초에 오기도 하고 8초를 넘기기도 하며, 호출을
   연달아 하면 느려지는 경향이 관측됐다. 실시간 통역에 쓸 수 있는 수준인지는 6단계에서
   실제 발화 간격과 함께 다시 판단해야 한다.
-- 기본 모델은 `gemini-3.5-flash`다. 2026-08-15 측정에서 `gemini-3.7-flash`는 과부하로
-  성공률이 1/3이었고, `gemini-3.5-flash`는 3/3에 평균 2.5초였다. 지연이 문제가 되면
-  `GeminiTranslator(model="gemini-3.1-flash-lite")`가 평균 1.0초로 더 빠르지만 lite
-  모델이라 뉘앙스 번역 품질은 별도로 확인해야 한다.
+- 기본 모델은 `gemini-3.1-flash-lite`다. 2026-08-16 측정에서 평균 2.0초로 가장 빨랐고
+  무료 티어 할당량도 남아 있었다. 같은 시점에 `gemini-3.5-flash`는 429로 막혔고
+  `gemini-3-flash-preview`는 7.3초였다. 처음에는 lite의 번역 품질을 걱정해 일반 모델을
+  기본으로 뒀지만 품질 저하가 관측되지 않았고 사전 준수는 오히려 나았다.
+- `gemma-4-31b-it`, `gemma-4-26b-a4b-it`는 무료 티어 할당량이 훨씬 넉넉하지만 응답이
+  13~21초라 실시간 통역에는 쓸 수 없다. 할당량이 많이 필요한 측정 작업에만 쓴다.
 - 무료 티어는 입력이 모델 개선에 사용될 수 있다. 개발·데모 검증에만 쓰고 실제 사용자
   회의에는 적용하지 않는다. 자세한 내용은 `docs/ADR/0001-translation-provider-abstraction.md`.
 - `data/glossary.json`의 베트남어 표현은 AI 초안이며 베트남어 사용자 검토가 필요하다.
