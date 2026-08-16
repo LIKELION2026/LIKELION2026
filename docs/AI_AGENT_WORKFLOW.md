@@ -391,3 +391,13 @@
 - 팀원 검토·수정 내용: 실제 구현 범위와 목표 기능을 분리하고, 화면 감시가 아닌 사용자가 선택한 공개 정보만 공유한다는 원칙을 반영
 - 검증 결과: Client typecheck와 production build 통과. 문서 간 상대 경로와 `git diff --check` 확인
 - 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
+
+### 2026-08-16 - 공유 캘린더 P0 계약
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 기존 Supabase 일정 테이블을 활용해 일정 소유권, 팀 공개 조회, 현재 시각 기준 파생 상태를 설계
+- 입력 맥락: Issue #58, `calendar_events`, `calendar_event_participants`, Presence 상태 학습 기록
+- AI 제안 또는 산출물: 일정 CRUD HTTP 계약, 생성자 guest token 소유권 검증, 휴가·부재·회의·집중·재택 우선순위, 디자인 교체형 controller·slot
+- 팀원 검토·수정 내용: 캘린더는 DB Presence를 영구 변경하지 않고 Client가 현재 유효한 상태만 표현에 반영하도록 결정
+- 검증 결과: Shared·Server·Client typecheck, Server·Client production build 통과. Phaser 초기 번들 크기 경고는 기존 과제로 유지
+- 관련 Issue / PR / Discussion: Issue #58, PR 작성 예정
