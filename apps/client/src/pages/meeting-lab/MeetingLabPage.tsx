@@ -18,7 +18,9 @@ import {
   type LiveKitMeetingMediaTrack,
   type LiveKitMeetingSessionStatus
 } from "../../features/realtime-meeting/model/use-livekit-meeting-session";
+import { useMeetingSubtitles } from "../../features/realtime-meeting/model/use-meeting-subtitles";
 import { MeetingMediaTrackElement } from "../../features/realtime-meeting/ui/MeetingMediaTrackElement";
+import { MeetingSubtitlePanel } from "../../features/realtime-meeting/ui/MeetingSubtitlePanel";
 import {
   getDevelopmentIdentity,
   saveDevelopmentProfile
@@ -78,6 +80,9 @@ export function MeetingLabPage(): JSX.Element {
     session.status === "reconnecting";
   const canControlMedia =
     session.status === "connected" || session.status === "reconnecting";
+  const subtitleState = useMeetingSubtitles(
+    canControlMedia ? session.roomName : undefined
+  );
   const videoTracks = session.mediaTracks.filter(
     (mediaTrack) => mediaTrack.kind === Track.Kind.Video
   );
@@ -224,6 +229,11 @@ export function MeetingLabPage(): JSX.Element {
           remoteAudioTracks={remoteAudioTracks}
           session={session}
           videoTracks={videoTracks}
+        />
+        <MeetingSubtitlePanel
+          errorMessage={subtitleState.errorMessage}
+          status={subtitleState.status}
+          subtitles={subtitleState.subtitles}
         />
         <div className="meeting-session-status" aria-live="polite">
           <div>
