@@ -1,6 +1,6 @@
 # Translation Pipeline
 
-> 상태: 1·3단계 구현 - 참가자-언어 매핑과 관용구 사전 매칭
+> 상태: 1·3·4단계 구현 - 참가자-언어 매핑, 관용구 사전, 번역 provider
 >
 > 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3)
 
@@ -27,10 +27,17 @@ apps/translation-pipeline/
 │       ├── errors.py           # 파이프라인 공통 예외
 │       ├── languages.py        # SUPPORTED_LANGUAGES, get_target_lang
 │       ├── glossary.py         # Glossary, 매칭 결과 GlossaryMatch
+│       ├── context.py          # ConversationContext (최근 대화 버퍼)
+│       ├── translator.py       # Translator 계약, 시스템 프롬프트, FakeTranslator
+│       ├── providers/
+│       │   └── gemini.py       # GeminiTranslator
 │       └── participants.py     # ParticipantRegistry
 └── tests/
     ├── test_languages.py
     ├── test_glossary.py
+    ├── test_context.py
+    ├── test_translator.py
+    ├── test_gemini_translator.py
     └── test_participants.py
 ```
 
@@ -44,13 +51,14 @@ cd apps/translation-pipeline
 python -m venv .venv
 .venv/Scripts/activate      # macOS, Linux는 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-API 키는 2단계부터 필요하다.
-
-```bash
 cp .env.example .env
 ```
+
+`.env`에 사용할 provider의 키만 채우면 된다. 4단계는 `GEMINI_API_KEY`가 필요하고,
+[Google AI Studio](https://aistudio.google.com/apikey)에서 무료로 발급받을 수 있다.
+
+**테스트는 키 없이 전부 통과한다.** Gemini 호출은 가짜 클라이언트로 검증하므로
+API 키와 네트워크가 없어도 된다.
 
 ## 실행과 테스트
 
@@ -115,17 +123,90 @@ match.entries                      # 확정 번역 사전으로 프롬프트에 
 > 사전에 넣은 베트남어 표현은 AI가 초안을 만든 것이다. 실제 사용 전에 베트남어
 > 사용자의 검토가 필요하다.
 
+### 4단계: 번역 provider
+
+```bash
+cd apps/translation-pipeline
+python -m pytest -v tests/test_translator.py tests/test_gemini_translator.py tests/test_context.py
+```
+
+번역은 `Translator` 계약 뒤에 있고 파이프라인은 provider를 알지 못한다.
+
+```python
+class Translator(Protocol):
+    def translate(self, request: TranslationRequest) -> str: ...
+```
+
+provider와 무관하게 공유하는 것은 관용구 매칭, 시스템 프롬프트 생성, 대화 컨텍스트
+버퍼, 출력 조립이다. provider마다 달라지는 것은 SDK 호출, 응답에서 텍스트를 꺼내는
+방식, 예외 타입뿐이다.
+
+```python
+from translation_pipeline import ConversationContext, Glossary, TranslationRequest
+from translation_pipeline.providers import GeminiTranslator
+
+glossary = Glossary.load()
+context = ConversationContext()          # 최근 5턴 유지
+translator = GeminiTranslator()          # GEMINI_API_KEY 필요
+
+text = "다들 고생하셨습니다 내일 봬요"
+match = glossary.match(text, "ko", "vi")
+
+if match.can_skip_translation_model:
+    translated = match.direct_translation          # 모델 호출 없음
+else:
+    translated = translator.translate(
+        TranslationRequest(
+            text=text,
+            source_lang="ko",
+            target_lang="vi",
+            glossary_entries=match.entries,        # 확정 번역 사전으로 주입
+            context_turns=context.recent(),
+        )
+    )
+
+context.add("user_abc123", text, translated)
+```
+
+시스템 프롬프트는 번역 방향에 맞춰 매번 생성되고, 확정 번역 사전과 최근 대화는
+있을 때만 들어간다. 사전 규칙이 다른 모든 규칙보다 우선한다고 명시한다.
+
+provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`에 추가하고
+조립 지점에서 바꿔 끼우면 된다. 테스트에는 `FakeTranslator`를 쓴다.
+
 ## 다음 단계
 
 | 단계 | 내용 |
 | --- | --- |
 | 2 | Deepgram Nova-3 파일 기반 STT (wav → 텍스트) |
-| 4 | `Translator` 인터페이스와 provider 구현, 시스템 프롬프트 동적 생성 |
 | 5 | 2~4 연결, wav → JSON 엔드투엔드 |
 | 6 | Deepgram 실시간 스트리밍, endpointing으로 발화 종료 감지 |
 
-4단계는 번역 provider를 교체할 수 있도록 `Translator` 인터페이스 뒤에 둔다.
-관용구 매칭, 시스템 프롬프트, 컨텍스트 버퍼는 provider와 무관하게 공유한다.
+## 알려진 제한
+
+- **확정 번역 사전이 항상 그대로 적용되지는 않는다.** 프롬프트에 "다른 모든 규칙보다
+  우선한다"고 명시했지만, 모델이 문맥에 맞춰 변형하는 경우가 관측됐다. 사전값이
+  `Cảm ơn anh/chị đã vất vả.`일 때 `Cảm ơn mọi người đã vất vả.`로 인칭을 바꾼 사례가
+  있다. 원문 전체가 일치하는 경우는 모델을 거치지 않으므로 영향이 없고, 부분 일치일
+  때만 발생한다. 사전 준수가 반드시 필요하면 반환값에 사전 표현이 있는지 확인하는
+  단계가 따로 필요하다.
+- Gemini 무료 티어는 서버 과부하로 일시 실패(503, 504)가 난다. **재시도하지 않고
+  `TranslationError`를 그대로 올린다.** 실시간 통역에서 늦게 도착한 번역은 이후 발화와
+  순서가 엉켜 대화를 방해하므로, 재시도로 살려내는 것보다 그 발화를 버리는 편이 낫다.
+  호출자가 건너뛰기를 처리해야 한다.
+- timeout은 10초다. 더 짧게 두고 싶지만 Gemini가 10초 미만 deadline을 400으로 거절한다.
+  따라서 "늦은 번역은 버린다"는 판단은 이 계층에서 할 수 없고, 발화 시각을 아는 호출자가
+  5단계에서 처리해야 한다.
+- 지연이 일정하지 않다. 같은 문장이 2.5초에 오기도 하고 8초를 넘기기도 하며, 호출을
+  연달아 하면 느려지는 경향이 관측됐다. 실시간 통역에 쓸 수 있는 수준인지는 6단계에서
+  실제 발화 간격과 함께 다시 판단해야 한다.
+- 기본 모델은 `gemini-3.5-flash`다. 2026-08-15 측정에서 `gemini-3.7-flash`는 과부하로
+  성공률이 1/3이었고, `gemini-3.5-flash`는 3/3에 평균 2.5초였다. 지연이 문제가 되면
+  `GeminiTranslator(model="gemini-3.1-flash-lite")`가 평균 1.0초로 더 빠르지만 lite
+  모델이라 뉘앙스 번역 품질은 별도로 확인해야 한다.
+- 무료 티어는 입력이 모델 개선에 사용될 수 있다. 개발·데모 검증에만 쓰고 실제 사용자
+  회의에는 적용하지 않는다. 자세한 내용은 `docs/ADR/0001-translation-provider-abstraction.md`.
+- `data/glossary.json`의 베트남어 표현은 AI 초안이며 베트남어 사용자 검토가 필요하다.
 
 ## Windows 콘솔 참고
 

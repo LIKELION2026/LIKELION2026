@@ -21,6 +21,10 @@ class GlossaryError(TranslationPipelineError):
     """관용구 사전을 읽거나 해석하지 못했을 때 발생한다."""
 
 
+class TranslationError(TranslationPipelineError):
+    """번역 provider 호출이 실패했거나 쓸 수 있는 결과를 못 받았을 때 발생한다."""
+
+
 class UnknownParticipantError(TranslationPipelineError):
     """언어를 등록하지 않은 참가자를 조회했을 때 발생한다."""
 
