@@ -1,7 +1,9 @@
 const REQUIRED_ENV_KEYS = [
   "LIVEKIT_API_KEY",
   "LIVEKIT_API_SECRET",
-  "LIVEKIT_URL"
+  "LIVEKIT_URL",
+  "SUPABASE_SECRET_KEY",
+  "SUPABASE_URL"
 ] as const;
 
 export function validateEnvironment(
