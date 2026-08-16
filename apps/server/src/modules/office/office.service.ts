@@ -17,9 +17,14 @@ import {
   type OfficeAvatarState,
   type MemberStatus,
   type OfficeTodo,
+  type OfficeCalendarEvent,
+  type CalendarMemberStatus,
   type PublicOfficeTodo,
   type CreateOfficeTodoRequest,
+  type CreateOfficeCalendarEventRequest,
+  type GetWorkspaceCalendarEventsQuery,
   type UpdateOfficeTodoRequest,
+  type UpdateOfficeCalendarEventRequest,
   type UpdateOfficeAttendanceRequest,
   type UpdateOfficePresenceRequest
 } from "@likelion2026/shared";
@@ -77,6 +82,22 @@ interface TodoRow {
   sort_order: number;
   status: OfficeTodo["status"];
   title: string;
+}
+
+interface CalendarEventRow {
+  created_by_member_id: string | null;
+  ends_at: string;
+  event_type: OfficeCalendarEvent["eventType"];
+  id: string;
+  is_all_day: boolean;
+  starts_at: string;
+  title: string;
+  workspace_id: string;
+}
+
+interface CalendarParticipantRow {
+  calendar_event_id: string;
+  member_id: string;
 }
 
 const DEFAULT_DESKS = [
@@ -286,6 +307,106 @@ export class OfficeService {
     return toOfficeTodo(data as TodoRow);
   }
 
+  async createCalendarEvent(
+    memberId: string,
+    request: CreateOfficeCalendarEventRequest
+  ): Promise<OfficeCalendarEvent> {
+    const member = await this.requireMemberOwnership(memberId, request.guestToken);
+    assertCalendarRange(request.startsAt, request.endsAt);
+    const { data, error } = await this.supabase
+      .from("calendar_events")
+      .insert({
+        created_by_member_id: memberId,
+        ends_at: request.endsAt,
+        event_type: request.eventType,
+        is_all_day: request.isAllDay ?? false,
+        starts_at: request.startsAt,
+        title: request.title.trim(),
+        workspace_id: member.workspace_id
+      })
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .single();
+    this.throwIfError(error, "create calendar event");
+
+    const event = data as CalendarEventRow;
+    const { error: participantError } = await this.supabase
+      .from("calendar_event_participants")
+      .insert({ calendar_event_id: event.id, member_id: memberId });
+    this.throwIfError(participantError, "add calendar event participant");
+    return { ...toCalendarEvent(event), participantMemberIds: [memberId] };
+  }
+
+  async getWorkspaceCalendarEvents(
+    workspaceId: string,
+    query: GetWorkspaceCalendarEventsQuery
+  ): Promise<OfficeCalendarEvent[]> {
+    assertCalendarRange(query.startsAt, query.endsAt);
+    const { data, error } = await this.supabase
+      .from("calendar_events")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .eq("workspace_id", workspaceId)
+      .lt("starts_at", query.endsAt)
+      .gt("ends_at", query.startsAt)
+      .order("starts_at");
+    this.throwIfError(error, "read workspace calendar events");
+    return this.withCalendarParticipants((data ?? []) as CalendarEventRow[]);
+  }
+
+  async getCalendarMemberStatuses(
+    workspaceId: string,
+    at: string
+  ): Promise<CalendarMemberStatus[]> {
+    const events = await this.getWorkspaceCalendarEvents(workspaceId, {
+      endsAt: new Date(new Date(at).getTime() + 1).toISOString(),
+      startsAt: at
+    });
+    const activeEvents = events.filter((event) => event.startsAt <= at && event.endsAt > at);
+    const statuses = new Map<string, CalendarMemberStatus>();
+    for (const event of activeEvents) {
+      for (const memberId of event.participantMemberIds) {
+        const next = toCalendarMemberStatus(event, memberId);
+        const existing = statuses.get(memberId);
+        if (!existing || calendarPriority(next.eventType) > calendarPriority(existing.eventType)) {
+          statuses.set(memberId, next);
+        }
+      }
+    }
+    return [...statuses.values()];
+  }
+
+  async updateCalendarEvent(
+    eventId: string,
+    request: UpdateOfficeCalendarEventRequest
+  ): Promise<OfficeCalendarEvent> {
+    const existing = await this.requireCalendarEventOwnership(eventId, request.guestToken);
+    const startsAt = request.startsAt ?? existing.starts_at;
+    const endsAt = request.endsAt ?? existing.ends_at;
+    assertCalendarRange(startsAt, endsAt);
+    const updates: Record<string, boolean | string> = {};
+    if (request.endsAt !== undefined) updates.ends_at = request.endsAt;
+    if (request.eventType !== undefined) updates.event_type = request.eventType;
+    if (request.isAllDay !== undefined) updates.is_all_day = request.isAllDay;
+    if (request.startsAt !== undefined) updates.starts_at = request.startsAt;
+    if (request.title !== undefined) updates.title = request.title.trim();
+    if (Object.keys(updates).length === 0) {
+      throw new ConflictException("No calendar event updates were provided");
+    }
+    const { data, error } = await this.supabase
+      .from("calendar_events")
+      .update(updates)
+      .eq("id", eventId)
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .single();
+    this.throwIfError(error, "update calendar event");
+    return (await this.withCalendarParticipants([data as CalendarEventRow]))[0];
+  }
+
+  async deleteCalendarEvent(eventId: string, guestToken: string): Promise<void> {
+    await this.requireCalendarEventOwnership(eventId, guestToken);
+    const { error } = await this.supabase.from("calendar_events").delete().eq("id", eventId);
+    this.throwIfError(error, "delete calendar event");
+  }
+
   async connectRealtimeMember(
     memberId: string,
     guestToken: string
@@ -443,6 +564,43 @@ export class OfficeService {
       .maybeSingle();
     this.throwIfError(error, "read next office todo order");
     return data ? Number(data.sort_order) + 1 : 0;
+  }
+
+  private async requireCalendarEventOwnership(
+    eventId: string,
+    guestToken: string
+  ): Promise<CalendarEventRow> {
+    const { data, error } = await this.supabase
+      .from("calendar_events")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .eq("id", eventId)
+      .maybeSingle();
+    this.throwIfError(error, "find calendar event");
+    if (!data) throw new NotFoundException("Calendar event was not found");
+    const event = data as CalendarEventRow;
+    if (!event.created_by_member_id) throw new ConflictException("Calendar event has no owner");
+    await this.requireMemberOwnership(event.created_by_member_id, guestToken);
+    return event;
+  }
+
+  private async withCalendarParticipants(events: CalendarEventRow[]): Promise<OfficeCalendarEvent[]> {
+    if (events.length === 0) return [];
+    const { data, error } = await this.supabase
+      .from("calendar_event_participants")
+      .select("calendar_event_id, member_id")
+      .in("calendar_event_id", events.map((event) => event.id));
+    this.throwIfError(error, "read calendar event participants");
+    const participantsByEvent = new Map<string, string[]>();
+    for (const row of (data ?? []) as CalendarParticipantRow[]) {
+      participantsByEvent.set(row.calendar_event_id, [
+        ...(participantsByEvent.get(row.calendar_event_id) ?? []),
+        row.member_id
+      ]);
+    }
+    return events.map((event) => ({
+      ...toCalendarEvent(event),
+      participantMemberIds: participantsByEvent.get(event.id) ?? []
+    }));
   }
 
   private async createWorkspace(name: string): Promise<WorkspaceRow> {
@@ -747,6 +905,43 @@ function toOfficeTodo(row: TodoRow): OfficeTodo {
     status: row.status,
     title: row.title
   };
+}
+
+function toCalendarEvent(row: CalendarEventRow): Omit<OfficeCalendarEvent, "participantMemberIds"> {
+  return {
+    ...(row.created_by_member_id ? { createdByMemberId: row.created_by_member_id } : {}),
+    endsAt: row.ends_at,
+    eventType: row.event_type,
+    id: row.id,
+    isAllDay: row.is_all_day,
+    startsAt: row.starts_at,
+    title: row.title,
+    workspaceId: row.workspace_id
+  };
+}
+
+function toCalendarMemberStatus(
+  event: OfficeCalendarEvent,
+  memberId: string
+): CalendarMemberStatus {
+  const statusByType = {
+    absence: { availabilityStatus: "absent", displayMode: "ghost" },
+    focus: { availabilityStatus: "focus", displayMode: "active" },
+    meeting: { availabilityStatus: "meeting", displayMode: "active" },
+    remote_work: { availabilityStatus: "remote_work", displayMode: "remote" },
+    vacation: { availabilityStatus: "vacation", displayMode: "vacation" }
+  } as const;
+  return { ...statusByType[event.eventType], endsAt: event.endsAt, eventId: event.id, eventType: event.eventType, memberId };
+}
+
+function calendarPriority(eventType: OfficeCalendarEvent["eventType"]): number {
+  return { vacation: 5, absence: 4, meeting: 3, focus: 2, remote_work: 1 }[eventType];
+}
+
+function assertCalendarRange(startsAt: string, endsAt: string): void {
+  if (new Date(endsAt).getTime() <= new Date(startsAt).getTime()) {
+    throw new ConflictException("Calendar event end must be after its start");
+  }
 }
 
 function toRealtimeMember(
