@@ -164,6 +164,141 @@ button {
   width: 100%;
 }
 
+.people-directory-toggle {
+  background: #ffffff;
+  border: 1px solid #b9c5d2;
+  border-radius: 4px;
+  color: #26384c;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.people-directory {
+  background: rgb(255 255 255 / 97%);
+  border-right: 1px solid #cbd5df;
+  box-shadow: 8px 0 24px rgb(28 39 53 / 14%);
+  height: 100%;
+  left: 0;
+  overflow-y: auto;
+  padding: 20px;
+  position: absolute;
+  top: 0;
+  width: min(340px, calc(100vw - 40px));
+  z-index: 2;
+}
+
+.people-directory-header {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.people-directory-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.people-directory-header p {
+  color: #627084;
+  font-size: 13px;
+  margin: 0;
+}
+
+.people-directory-search {
+  display: block;
+  margin-top: 18px;
+}
+
+.people-directory-search input {
+  border: 1px solid #b9c5d2;
+  border-radius: 4px;
+  padding: 9px 10px;
+  width: 100%;
+}
+
+.people-directory-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.people-directory-member {
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 10px;
+  min-height: 64px;
+}
+
+.member-presence-dot {
+  background: #1a9c63;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  height: 9px;
+  width: 9px;
+}
+
+.member-presence-dot.ghost,
+.member-presence-dot.sleeping {
+  background: #9aa7b6;
+}
+
+.member-presence-dot.vacation {
+  background: #d58b3d;
+}
+
+.member-presence-dot.remote {
+  background: #5d8bd5;
+}
+
+.people-directory-member-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.people-directory-member-info strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-directory-member-info span {
+  color: #627084;
+  font-size: 12px;
+}
+
+.member-focus-button {
+  background: #e8f0ff;
+  border: 1px solid #c6d7fa;
+  border-radius: 4px;
+  color: #1558d6;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+.people-directory-empty {
+  color: #627084;
+  font-size: 13px;
+  margin-top: 24px;
+}
+
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
 .guest-onboarding-backdrop {
   align-items: center;
   background: rgb(18 29 45 / 62%);
