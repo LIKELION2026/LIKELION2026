@@ -63,5 +63,5 @@ function requireEnv(name: string): string {
     throw new Error(`[config] Missing required environment variable: ${name}`);
   }
 
-  return value;
+  return value.trim();
 }
