@@ -220,10 +220,36 @@ button {
   gap: 6px;
 }
 
-.meeting-lab-form input {
+.meeting-lab-form input,
+.meeting-lab-form select {
   border: 1px solid #bcc8d5;
   border-radius: 4px;
   padding: 9px 10px;
+}
+
+.meeting-room-preview {
+  background: #f7f9fc;
+  border: 1px solid #d6dee7;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.meeting-room-preview span {
+  color: #627084;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.meeting-room-preview strong {
+  color: #172235;
+  font-size: 14px;
+}
+
+.meeting-room-preview code {
+  color: #486077;
+  font-size: 12px;
+  overflow-wrap: anywhere;
 }
 
 .result-message {

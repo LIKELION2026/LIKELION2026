@@ -1,12 +1,31 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent, JSX } from "react";
+import {
+  MEETING_PARTICIPANT_COUNTRIES,
+  type MeetingParticipantCountry
+} from "@likelion2026/shared";
 
 import { createMeetingToken } from "../../features/realtime-meeting/api/create-meeting-token";
-import { getDevelopmentIdentity } from "../../shared/lib/development-identity";
+import { resolveMeetingRoomSection } from "../../features/realtime-meeting/model/meeting-room-section";
+import {
+  getDevelopmentIdentity,
+  saveDevelopmentProfile
+} from "../../shared/lib/development-identity";
+
+const COUNTRY_OPTION_LABELS: Record<MeetingParticipantCountry, string> = {
+  kr: "한국",
+  vn: "베트남"
+};
 
 export function MeetingLabPage(): JSX.Element {
-  const identity = getDevelopmentIdentity();
-  const [roomName, setRoomName] = useState("lab-likelion-20260816-client");
+  const initialIdentity = useMemo(getDevelopmentIdentity, []);
+  const roomSection = useMemo(
+    () => resolveMeetingRoomSection(window.location.search),
+    []
+  );
+  const [displayName, setDisplayName] = useState(initialIdentity.displayName);
+  const [participantCountry, setParticipantCountry] =
+    useState<MeetingParticipantCountry>(initialIdentity.participantCountry);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,14 +37,28 @@ export function MeetingLabPage(): JSX.Element {
     setIsSubmitting(true);
 
     try {
-      const response = await createMeetingToken({
-        participantCountry: identity.language === "vi" ? "vn" : "kr",
-        participantName: identity.displayName,
-        roomName
+      const savedProfile = saveDevelopmentProfile({
+        displayName,
+        participantCountry
       });
-      setMessage(`${response.roomName} 토큰을 받았습니다. 만료 시각: ${new Date(response.expiresAt).toLocaleTimeString()}`);
+      const response = await createMeetingToken({
+        participantCountry: savedProfile.participantCountry,
+        participantName: savedProfile.displayName,
+        roomName: roomSection.roomName
+      });
+      setDisplayName(savedProfile.displayName);
+      setParticipantCountry(savedProfile.participantCountry);
+      setMessage(
+        `${response.roomName} 토큰을 받았습니다. 만료 시각: ${new Date(
+          response.expiresAt
+        ).toLocaleTimeString()}`
+      );
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "알 수 없는 오류가 발생했습니다.");
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "알 수 없는 오류가 발생했습니다."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -35,20 +68,40 @@ export function MeetingLabPage(): JSX.Element {
     <section className="meeting-lab-page">
       <div className="meeting-lab-card">
         <h1>Meeting Lab</h1>
-        <p>
-          현재 토큰 API 연결을 확인하는 공간입니다. 영상·음성·번역 자막 UI는 Realtime Meeting 담당자가 이 경로에 이어서 구현합니다.
-        </p>
+        <p>LiveKit 입장 정보와 회의 섹션을 확인합니다.</p>
         <form className="meeting-lab-form" onSubmit={handleSubmit}>
           <label>
-            회의방 이름
+            사용자 이름
             <input
-              maxLength={64}
-              onChange={(event) => setRoomName(event.target.value)}
-              pattern="[A-Za-z0-9_-]{3,64}"
+              autoComplete="name"
+              maxLength={40}
+              onChange={(event) => setDisplayName(event.target.value)}
               required
-              value={roomName}
+              value={displayName}
             />
           </label>
+          <label>
+            국가
+            <select
+              onChange={(event) =>
+                setParticipantCountry(
+                  event.target.value as MeetingParticipantCountry
+                )
+              }
+              value={participantCountry}
+            >
+              {MEETING_PARTICIPANT_COUNTRIES.map((country) => (
+                <option key={country} value={country}>
+                  {COUNTRY_OPTION_LABELS[country]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="meeting-room-preview">
+            <span>회의 섹션</span>
+            <strong>{roomSection.label}</strong>
+            <code>{roomSection.roomName}</code>
+          </div>
           <button className="primary-button" disabled={isSubmitting} type="submit">
             {isSubmitting ? "토큰 요청 중" : "토큰 API 확인"}
           </button>
