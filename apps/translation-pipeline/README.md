@@ -1,6 +1,6 @@
 # Translation Pipeline
 
-> 상태: 마이크 실시간 통역 동작 - 1·3·4·6단계 구현
+> 상태: 마이크 실시간 통역과 자막 발행 동작
 >
 > 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3)
 
@@ -30,6 +30,9 @@ apps/translation-pipeline/
 │       ├── context.py          # ConversationContext (최근 대화 버퍼)
 │       ├── translator.py       # Translator 계약, 시스템 프롬프트, FakeTranslator
 │       ├── stt.py              # Deepgram 실시간 인식, 마이크 입력
+│       ├── pipeline.py         # 발화 -> 자막 조립, 늦은 번역 폐기
+│       ├── subtitle.py         # 자막 페이로드 (shared 계약)
+│       ├── publisher.py        # Server로 자막 발행
 │       ├── providers/
 │       │   └── gemini.py       # GeminiTranslator
 │       └── participants.py     # ParticipantRegistry
@@ -42,6 +45,8 @@ apps/translation-pipeline/
     ├── test_translator.py
     ├── test_gemini_translator.py
     ├── test_stt.py
+    ├── test_pipeline.py
+    ├── test_subtitle.py
     └── test_participants.py
 ```
 
@@ -178,33 +183,77 @@ context.add("user_abc123", text, translated)
 provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`에 추가하고
 조립 지점에서 바꿔 끼우면 된다. 테스트에는 `FakeTranslator`를 쓴다.
 
-### 6단계: 마이크 실시간 통역
+### 마이크 실시간 통역과 자막 발행
 
-말하면 번역이 화면에 뜬다. 파이프라인 전체가 연결되는 지점이다.
+말하면 번역이 화면에 뜨고, `--publish`를 주면 회의 화면에 자막으로 나간다.
 
 ```powershell
 cd C:\LIKELION2026\apps\translation-pipeline
-.venv\Scripts\python.exe -u scripts\live_translate.py              # 한국어로 말하면 베트남어
-.venv\Scripts\python.exe -u scripts\live_translate.py --source vi  # 베트남어로 말하면 한국어
+.venv\Scripts\python.exe -u scripts\live_translate.py --speaker user_ko --name 민수
+.venv\Scripts\python.exe -u scripts\live_translate.py --speaker user_vi --language vi --publish
 ```
 
 `-u`를 빼면 출력이 버퍼링되어 보이지 않을 수 있다. Ctrl+C로 종료하면 통계가 나온다.
 
 ```text
-마이크 -> Deepgram(endpointing) -> 관용구 사전 -> 번역 -> 화면
+마이크 -> Deepgram(endpointing) -> 관용구 사전 -> 번역 -> 자막 페이로드 -> Server
 ```
 
 발화 종료는 Deepgram의 `speech_final`로 판단한다. 별도 VAD를 만들지 않았다.
-타겟 언어는 `get_target_lang()`이 화자 언어만으로 정하므로 지정하지 않는다.
+번역 방향은 `ParticipantRegistry`에 등록된 화자 언어로 정해진다. 타겟 언어는
+`get_target_lang()`이 화자 언어만으로 결정하므로 따로 지정하지 않는다.
 
 | 옵션 | 용도 |
 | --- | --- |
-| `--source vi` | 베트남어로 말하고 한국어를 받는다 |
+| `--speaker` | 화자 참가자 ID. 자막의 `participantIdentity`가 된다 |
+| `--name` | 자막에 표시할 이름. 생략하면 참가자 ID를 쓴다 |
+| `--language vi` | 베트남어로 말하고 한국어를 받는다 |
+| `--room` | 회의방 이름. `lab-<team>-<yyyymmdd>-<slug>` 형식이어야 한다 |
+| `--publish` | Server로 자막을 발행한다 |
+| `--server` | Server 주소. 기본값은 `http://localhost:4000` |
+| `--max-staleness` | 이 시간을 넘겨 도착한 번역은 버린다(ms) |
 | `--model` | 번역 모델을 바꾼다 |
 | `--endpointing 600` | 문장이 잘게 쪼개질 때 무음 판정을 늘린다 |
 | `--device 17` | 마이크 장치를 지정한다 (스테레오 믹스로 시스템 소리 입력 가능) |
 | `--no-interim` | 인식 중간 결과를 숨긴다 |
 | `--timeout` | 번역 대기 시간(ms). 생략하면 모델에 맞춰 정한다 |
+
+### 자막 계약
+
+출력은 `packages/shared`의 `SubtitleCreatedPayload`를 따른다. Client와 Server가
+이미 이 형식을 쓰므로 파이프라인이 별도 형식을 만들지 않는다.
+
+```
+POST /meeting/subtitles/mock  ->  소켓 이벤트 subtitle.created
+```
+
+```json
+{
+  "subtitleId": "47ebde54865f4deebeea3c23486b9f2b",
+  "roomName": "lab-ai-20260816-demo",
+  "speaker": { "participantIdentity": "user_ko", "displayName": "민수" },
+  "sourceLanguage": "ko",
+  "sourceText": "다들 고생하셨습니다",
+  "translatedLanguage": "vi",
+  "translatedText": "Cảm ơn mọi người.",
+  "occurredAt": "2026-08-16T09:12:58.988+00:00",
+  "isFinal": true,
+  "revision": 1
+}
+```
+
+`roomName`과 `participantIdentity`는 서버와 같은 정규식으로 보내기 전에 검증한다.
+서버 응답만 보면 어느 발화가 문제였는지 알기 어렵기 때문이다.
+
+### 늦은 번역 폐기
+
+번역이 `--max-staleness`(기본 5초)를 넘겨 도착하면 자막을 만들지 않는다. 늦게 뜬
+자막은 이후 발화와 순서가 엉켜 대화를 방해하므로 없는 편이 낫다.
+
+버린 번역은 대화 컨텍스트에도 넣지 않는다. 화면에 없는 문장이 이후 번역의 선례가
+되면 안 되기 때문이다.
+
+사전만으로 끝난 발화는 지연이 사실상 없으므로 폐기 대상이 아니다.
 
 실제 음성으로 확인한 결과다.
 
