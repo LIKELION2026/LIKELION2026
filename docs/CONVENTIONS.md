@@ -191,6 +191,9 @@ PR 설명에는 아래 항목을 포함한다.
 저장소의 `.github/pull_request_template.md`를 사용해 위 내용을 작성한다. 디자인 PR은 `.github/PULL_REQUEST_TEMPLATE/design.md`, 개발 PR은 `.github/PULL_REQUEST_TEMPLATE/development.md`를 선택해 작성한다. Issue는 작업 성격에 맞는 `.github/ISSUE_TEMPLATE` 양식을 사용한다.
 
 - 기능 PR은 최소 1명 이상이 리뷰한다.
+- 구현, 버그 수정, 설정, 문서화 PR은 본문에 `Closes #<Issue 번호>`를 작성해 작업 Issue를 연결한다. `Refs #번호`는 참고 연결만 만들며 자동 종료에는 사용하지 않는다.
+- 기본 브랜치인 `dev`에 PR이 병합되면 `Closes #번호`로 연결한 Issue가 자동 종료된다. 병합 뒤에는 Issue 상태와 GitHub Project 상태를 확인한다.
+- 구현 계획이 아직 없는 조사·Discussion 전용 PR만 `Issue 없음: <사유>`를 작성할 수 있다. 구현이 결정되면 반드시 Issue를 만든 뒤 후속 PR에서 closing keyword를 사용한다.
 - 화면이 바뀌면 이미지, GIF 또는 짧은 영상 링크를 첨부한다.
 - API 계약이 바뀌면 `packages/shared` 타입과 API 명세를 함께 수정한다.
 - 리뷰어는 코드 스타일보다 기능 정확성, 예외 처리, 사용자 흐름, 문서와의 일치를 먼저 확인한다.
