@@ -379,3 +379,14 @@
 - 사용자 검토/수정 내용: 두 브라우저 간 실제 video/audio 송수신 확인은 사용자 검토 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/36
+
+### 2026-08-16 - Meeting Lab subtitle Mock display
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #37 범위에서 Meeting Lab이 `/meeting` Socket namespace를 구독하고 `subtitle.created` Mock payload를 실시간 자막 UI에 표시하도록 구성
+- 입력 맥락: Issue #37, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: mock subtitle buffer 조회 API, roomName 기반 Socket subscribe/unsubscribe hook, `subtitleId`와 `revision` 기반 partial/final 교체 로직, 원문/번역문/화자/시각/확정 여부 표시 패널
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/37
