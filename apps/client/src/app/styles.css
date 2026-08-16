@@ -207,7 +207,7 @@ button {
 
 .meeting-lab-page {
   margin: 0 auto;
-  max-width: 640px;
+  max-width: 960px;
   padding: 48px 20px;
 }
 
@@ -326,6 +326,257 @@ button {
   flex-wrap: wrap;
   font-size: 12px;
   gap: 8px;
+}
+
+.meeting-session-status {
+  border-top: 1px solid #d6dee7;
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.meeting-session-status span {
+  color: #627084;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.meeting-session-status code {
+  color: #486077;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.meeting-session-status p {
+  color: #58687c;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.meeting-session-state {
+  color: #5f6e80;
+  font-size: 14px;
+}
+
+.meeting-session-state.connected {
+  color: #22633f;
+}
+
+.meeting-session-state.connecting,
+.meeting-session-state.publishing,
+.meeting-session-state.reconnecting {
+  color: #8a5a0a;
+}
+
+.meeting-session-state.failed {
+  color: #a33030;
+}
+
+.meeting-session-error {
+  color: #a33030;
+}
+
+.meeting-media-stage {
+  border-top: 1px solid #d6dee7;
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.meeting-media-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.meeting-media-tile {
+  aspect-ratio: 16 / 10;
+  background: #18212f;
+  border: 1px solid #243246;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.meeting-media-video {
+  background: #111827;
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.meeting-media-overlay {
+  background: rgb(17 24 39 / 78%);
+  bottom: 0;
+  color: #ffffff;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  left: 0;
+  padding: 8px 10px;
+  position: absolute;
+  right: 0;
+}
+
+.meeting-media-overlay strong,
+.meeting-media-overlay span {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meeting-media-empty {
+  align-items: center;
+  aspect-ratio: 16 / 6;
+  background: #f7f9fc;
+  border: 1px dashed #b7c4d1;
+  color: #58687c;
+  display: flex;
+  font-size: 13px;
+  justify-content: center;
+  min-height: 120px;
+  padding: 16px;
+}
+
+.meeting-audio-sinks {
+  display: none;
+}
+
+.meeting-media-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meeting-subtitle-panel {
+  border-top: 1px solid #d6dee7;
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.meeting-subtitle-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.meeting-subtitle-panel-header span {
+  color: #627084;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.meeting-subtitle-panel-header strong {
+  color: #172235;
+  font-size: 15px;
+}
+
+.meeting-subtitle-state {
+  border: 1px solid #bcc8d5;
+  color: #5f6e80;
+  font-size: 12px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.meeting-subtitle-state.subscribed {
+  border-color: #aad7bd;
+  color: #22633f;
+}
+
+.meeting-subtitle-state.loading {
+  border-color: #dfc48c;
+  color: #8a5a0a;
+}
+
+.meeting-subtitle-state.failed {
+  border-color: #f0b5b5;
+  color: #a33030;
+}
+
+.meeting-subtitle-list {
+  display: grid;
+  gap: 10px;
+}
+
+.meeting-subtitle-item {
+  background: #f7f9fc;
+  border: 1px solid #d6dee7;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.meeting-subtitle-item.partial {
+  border-style: dashed;
+}
+
+.meeting-subtitle-item header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meeting-subtitle-item header strong {
+  color: #172235;
+  font-size: 13px;
+}
+
+.meeting-subtitle-item header span,
+.meeting-subtitle-item header time {
+  color: #627084;
+  font-size: 12px;
+}
+
+.meeting-subtitle-finality {
+  border: 1px solid #bcc8d5;
+  padding: 2px 6px;
+}
+
+.meeting-subtitle-item.final .meeting-subtitle-finality {
+  border-color: #aad7bd;
+  color: #22633f;
+}
+
+.meeting-subtitle-source,
+.meeting-subtitle-translation {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.meeting-subtitle-source {
+  color: #486077;
+}
+
+.meeting-subtitle-translation {
+  color: #172235;
+  font-weight: 700;
+}
+
+.meeting-subtitle-empty,
+.meeting-subtitle-error {
+  color: #58687c;
+  font-size: 13px;
+  margin: 0;
+}
+
+.meeting-subtitle-error {
+  color: #a33030;
 }
 
 .result-message {

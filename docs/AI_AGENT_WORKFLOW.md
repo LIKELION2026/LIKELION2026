@@ -357,3 +357,47 @@
 - 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/34
+
+### 2026-08-16 - Meeting Lab LiveKit room connect
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Token API 응답의 `serverUrl`과 `token`으로 LiveKit Cloud room에 연결하고 local camera/mic track publish 흐름 구성
+- 입력 맥락: Issue #35, LiveKit client SDK v2.21.0 README와 로컬 타입 정의, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `Room.connect`, `localParticipant.enableCameraAndMicrophone`, 연결/게시/재연결/실패/종료 상태 hook, `room.disconnect(true)` 기반 cleanup
+- 사용자 검토/수정 내용: 실제 브라우저 camera/mic 연결 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/35
+
+### 2026-08-16 - Meeting Lab media render and controls
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 연결 후 local/remote video/audio track을 화면에 렌더링하고 mic/camera 토글을 실제 track 상태와 연결
+- 입력 맥락: Issue #36, LiveKit client SDK track attach/detach 타입 정의, `apps/client/src/features/realtime-meeting/model/use-livekit-meeting-session.ts`
+- AI 제안 또는 산출물: local/remote media track snapshot, `<video>`/`<audio>` attach 컴포넌트, remote audio sink, mic/camera toggle, participant/track event 기반 UI 갱신
+- 사용자 검토/수정 내용: 두 브라우저 간 실제 video/audio 송수신 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/36
+
+### 2026-08-16 - Meeting Lab subtitle Mock display
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #37 범위에서 Meeting Lab이 `/meeting` Socket namespace를 구독하고 `subtitle.created` Mock payload를 실시간 자막 UI에 표시하도록 구성
+- 입력 맥락: Issue #37, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: mock subtitle buffer 조회 API, roomName 기반 Socket subscribe/unsubscribe hook, `subtitleId`와 `revision` 기반 partial/final 교체 로직, 원문/번역문/화자/시각/확정 여부 표시 패널
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/37
+
+### 2026-08-16 - Realtime Meeting P0 verification helper
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #38 범위에서 Meeting Lab P0 데모와 Mock subtitle 확인을 반복 가능한 절차로 정리
+- 입력 맥락: Issue #38, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `docs/RUNBOOKS/client-local.md`, `docs/RUNBOOKS/server-local.md`, 기존 LiveKit smoke script 패턴
+- AI 제안 또는 산출물: `pnpm smoke:meeting-subtitle`, partial/final Mock subtitle smoke script, dry-run 테스트, 두 브라우저 Meeting Lab 데모 절차
+- 사용자 검토/수정 내용: 실제 두 브라우저 카메라/마이크와 화면 표시 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server smoke:meeting-subtitle -- --dry-run` 통과, `corepack pnpm --filter @likelion2026/server test` 47개 테스트 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/38

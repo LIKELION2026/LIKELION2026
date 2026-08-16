@@ -1,5 +1,47 @@
 # Client Local Runbook
 
+## Meeting Lab P0 Demo
+
+Run the server and client in separate terminals, then open two browser sessions in the same Meeting Lab section.
+
+```bash
+corepack pnpm dev:server
+corepack pnpm dev:client
+```
+
+Browser A:
+
+```text
+http://localhost:5173/meeting-lab?section=meeting-room&name=Korea-PM&country=kr
+```
+
+Browser B:
+
+```text
+http://localhost:5173/meeting-lab?section=meeting-room&name=Vietnam-Dev&country=vn
+```
+
+1. Click device check in both browsers and allow camera/mic permission.
+2. Join the meeting in both browsers and confirm they use the same displayed `lab-likelion-<yyyymmdd>-meeting-room`.
+3. Confirm local and remote video render, and remote audio is received.
+4. Toggle mic/camera and confirm the media state changes without leaving the room.
+5. Send a Mock subtitle to the displayed roomName from another terminal.
+
+PowerShell:
+
+```powershell
+$env:MEETING_SUBTITLE_SMOKE_ROOM_NAME = "lab-likelion-<yyyymmdd>-meeting-room"
+corepack pnpm smoke:meeting-subtitle
+```
+
+Git Bash:
+
+```bash
+MEETING_SUBTITLE_SMOKE_ROOM_NAME="lab-likelion-<yyyymmdd>-meeting-room" corepack pnpm smoke:meeting-subtitle
+```
+
+The subtitle panel should show the same utterance replacing the partial subtitle with the final subtitle. After leaving the meeting, confirm camera/mic usage stops.
+
 > 대상: `apps/client`와 Virtual Office 초기 통합 환경
 
 ## 준비 사항
