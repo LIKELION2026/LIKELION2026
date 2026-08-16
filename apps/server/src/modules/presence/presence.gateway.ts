@@ -8,6 +8,7 @@ import {
 } from "@nestjs/websockets";
 import {
   SOCKET_EVENT_NAMES,
+  isLanguageCode,
   type MemberStatusUpdatePayload,
   type OfficeJoinPayload,
   type PresenceMovePayload
@@ -136,7 +137,8 @@ function isOfficeJoinPayload(value: unknown): value is OfficeJoinPayload {
     isIdentifier(value.memberId) &&
     typeof value.displayName === "string" &&
     value.displayName.trim().length > 0 &&
-    (value.language === "ko" || value.language === "en")
+    typeof value.language === "string" &&
+    isLanguageCode(value.language)
   );
 }
 
