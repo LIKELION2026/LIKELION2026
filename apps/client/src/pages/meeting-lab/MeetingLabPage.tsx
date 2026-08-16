@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { FormEvent, JSX } from "react";
 import {
   MEETING_PARTICIPANT_COUNTRIES,
@@ -6,6 +6,11 @@ import {
 } from "@likelion2026/shared";
 
 import { createMeetingToken } from "../../features/realtime-meeting/api/create-meeting-token";
+import {
+  checkMeetingDevicePreflight,
+  INITIAL_MEETING_DEVICE_PREFLIGHT_STATE,
+  type MeetingDevicePreflightStatus
+} from "../../features/realtime-meeting/model/device-preflight";
 import { resolveMeetingRoomSection } from "../../features/realtime-meeting/model/meeting-room-section";
 import {
   getDevelopmentIdentity,
@@ -15,6 +20,14 @@ import {
 const COUNTRY_OPTION_LABELS: Record<MeetingParticipantCountry, string> = {
   kr: "한국",
   vn: "베트남"
+};
+
+const PREFLIGHT_STATUS_LABELS: Record<MeetingDevicePreflightStatus, string> = {
+  checking: "확인 중",
+  "device-unavailable": "장치 없음",
+  idle: "확인 전",
+  "permission-denied": "권한 거부",
+  ready: "입장 가능"
 };
 
 export function MeetingLabPage(): JSX.Element {
@@ -29,9 +42,31 @@ export function MeetingLabPage(): JSX.Element {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [devicePreflight, setDevicePreflight] = useState(
+    INITIAL_MEETING_DEVICE_PREFLIGHT_STATE
+  );
+  const isCheckingDevices = devicePreflight.status === "checking";
+  const isDeviceReady = devicePreflight.status === "ready";
+
+  const handleDevicePreflight = useCallback(async () => {
+    setError(null);
+    setMessage(null);
+    setDevicePreflight({
+      ...INITIAL_MEETING_DEVICE_PREFLIGHT_STATE,
+      message: "카메라와 마이크 권한을 확인하고 있습니다.",
+      status: "checking"
+    });
+
+    setDevicePreflight(await checkMeetingDevicePreflight());
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!isDeviceReady) {
+      setError("카메라와 마이크 확인을 먼저 완료해 주세요.");
+      return;
+    }
+
     setError(null);
     setMessage(null);
     setIsSubmitting(true);
@@ -102,7 +137,40 @@ export function MeetingLabPage(): JSX.Element {
             <strong>{roomSection.label}</strong>
             <code>{roomSection.roomName}</code>
           </div>
-          <button className="primary-button" disabled={isSubmitting} type="submit">
+          <div className="meeting-device-preflight" aria-live="polite">
+            <div className="meeting-device-preflight-row">
+              <div>
+                <span className="meeting-device-preflight-label">
+                  카메라/마이크
+                </span>
+                <strong
+                  className={`meeting-device-status ${devicePreflight.status}`}
+                >
+                  {PREFLIGHT_STATUS_LABELS[devicePreflight.status]}
+                </strong>
+              </div>
+              <button
+                className="secondary-button"
+                disabled={isCheckingDevices}
+                onClick={handleDevicePreflight}
+                type="button"
+              >
+                {isCheckingDevices ? "확인 중" : "장치 확인"}
+              </button>
+            </div>
+            <p>{devicePreflight.message}</p>
+            {isDeviceReady ? (
+              <div className="meeting-device-counts">
+                <span>Camera {devicePreflight.videoInputCount}</span>
+                <span>Mic {devicePreflight.audioInputCount}</span>
+              </div>
+            ) : null}
+          </div>
+          <button
+            className="primary-button"
+            disabled={isSubmitting || !isDeviceReady}
+            type="submit"
+          >
             {isSubmitting ? "토큰 요청 중" : "토큰 API 확인"}
           </button>
         </form>
