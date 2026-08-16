@@ -14,6 +14,7 @@
     "dev:server": "pnpm --filter @likelion2026/server start:dev",
     "lint": "pnpm typecheck",
     "start:server": "pnpm --filter @likelion2026/server start",
+    "test:server": "pnpm --filter @likelion2026/server test",
     "typecheck": "pnpm --filter @likelion2026/shared typecheck && pnpm --filter @likelion2026/server typecheck"
   },
   "devDependencies": {
