@@ -9,15 +9,17 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
-    "build": "pnpm --filter @likelion2026/shared build && pnpm --filter @likelion2026/server build",
-    "build:server": "pnpm --filter @likelion2026/shared build && pnpm --filter @likelion2026/server build",
-    "dev:server": "pnpm --filter @likelion2026/server start:dev",
-    "lint": "pnpm typecheck",
-    "smoke:livekit-room": "pnpm --filter @likelion2026/server smoke:livekit-room",
-    "smoke:livekit-webhook": "pnpm --filter @likelion2026/server smoke:livekit-webhook",
-    "start:server": "pnpm --filter @likelion2026/server start",
-    "test:server": "pnpm --filter @likelion2026/server test",
-    "typecheck": "pnpm --filter @likelion2026/shared typecheck && pnpm --filter @likelion2026/server typecheck"
+    "build": "corepack pnpm --filter @likelion2026/shared build && corepack pnpm --filter @likelion2026/client build && corepack pnpm --filter @likelion2026/server build",
+    "build:client": "corepack pnpm --filter @likelion2026/client build",
+    "build:server": "corepack pnpm --filter @likelion2026/shared build && corepack pnpm --filter @likelion2026/server build",
+    "dev:client": "corepack pnpm --filter @likelion2026/client dev",
+    "dev:server": "corepack pnpm --filter @likelion2026/server start:dev",
+    "lint": "corepack pnpm typecheck",
+    "smoke:livekit-room": "corepack pnpm --filter @likelion2026/server smoke:livekit-room",
+    "smoke:livekit-webhook": "corepack pnpm --filter @likelion2026/server smoke:livekit-webhook",
+    "start:server": "corepack pnpm --filter @likelion2026/server start",
+    "test:server": "corepack pnpm --filter @likelion2026/server test",
+    "typecheck": "corepack pnpm --filter @likelion2026/shared typecheck && corepack pnpm --filter @likelion2026/client typecheck && corepack pnpm --filter @likelion2026/server typecheck"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

@@ -7,22 +7,24 @@ import { configuration } from "./config/configuration";
 import { validateEnvironment } from "./config/environment";
 import { HealthController } from "./health.controller";
 import { MeetingModule } from "./modules/meeting/meeting.module";
+import { PresenceModule } from "./modules/presence/presence.module";
 
 @Module({
   controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
       envFilePath: [
-        "apps/server/.env.local",
-        "apps/server/.env",
         ".env.local",
-        ".env"
+        ".env",
+        "apps/server/.env.local",
+        "apps/server/.env"
       ],
       isGlobal: true,
       load: [configuration],
       validate: validateEnvironment
     }),
-    MeetingModule
+    MeetingModule,
+    PresenceModule
   ],
   providers: [
     {

@@ -35,22 +35,26 @@ Moyo와 같은 pnpm monorepo의 장점을 따라 Client, Server, 공통 계약�
 │   │       │   └── team-icebreaking/   # 질문 카드·가벼운 팀 상호작용
 │   │       ├── entities/               # Member, Meeting, Briefing 같은 도메인 UI 모델
 │   │       └── shared/                 # API·Socket 클라이언트, 공통 UI, 유틸
-│   └── server/
-│       └── src/
-│           ├── modules/                # NestJS 도메인 모듈
-│           │   ├── auth/
-│           │   ├── team/
-│           │   ├── presence/           # 접속·상태 동기화
-│           │   ├── meeting/            # 회의방, 참가 권한, 자막 흐름
-│           │   └── briefing/           # 브리핑 저장·확정
-│           ├── integrations/           # 외부 서비스 어댑터
-│           │   ├── livekit/
-│           │   ├── speech/             # 음성 인식·번역 제공자
-│           │   └── llm/                # 요약·누락 점검 제공자
-│           ├── common/                 # Guard, Filter, Interceptor, 공통 오류 처리
-│           ├── config/                 # 환경변수 검증과 설정 조합
-│           ├── app.module.ts
-│           └── main.ts
+│   ├── server/
+│   │   └── src/
+│   │       ├── modules/                # NestJS 도메인 모듈
+│   │       │   ├── auth/
+│   │       │   ├── team/
+│   │       │   ├── presence/           # 접속·상태 동기화
+│   │       │   ├── meeting/            # 회의방, 참가 권한, 자막 흐름
+│   │       │   └── briefing/           # 브리핑 저장·확정
+│   │       ├── integrations/           # 외부 서비스 어댑터
+│   │       │   ├── livekit/
+│   │       │   ├── speech/             # 음성 인식·번역 제공자
+│   │       │   └── llm/                # 요약·누락 점검 제공자
+│   │       ├── common/                 # Guard, Filter, Interceptor, 공통 오류 처리
+│   │       ├── config/                 # 환경변수 검증과 설정 조합
+│   │       ├── app.module.ts
+│   │       └── main.ts
+│   └── translation-pipeline/           # 한국어-베트남어 통역 파이프라인 (Python)
+│       ├── data/                       # 관용구 사전 glossary.json
+│       ├── src/translation_pipeline/   # 언어·참가자·사전 매칭 로직
+│       └── tests/
 ├── packages/
 │   └── shared/
 │       └── src/
@@ -151,6 +155,18 @@ briefing.confirmed
 ```
 
 계약을 바꾸면 `packages/shared` 변경, Client·Server 반영, 관련 기능 문서를 같은 작업 흐름에서 함께 확인한다.
+
+## Python 통역 파이프라인 예외
+
+`apps/translation-pipeline`은 이 문서의 pnpm·TypeScript 전제에서 벗어나는 유일한 패키지다. 이 문서의 변경 규칙에 따라 배치 사유와 범위를 남긴다.
+
+- **왜 `apps/`인가**: `apps/`는 독립 실행 가능한 애플리케이션 단위이고 이 파이프라인이 정확히 그것이다. `packages/shared`는 Client와 Server가 함께 쓰는 TypeScript 계약 자리이므로 맞지 않는다.
+- **왜 다른 언어인가**: Deepgram과 LLM SDK를 LiveKit 연동 전에 오디오 파일·마이크만으로 검증하기 위해서다. Python SDK 쪽 예제와 실시간 스트리밍 지원이 이 검증에 유리하다.
+- **workspace 경계**: pnpm workspace에는 포함하지 않는다. 자체 `requirements.txt`와 가상환경으로 실행하므로 `pnpm install`과 루트 스크립트의 영향을 받지 않는다.
+- **범위**: 검증용이다. 확정된 로직은 `apps/server/src/integrations/speech`와 `integrations/llm`으로 옮기고, 그 시점에 이 폴더의 존속 여부를 다시 판단한다.
+- **의존 경계**: Client·Server·Shared 코드를 import하지 않는다. 반대로 다른 앱이 이 폴더를 import하지도 않는다.
+
+관련 기록은 `docs/ADR/0001-translation-provider-abstraction.md`와 PR #5에 있다.
 
 ## 초기 구현 순서
 

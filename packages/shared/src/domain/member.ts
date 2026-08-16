@@ -9,6 +9,14 @@ export const MEMBER_STATUS_VALUES = [
 
 export type MemberStatus = (typeof MEMBER_STATUS_VALUES)[number];
 
+export const AVATAR_DIRECTIONS = ["up", "down", "left", "right"] as const;
+
+export type AvatarDirection = (typeof AVATAR_DIRECTIONS)[number];
+
+export const AVATAR_ANIMATIONS = ["idle", "walk"] as const;
+
+export type AvatarAnimation = (typeof AVATAR_ANIMATIONS)[number];
+
 export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
   available: "협업 가능",
   away: "자리 비움",
@@ -31,4 +39,15 @@ export interface MemberPresence {
   status: MemberStatus;
   updatedAt: string;
   workContext?: MemberWorkContext;
+}
+
+export interface OfficeAvatarState {
+  animation: AvatarAnimation;
+  direction: AvatarDirection;
+  x: number;
+  y: number;
+}
+
+export interface OfficeMemberPresence extends MemberPresence {
+  avatar: OfficeAvatarState;
 }
