@@ -8,8 +8,10 @@ import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/offi
 
 interface OfficeHudProps {
   connectionState: OfficeConnectionState;
+  isPeopleDirectoryOpen: boolean;
   memberCount: number;
   onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
+  onTogglePeopleDirectory: () => void;
   onStatusChange: (status: MemberStatus) => void;
   selfAttendanceStatus: AttendanceStatus | undefined;
   selfStatus: MemberStatus | undefined;
@@ -17,8 +19,10 @@ interface OfficeHudProps {
 
 export function OfficeHud({
   connectionState,
+  isPeopleDirectoryOpen,
   memberCount,
   onAttendanceChange,
+  onTogglePeopleDirectory,
   onStatusChange,
   selfAttendanceStatus,
   selfStatus
@@ -32,6 +36,14 @@ export function OfficeHud({
           <span className={`connection-dot ${connectionState}`} />
           {getConnectionLabel(connectionState)}
         </div>
+        <button
+          aria-pressed={isPeopleDirectoryOpen}
+          className="people-directory-toggle"
+          onClick={onTogglePeopleDirectory}
+          type="button"
+        >
+          구성원 {memberCount}명
+        </button>
         <button
           className="attendance-button"
           onClick={() =>

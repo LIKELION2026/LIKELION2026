@@ -361,3 +361,14 @@
 - 팀원 검토·수정 내용: 실제 화면 감시나 SNS 정보는 저장하지 않고, 이름·국가·언어와 Server 소유권 확인용 guest token만 유지. 아바타 직접 선택은 해커톤 후속 범위로 분리
 - 검증 결과: Client typecheck와 production build 통과. 로컬 `/office` 응답 확인. 실제 세션 성공 흐름은 Supabase Server 환경 변수 설정 후 검증 필요
 - 관련 Issue / PR / Discussion: Issue #40, PR 작성 예정
+
+### 2026-08-16 - 피플 목록과 빠른 위치 이동
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 큰 오피스에서 팀원의 연결·출퇴근 상태를 찾고, 원격 아바타 위치로 빠르게 이동하는 UI 구현
+- 입력 맥락: Issue #41, `OfficeMemberPresence`, ghost/sleeping Phaser 표현, 기존 Office HUD
+- AI 제안 또는 산출물: 이름 검색, display mode별 상태점, `focusMember` 카메라 이동 후 로컬 플레이어 follow 복귀, 기능 책임 문서
+- 팀원 검토·수정 내용: 피플 목록은 업무 감시 지표가 아니라 선택한 상태와 서비스 연결 상태만 보여주며, 메시지·TODO는 별도 기능으로 분리
+- 검증 결과: Client typecheck와 production build 통과. 실제 다중 사용자 snapshot 수신은 Issue #39 환경 검증 뒤 확인 필요
+- 관련 Issue / PR /Discussion: Issue #41, PR 작성 예정
