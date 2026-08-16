@@ -350,3 +350,14 @@
 - 팀원 검토·수정 내용: 실제 화면 감시가 아닌 사용자가 선택한 상태와 서비스 연결 상태만 공유하며, 휴가·재택 자동 판정과 TODO UI는 후속 Issue로 분리
 - 검증 결과: `corepack pnpm typecheck`, `corepack pnpm build` 통과. 실제 Supabase와 두 브라우저 연결 검증은 Server 환경 변수를 설정한 뒤 수행 필요
 - 관련 Issue / PR / Discussion: Issue #29, PR 작성 예정
+
+### 2026-08-16 - 게스트 첫 입장 흐름
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: URL query 없이 이름과 한국·베트남 선택만으로 게스트 세션을 만들고 오피스에 입장시키는 흐름 구성
+- 입력 맥락: Issue #40, `POST /office/session` 계약, 게스트 세션과 Presence 동기화 구현
+- AI 제안 또는 산출물: 프로필·guest token의 localStorage 책임 분리, 세션 성공 뒤 Socket 연결, 모달의 입력·로딩·오류 상태, Meeting Lab 호환 기본 프로필
+- 팀원 검토·수정 내용: 실제 화면 감시나 SNS 정보는 저장하지 않고, 이름·국가·언어와 Server 소유권 확인용 guest token만 유지. 아바타 직접 선택은 해커톤 후속 범위로 분리
+- 검증 결과: Client typecheck와 production build 통과. 로컬 `/office` 응답 확인. 실제 세션 성공 흐름은 Supabase Server 환경 변수 설정 후 검증 필요
+- 관련 Issue / PR / Discussion: Issue #40, PR 작성 예정
