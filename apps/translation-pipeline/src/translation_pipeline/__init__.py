@@ -28,6 +28,13 @@ from .languages import (
     language_name,
 )
 from .participants import ParticipantRegistry
+from .pipeline import (
+    DEFAULT_MAX_STALENESS_MS,
+    TranslationPipeline,
+    UtteranceResult,
+)
+from .publisher import SubtitlePublisher, SubtitlePublishError
+from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
 from .translator import (
     FakeTranslator,
     TranslationRequest,
@@ -47,8 +54,17 @@ __all__ = [
     "GlossaryEntry",
     "GlossaryError",
     "GlossaryMatch",
+    "DEFAULT_MAX_STALENESS_MS",
     "ParticipantRegistry",
+    "SubtitleError",
+    "SubtitlePayload",
+    "SubtitlePublishError",
+    "SubtitlePublisher",
     "TranslationError",
+    "TranslationPipeline",
+    "UtteranceResult",
+    "build_subtitle",
+    "utc_now_iso",
     "TranslationPipelineError",
     "TranslationRequest",
     "Translator",
