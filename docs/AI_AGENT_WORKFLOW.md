@@ -335,3 +335,14 @@
 - `stt.py`의 스트리밍 루프에는 단위 테스트가 없다. 마이크와 웹소켓이 필요해서이며, 실제 음성으로만 확인했다.
 - 늦게 도착한 번역을 버리는 처리가 없다 (Issue #11).
 - 무료 티어 할당량이 실제 회의 분량을 감당하지 못할 수 있다 (Issue #11).
+
+### 2026-08-16 - Meeting Lab 프론트 SDK 진입 정책
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, GitHub Skill
+- 사용 목적: Issue #30 범위의 첫 프론트 작업으로, 로그인 없이 이름과 국가를 기억하고 오피스 섹션에서 LiveKit roomName을 파생하도록 Client 진입 흐름 구성
+- 입력 맥락: 사용자 결정(이름/국가만 입력, 룸 번호 직접 입력 없음), `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `DevelopmentProfile` localStorage 저장, `participantCountry` 기반 언어 파생 유지, `meeting-room` 섹션 resolver, Meeting Lab 수동 roomName 입력 제거
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/30

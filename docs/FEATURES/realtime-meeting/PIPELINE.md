@@ -4,7 +4,7 @@
 >
 > 작성일: 2026-08-15
 >
-> 마지막 업데이트: 2026-08-15
+> 마지막 업데이트: 2026-08-16
 >
 > 상태: P0 설계
 >
@@ -43,7 +43,8 @@ sequenceDiagram
     participant LiveKit as LiveKit Cloud Room
     participant SubtitleMock as Subtitle Mock Source
 
-    User->>Client: 이름, 국가(kr/vn), 테스트 룸 선택
+    User->>Client: 이름, 국가(kr/vn) 입력
+    Client->>Client: 현재 오피스 섹션에서 roomName 결정
     Client->>Client: camera/mic 권한과 장치 확인
     Client->>Server: POST /meeting/token
     Server->>Server: 국가, 이름, 룸, 권한 검증
@@ -243,6 +244,8 @@ P0에서는 이 책임을 구현하지 않는다. 단, `subtitleId`, `revision`,
 
 - `apps/client` 초기 구조 생성
 - Meeting Lab 라우트 추가
+- 로그인 없는 참가자 프로필(`displayName`, `participantCountry`) 저장과 재사용
+- 현재 오피스 섹션에서 Meeting Lab roomName 파생
 - device preflight UI 구현
 - LiveKit room 연결과 media 렌더링 구현
 - mic/camera toggle 구현
@@ -267,6 +270,7 @@ P0에서는 이 책임을 구현하지 않는다. 단, `subtitleId`, `revision`,
 - `room_finished` webhook clears the room's mock subtitle buffer.
 - Token API accepts only `participantName` and `participantCountry` for participant input, then returns the server-derived `participantIdentity` and `preferredLanguage`.
 - Manual token API smoke verifies `kr -> ko` with `kr-guest-<uuid>` and `vn -> vi` with `vn-guest-<uuid>`.
+- Client token request smoke uses a section-derived room name such as `lab-likelion-<yyyymmdd>-meeting-room`.
 
 ## 오픈 질문
 
