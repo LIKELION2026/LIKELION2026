@@ -368,3 +368,14 @@
 - 사용자 검토/수정 내용: 실제 브라우저 camera/mic 연결 확인은 사용자 검토 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/35
+
+### 2026-08-16 - Meeting Lab media render and controls
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 연결 후 local/remote video/audio track을 화면에 렌더링하고 mic/camera 토글을 실제 track 상태와 연결
+- 입력 맥락: Issue #36, LiveKit client SDK track attach/detach 타입 정의, `apps/client/src/features/realtime-meeting/model/use-livekit-meeting-session.ts`
+- AI 제안 또는 산출물: local/remote media track snapshot, `<video>`/`<audio>` attach 컴포넌트, remote audio sink, mic/camera toggle, participant/track event 기반 UI 갱신
+- 사용자 검토/수정 내용: 두 브라우저 간 실제 video/audio 송수신 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/36
