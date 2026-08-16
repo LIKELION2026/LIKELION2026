@@ -14,6 +14,7 @@ import { useOfficeStore } from "../model/office-store";
 import { useOfficeSocket } from "../model/use-office-socket";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
+import { PeopleDirectory } from "./PeopleDirectory";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
@@ -24,6 +25,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
   const [isInsideMeetingRoom, setIsInsideMeetingRoom] = useState(false);
+  const [isPeopleDirectoryOpen, setIsPeopleDirectoryOpen] = useState(false);
   const [isSceneReady, setIsSceneReady] = useState(false);
   const [session, setSession] = useState<GuestOfficeSessionResponse | null>(null);
   const [isPreparingSession, setIsPreparingSession] = useState(false);
@@ -36,6 +38,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const { sendMove, updateAttendance, updateStatus } = useOfficeSocket(session);
+
+  const focusMember = useCallback(
+    (memberId: string) => {
+      sceneRef.current?.focusMember(memberId, self?.memberId);
+    },
+    [self?.memberId]
+  );
 
   const prepareSession = useCallback(async (profile: GuestProfile) => {
     setIsPreparingSession(true);
@@ -129,12 +138,21 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud
         connectionState={connectionState}
+        isPeopleDirectoryOpen={isPeopleDirectoryOpen}
         memberCount={members.length}
         onAttendanceChange={updateAttendance}
         onStatusChange={updateStatus}
+        onTogglePeopleDirectory={() => setIsPeopleDirectoryOpen((isOpen) => !isOpen)}
         selfAttendanceStatus={self?.officePresence?.attendanceStatus}
         selfStatus={self?.status}
       />
+      {isPeopleDirectoryOpen ? (
+        <PeopleDirectory
+          members={members}
+          onFocusMember={focusMember}
+          selfMemberId={self?.memberId}
+        />
+      ) : null}
       {isInsideMeetingRoom ? (
         <aside className="meeting-prompt">
           <h2>회의실에 들어왔습니다</h2>
