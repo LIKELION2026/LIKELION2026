@@ -152,6 +152,123 @@ button {
   width: 100%;
 }
 
+.attendance-button {
+  background: #1558d6;
+  border: 1px solid #1558d6;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 8px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.guest-onboarding-backdrop {
+  align-items: center;
+  background: rgb(18 29 45 / 62%);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: absolute;
+  z-index: 3;
+}
+
+.guest-onboarding {
+  background: #ffffff;
+  border: 1px solid #cbd5df;
+  box-shadow: 0 18px 42px rgb(16 29 46 / 28%);
+  max-width: 420px;
+  padding: 28px;
+  width: 100%;
+}
+
+.guest-onboarding-eyebrow {
+  color: #1558d6;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.guest-onboarding h1 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.guest-onboarding-description {
+  color: #58687c;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 12px 0 24px;
+}
+
+.guest-onboarding-label,
+.guest-country-fieldset legend {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.guest-onboarding input {
+  border: 1px solid #b9c5d2;
+  border-radius: 4px;
+  padding: 10px 12px;
+  width: 100%;
+}
+
+.guest-country-fieldset {
+  border: 0;
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.guest-country-options {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guest-country-options button {
+  background: #ffffff;
+  border: 1px solid #b9c5d2;
+  border-radius: 4px;
+  color: #334155;
+  padding: 10px;
+}
+
+.guest-country-options button.selected {
+  background: #e8f0ff;
+  border-color: #1558d6;
+  color: #1558d6;
+  font-weight: 700;
+}
+
+.guest-onboarding-error {
+  color: #b42318;
+  font-size: 13px;
+  margin: 14px 0 0;
+}
+
+.guest-onboarding-submit {
+  background: #1558d6;
+  border: 1px solid #1558d6;
+  border-radius: 4px;
+  color: #ffffff;
+  font-weight: 700;
+  margin-top: 24px;
+  padding: 11px;
+  width: 100%;
+}
+
+.guest-onboarding-submit:disabled,
+.guest-country-options button:disabled,
+.guest-onboarding input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .meeting-prompt {
   background: #ffffff;
   border: 1px solid #a9bdde;

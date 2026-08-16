@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type {
   MemberStatus,
+  OfficeCollaborationPresence,
   OfficeMemberPresence,
   PresenceMovedPayload
 } from "@likelion2026/shared";
@@ -20,6 +21,10 @@ interface OfficeState {
   upsertMember: (member: OfficeMemberPresence) => void;
   removeMember: (memberId: string) => void;
   updateMemberPosition: (payload: PresenceMovedPayload) => void;
+  updateMemberLifecycle: (
+    memberId: string,
+    presence: OfficeCollaborationPresence
+  ) => void;
   updateMemberStatus: (member: OfficeMemberPresence) => void;
 }
 
@@ -50,6 +55,30 @@ export const useOfficeStore = create<OfficeState>((set) => ({
           : member
       )
     })),
+  updateMemberLifecycle: (memberId, presence) =>
+    set((state) => ({
+      members: state.members.map((member) =>
+        member.memberId === memberId
+          ? {
+              ...member,
+              avatar: presence.avatar,
+              officePresence: presence,
+              status: toMemberStatus(presence.availabilityStatus),
+              updatedAt: presence.updatedAt
+            }
+          : member
+      ),
+      self:
+        state.self?.memberId === memberId
+          ? {
+              ...state.self,
+              avatar: presence.avatar,
+              officePresence: presence,
+              status: toMemberStatus(presence.availabilityStatus),
+              updatedAt: presence.updatedAt
+            }
+          : state.self
+    })),
   updateMemberStatus: (member) =>
     set((state) => ({
       members: upsert(state.members, member),
@@ -73,6 +102,21 @@ function upsert(
   return members.map((member) =>
     member.memberId === nextMember.memberId ? nextMember : member
   );
+}
+
+function toMemberStatus(
+  availabilityStatus: OfficeCollaborationPresence["availabilityStatus"]
+): MemberStatus {
+  if (availabilityStatus === "focus") {
+    return "focused";
+  }
+  if (availabilityStatus === "meeting") {
+    return "in_meeting";
+  }
+  if (availabilityStatus === "vacation" || availabilityStatus === "absent") {
+    return "away";
+  }
+  return "available";
 }
 
 export const OFFICE_STATUS_OPTIONS: MemberStatus[] = [

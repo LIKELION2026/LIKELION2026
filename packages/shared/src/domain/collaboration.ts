@@ -109,6 +109,10 @@ export interface OfficeTodo {
   title: string;
 }
 
+export interface PublicOfficeTodo extends OfficeTodo {
+  memberName: string;
+}
+
 export interface OfficeCalendarEvent {
   endsAt: string;
   eventType: CalendarEventType;

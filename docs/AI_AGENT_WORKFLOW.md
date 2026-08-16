@@ -401,3 +401,58 @@
 - 사용자 검토/수정 내용: 실제 두 브라우저 카메라/마이크와 화면 표시 확인은 사용자 검토 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server smoke:meeting-subtitle -- --dry-run` 통과, `corepack pnpm --filter @likelion2026/server test` 47개 테스트 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/38
+### 2026-08-16 - 오피스 영속 Presence 동기화
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 팀원이 실제 근무 화면을 공유하지 않아도 접속·퇴근·마지막 위치를 확인할 수 있도록, 게스트 세션과 Socket.IO Presence를 연결
+- 입력 맥락: Issue #29, PR #26의 게스트 세션·Supabase ERD, 기존 Phaser 오피스 Gateway, `docs/FEATURES/virtual-office/contracts.md`
+- AI 제안 또는 산출물:
+  - `member_presence`를 기준으로 한 workspace snapshot, heartbeat, disconnect, 위치 flush 흐름
+  - guest token을 room broadcast에서 제외하는 Socket 계약
+  - 이동은 Socket으로 즉시 중계하고 1초마다 마지막 좌표만 DB에 저장하는 경계
+  - Phaser ghost/sleeping 표현과 PresenceService 단위 테스트 초안
+- 팀원 검토·수정 내용: 실제 화면 감시가 아닌 사용자가 선택한 상태와 서비스 연결 상태만 공유하며, 휴가·재택 자동 판정과 TODO UI는 후속 Issue로 분리
+- 검증 결과: `corepack pnpm typecheck`, `corepack pnpm build` 통과. 실제 Supabase와 두 브라우저 연결 검증은 Server 환경 변수를 설정한 뒤 수행 필요
+- 관련 Issue / PR / Discussion: Issue #29, PR 작성 예정
+
+### 2026-08-16 - 게스트 첫 입장 흐름
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: URL query 없이 이름과 한국·베트남 선택만으로 게스트 세션을 만들고 오피스에 입장시키는 흐름 구성
+- 입력 맥락: Issue #40, `POST /office/session` 계약, 게스트 세션과 Presence 동기화 구현
+- AI 제안 또는 산출물: 프로필·guest token의 localStorage 책임 분리, 세션 성공 뒤 Socket 연결, 모달의 입력·로딩·오류 상태, Meeting Lab 호환 기본 프로필
+- 팀원 검토·수정 내용: 실제 화면 감시나 SNS 정보는 저장하지 않고, 이름·국가·언어와 Server 소유권 확인용 guest token만 유지. 아바타 직접 선택은 해커톤 후속 범위로 분리
+- 검증 결과: Client typecheck와 production build 통과. 로컬 `/office` 응답 확인. 실제 세션 성공 흐름은 Supabase Server 환경 변수 설정 후 검증 필요
+- 관련 Issue / PR / Discussion: Issue #40, PR 작성 예정
+
+### 2026-08-16 - 공개 TODO API 계약
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 협업에서 화면 감시 없이 오늘의 업무 맥락을 공유하는 TODO 소유권·공개 범위 설계
+- 입력 맥락: Issue #48, Supabase `todos` 테이블, 게스트 세션 소유권 계약
+- AI 제안 또는 산출물: 공개·비공개 조회 분리, guest token 소유권 확인, TODO 상태 DTO와 API 경로
+- 팀원 검토·수정 내용: `blocked`를 개인 평가가 아닌 지원 요청 신호로 정의. Socket 요약 전파와 UI는 후속 구현으로 분리
+- 검증 결과: Shared·Server typecheck 통과
+- 관련 Issue / PR / Discussion: Issue #48, PR 작성 예정
+
+### 2026-08-16 - TODO UI 디자인 교체 경계
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임 단계의 Figma를 확인해 상세 스타일 확정 전에도 TODO 데이터 계층과 디자인 컴포넌트를 분리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Issue #52, 공개 TODO HTTP 계약
+- AI 제안 또는 산출물: TODO API client, 세션 기반 controller hook, render function 기반 `OfficeTodoPanelSlot`, 디자인 적용 연결 문서
+- 팀원 검토·수정 내용: 임의의 시각 디자인과 에셋을 추가하지 않고, 추후 Figma 컴포넌트로 교체할 수 있는 데이터 계약만 반영
+- 검증 결과: Client typecheck와 production build 통과. Vite의 Phaser 초기 번들 크기 경고는 기존 과제로 유지
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
+
+### 2026-08-16 - Virtual Office 전체 사용자 시나리오
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임과 현재 구현 범위를 바탕으로 입장부터 상태·TODO·People·일정·회의·번역까지 연결한 서비스 전체 흐름 정리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Virtual Office 기능 문서, 구현·후속 범위
+- AI 제안 또는 산출물: 한국·베트남 협업 팀의 6개 사용자 시나리오, 해커톤 데모 4분 흐름, 신뢰·개인정보 경계, 디자인 검토 화면 목록
+- 팀원 검토·수정 내용: 실제 구현 범위와 목표 기능을 분리하고, 화면 감시가 아닌 사용자가 선택한 공개 정보만 공유한다는 원칙을 반영
+- 검증 결과: Client typecheck와 production build 통과. 문서 간 상대 경로와 `git diff --check` 확인
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정

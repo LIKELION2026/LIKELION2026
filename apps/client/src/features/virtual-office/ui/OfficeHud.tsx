@@ -1,18 +1,26 @@
-import { MEMBER_STATUS_LABELS, type MemberStatus } from "@likelion2026/shared";
+import {
+  MEMBER_STATUS_LABELS,
+  type AttendanceStatus,
+  type MemberStatus
+} from "@likelion2026/shared";
 
 import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/office-store";
 
 interface OfficeHudProps {
   connectionState: OfficeConnectionState;
   memberCount: number;
+  onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
   onStatusChange: (status: MemberStatus) => void;
+  selfAttendanceStatus: AttendanceStatus | undefined;
   selfStatus: MemberStatus | undefined;
 }
 
 export function OfficeHud({
   connectionState,
   memberCount,
+  onAttendanceChange,
   onStatusChange,
+  selfAttendanceStatus,
   selfStatus
 }: OfficeHudProps): React.JSX.Element {
   return (
@@ -24,6 +32,17 @@ export function OfficeHud({
           <span className={`connection-dot ${connectionState}`} />
           {getConnectionLabel(connectionState)}
         </div>
+        <button
+          className="attendance-button"
+          onClick={() =>
+            onAttendanceChange(
+              selfAttendanceStatus === "working" ? "checked_out" : "working"
+            )
+          }
+          type="button"
+        >
+          {selfAttendanceStatus === "working" ? "퇴근하기" : "출근하기"}
+        </button>
         <select
           aria-label="내 협업 상태"
           className="status-control"

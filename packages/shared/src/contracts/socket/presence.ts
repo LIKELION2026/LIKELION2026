@@ -7,9 +7,11 @@ import type {
 
 export interface OfficeJoinPayload {
   displayName: string;
+  guestToken: string;
   language: OfficeMemberPresence["language"];
   memberId: string;
   teamId: string;
+  workspaceId: string;
 }
 
 export interface OfficeSnapshotPayload {

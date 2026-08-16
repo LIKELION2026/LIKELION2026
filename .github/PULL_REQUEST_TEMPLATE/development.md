@@ -4,7 +4,11 @@
 
 ## 관련 자료
 
-<!-- Issue, Figma, Discussion, API 또는 Shared 계약 링크 -->
+<!-- 구현 Issue를 closing keyword로 연결합니다. 예: Closes #123 -->
+
+Closes #
+
+<!-- Figma, Discussion, API 또는 Shared 계약 링크 -->
 
 ## 확인
 
