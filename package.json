@@ -13,6 +13,8 @@
     "build:server": "pnpm --filter @likelion2026/shared build && pnpm --filter @likelion2026/server build",
     "dev:server": "pnpm --filter @likelion2026/server start:dev",
     "lint": "pnpm typecheck",
+    "smoke:livekit-room": "pnpm --filter @likelion2026/server smoke:livekit-room",
+    "smoke:livekit-webhook": "pnpm --filter @likelion2026/server smoke:livekit-webhook",
     "start:server": "pnpm --filter @likelion2026/server start",
     "test:server": "pnpm --filter @likelion2026/server test",
     "typecheck": "pnpm --filter @likelion2026/shared typecheck && pnpm --filter @likelion2026/server typecheck"
