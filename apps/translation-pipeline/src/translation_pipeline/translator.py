@@ -10,6 +10,7 @@ from typing import Protocol, runtime_checkable
 
 from .context import ConversationTurn
 from .glossary import GlossaryEntry
+from .guidelines import load_guidelines
 from .languages import ensure_supported, language_name
 
 
@@ -53,8 +54,9 @@ def build_system_prompt(request: TranslationRequest) -> str:
     source_name = language_name(request.source_lang)
     target_name = language_name(request.target_lang)
 
+    # "베트남어으로"처럼 조사가 어긋나지 않도록 명사를 하나 끼워 둔다.
     sections = [
-        f"너는 화상회의 실시간 통역사다. {source_name} 발화를 {target_name}으로 옮긴다."
+        f"너는 화상회의 실시간 통역사다. {source_name} 발화를 {target_name} 문장으로 옮긴다."
     ]
 
     if request.glossary_entries:
@@ -72,10 +74,17 @@ def build_system_prompt(request: TranslationRequest) -> str:
 
     sections.append(
         "## 번역 규칙\n"
-        "- 사전에 없는 나머지 부분은 직역하지 않는다. 문맥과 화자 사이의 관계를 "
-        "고려해 자연스럽게 옮긴다.\n"
-        "- 회의에서 실제로 쓰는 말투를 사용한다."
+        "- 직역하지 않는다. 문맥과 화자 사이의 관계를 고려해 자연스럽게 옮긴다.\n"
+        "- 회의에서 실제로 쓰는 말투를 사용한다.\n"
+        "- 원문이 유보적이거나 애매하면 그 정도를 그대로 유지한다. 확답이나 "
+        "거절 어느 쪽으로도 단정해서 옮기지 않는다.\n"
+        "- 음성 인식 결과라 문장이 중간에 끊길 수 있다. 끊긴 발화는 이어지는 "
+        "말로 자연스럽게 옮긴다."
     )
+
+    guidelines = load_guidelines(request.source_lang, request.target_lang)
+    if guidelines:
+        sections.append(guidelines)
 
     if request.context_turns:
         lines = "\n".join(
