@@ -4,7 +4,10 @@ import type {
   CountryCode,
   OfficeCollaborationPresence,
   OfficeDesk,
-  OfficeMember
+  OfficeMember,
+  OfficeTodo,
+  PublicOfficeTodo,
+  TodoStatus
 } from "../../domain/collaboration";
 import type { LanguageCode } from "../../domain/language";
 
@@ -34,4 +37,26 @@ export interface UpdateOfficePresenceRequest {
   positionX?: number;
   positionY?: number;
   statusMessage?: string;
+}
+
+export interface CreateOfficeTodoRequest {
+  guestToken: string;
+  isPublic?: boolean;
+  title: string;
+}
+
+export interface UpdateOfficeTodoRequest {
+  guestToken: string;
+  isPublic?: boolean;
+  sortOrder?: number;
+  status?: TodoStatus;
+  title?: string;
+}
+
+export interface OfficeTodoListResponse {
+  todos: OfficeTodo[];
+}
+
+export interface PublicOfficeTodoListResponse {
+  todos: PublicOfficeTodo[];
 }
