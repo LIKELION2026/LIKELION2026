@@ -18,6 +18,8 @@ class ParticipantRegistry:
 
     def __init__(self, participant_languages: dict[str, str] | None = None) -> None:
         self._participant_languages: dict[str, str] = {}
+        # 자막에 표시할 이름. 언어와 달리 없어도 동작하므로 따로 둔다.
+        self._display_names: dict[str, str] = {}
         for participant_id, language in (participant_languages or {}).items():
             self.set_language(participant_id, language)
 
@@ -35,16 +37,31 @@ class ParticipantRegistry:
     def __contains__(self, participant_id: object) -> bool:
         return participant_id in self._participant_languages
 
-    def set_language(self, participant_id: str, language: str) -> None:
-        """참가자가 선택한 언어를 등록하거나 변경한다."""
+    def set_language(
+        self, participant_id: str, language: str, display_name: str | None = None
+    ) -> None:
+        """참가자가 선택한 언어를 등록하거나 변경한다.
+
+        ``display_name``은 자막에 표시할 이름이다. 생략하면 기존 값을 유지하고,
+        한 번도 준 적이 없으면 ``display_name_of``가 참가자 ID를 대신 돌려준다.
+        """
         if not participant_id:
             raise ValueError("participant_id는 비어 있을 수 없습니다.")
         ensure_supported(language)
         self._participant_languages[participant_id] = language
+        if display_name:
+            self._display_names[participant_id] = display_name
+
+    def display_name_of(self, participant_id: str) -> str:
+        """자막에 표시할 이름. 등록되지 않았으면 참가자 ID를 그대로 쓴다."""
+        if participant_id not in self._participant_languages:
+            raise UnknownParticipantError(participant_id)
+        return self._display_names.get(participant_id, participant_id)
 
     def remove(self, participant_id: str) -> None:
         """퇴장한 참가자를 매핑에서 제거한다. 없는 참가자는 무시한다."""
         self._participant_languages.pop(participant_id, None)
+        self._display_names.pop(participant_id, None)
 
     def language_of(self, participant_id: str) -> str:
         """참가자가 선택한 언어를 반환한다."""
