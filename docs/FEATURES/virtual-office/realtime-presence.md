@@ -1,5 +1,24 @@
 # Realtime Presence Pipeline
 
+## 원격 이동 보간
+
+원격 아바타의 이동 좌표는 Socket 수신 주기와 화면 렌더링 주기를 분리한다. Client는 약 60ms마다 변경된 위치를 전송하고, 수신 화면은 최근 좌표 샘플을 120ms만큼 뒤에서 시간 기반으로 보간한다.
+
+```mermaid
+sequenceDiagram
+    participant A as 이동 사용자
+    participant S as Socket Server
+    participant B as 상대 Client
+    A->>S: presence.move (약 60ms)
+    S->>B: presence.moved
+    B->>B: 좌표와 수신 시각을 샘플로 저장
+    B->>B: 120ms 뒤 시점의 두 샘플을 보간해 렌더링
+```
+
+- Socket payload와 1초 단위 Supabase 위치 영속화 정책은 바꾸지 않는다.
+- 120ms는 수신 간격과 네트워크 흔들림을 흡수하기 위한 표시 지연이다.
+- 새 좌표가 없어지면 마지막 좌표에서 멈춘다. 임의의 예측 이동은 하지 않는다.
+
 > 작성일: 2026-08-16
 >
 > 관련 Issue: #29
