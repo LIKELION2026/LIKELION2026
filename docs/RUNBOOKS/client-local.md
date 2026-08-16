@@ -80,8 +80,9 @@ VITE_SERVER_URL=http://localhost:4000
 1. `http://localhost:5173/office?name=Korea-PM`을 연다.
 2. 다른 브라우저 또는 시크릿 창에서 `http://localhost:5173/office?name=Vietnam-Dev`를 연다.
 3. 두 사용자의 입장, 이동, 상태 변경을 확인한다.
-4. 회의실에 들어가 `Meeting Lab`으로 이동한다.
-5. 토큰 API 확인 버튼으로 `POST /meeting/token` 연결을 확인한다.
+4. 로컬과 상대 아바타가 레드판다 에셋으로 보이고, 위·아래·좌·우 이동마다 보행 frame이 반복되며 정지 시 idle frame으로 돌아오는지 확인한다.
+5. 회의실에 들어가 `Meeting Lab`으로 이동한다.
+6. 토큰 API 확인 버튼으로 `POST /meeting/token` 연결을 확인한다.
 
 ## 담당 경계
 

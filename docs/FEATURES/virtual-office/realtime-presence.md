@@ -1,5 +1,13 @@
 # Realtime Presence Pipeline
 
+## 레드판다 아바타 에셋
+
+`apps/client/public/assets/red_panda.webp`는 규칙적인 격자형 시트가 아니므로 Phaser가 전면·후면·측면 보행 frame을 명시적으로 잘라 사용한다. 좌측 이동은 우측 보행 frame을 반전해 표시한다.
+
+- Local과 remote avatar는 동일한 texture와 `40 x 52` 표시 크기를 사용하고, `idle/walk × up/down/left/right` 애니메이션 키를 공유한다.
+- 로컬 physics body는 발 주변으로만 잡아 가구 충돌 기준을 유지한다.
+- 이름·상태 label과 ghost/sleeping 투명도는 sprite container에 그대로 적용한다.
+
 ## 원격 이동 보간
 
 원격 아바타의 이동 좌표는 Socket 수신 주기와 화면 렌더링 주기를 분리한다. Client는 약 60ms마다 변경된 위치를 전송하고, 수신 화면은 최근 좌표 샘플을 120ms만큼 뒤에서 시간 기반으로 보간한다.
