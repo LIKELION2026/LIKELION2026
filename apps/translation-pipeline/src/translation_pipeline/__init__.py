@@ -17,6 +17,7 @@ from .glossary import (
     Glossary,
     GlossaryEntry,
     GlossaryMatch,
+    find_unapplied_entries,
 )
 from .languages import (
     LANGUAGE_NAMES,
@@ -55,6 +56,7 @@ __all__ = [
     "UnsupportedLanguageError",
     "build_system_prompt",
     "ensure_supported",
+    "find_unapplied_entries",
     "get_target_lang",
     "is_supported",
     "language_name",
