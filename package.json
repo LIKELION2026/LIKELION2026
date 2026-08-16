@@ -1,0 +1,24 @@
+{
+  "name": "likelion2026",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Global remote collaboration virtual office monorepo",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "build": "corepack pnpm --filter @likelion2026/shared build && corepack pnpm --filter @likelion2026/client build && corepack pnpm --filter @likelion2026/server build",
+    "build:client": "corepack pnpm --filter @likelion2026/client build",
+    "build:server": "corepack pnpm --filter @likelion2026/shared build && corepack pnpm --filter @likelion2026/server build",
+    "dev:client": "corepack pnpm --filter @likelion2026/client dev",
+    "dev:server": "corepack pnpm --filter @likelion2026/server start:dev",
+    "lint": "corepack pnpm typecheck",
+    "start:server": "corepack pnpm --filter @likelion2026/server start",
+    "typecheck": "corepack pnpm --filter @likelion2026/shared typecheck && corepack pnpm --filter @likelion2026/client typecheck && corepack pnpm --filter @likelion2026/server typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
