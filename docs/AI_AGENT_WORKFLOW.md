@@ -361,3 +361,13 @@
 - 팀원 검토·수정 내용: 실제 화면 감시나 SNS 정보는 저장하지 않고, 이름·국가·언어와 Server 소유권 확인용 guest token만 유지. 아바타 직접 선택은 해커톤 후속 범위로 분리
 - 검증 결과: Client typecheck와 production build 통과. 로컬 `/office` 응답 확인. 실제 세션 성공 흐름은 Supabase Server 환경 변수 설정 후 검증 필요
 - 관련 Issue / PR / Discussion: Issue #40, PR 작성 예정
+
+### 2026-08-16 - 공개 TODO API 계약
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 협업에서 화면 감시 없이 오늘의 업무 맥락을 공유하는 TODO 소유권·공개 범위 설계
+- 입력 맥락: Issue #48, Supabase `todos` 테이블, 게스트 세션 소유권 계약
+- AI 제안 또는 산출물: 공개·비공개 조회 분리, guest token 소유권 확인, TODO 상태 DTO와 API 경로
+- 팀원 검토·수정 내용: `blocked`를 개인 평가가 아닌 지원 요청 신호로 정의. Socket 요약 전파와 UI는 후속 구현으로 분리
+- 검증 결과: Shared·Server typecheck 통과
+- 관련 Issue / PR / Discussion: Issue #48, PR 작성 예정

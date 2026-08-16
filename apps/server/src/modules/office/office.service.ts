@@ -16,6 +16,10 @@ import {
   type OfficeMember,
   type OfficeAvatarState,
   type MemberStatus,
+  type OfficeTodo,
+  type PublicOfficeTodo,
+  type CreateOfficeTodoRequest,
+  type UpdateOfficeTodoRequest,
   type UpdateOfficeAttendanceRequest,
   type UpdateOfficePresenceRequest
 } from "@likelion2026/shared";
@@ -64,6 +68,15 @@ interface PresenceRow {
   position_y: number;
   status_message: string | null;
   updated_at: string;
+}
+
+interface TodoRow {
+  id: string;
+  is_public: boolean;
+  member_id: string;
+  sort_order: number;
+  status: OfficeTodo["status"];
+  title: string;
 }
 
 const DEFAULT_DESKS = [
@@ -176,6 +189,101 @@ export class OfficeService {
 
     this.throwIfError(error, "update office presence");
     return toPresence(data as PresenceRow);
+  }
+
+  async createTodo(
+    memberId: string,
+    request: CreateOfficeTodoRequest
+  ): Promise<OfficeTodo> {
+    await this.requireMemberOwnership(memberId, request.guestToken);
+    const { data, error } = await this.supabase
+      .from("todos")
+      .insert({
+        is_public: request.isPublic ?? true,
+        member_id: memberId,
+        sort_order: await this.getNextTodoSortOrder(memberId),
+        title: request.title.trim()
+      })
+      .select("id, is_public, member_id, sort_order, status, title")
+      .single();
+    this.throwIfError(error, "create office todo");
+    return toOfficeTodo(data as TodoRow);
+  }
+
+  async getMemberTodos(memberId: string, guestToken: string): Promise<OfficeTodo[]> {
+    await this.requireMemberOwnership(memberId, guestToken);
+    const { data, error } = await this.supabase
+      .from("todos")
+      .select("id, is_public, member_id, sort_order, status, title")
+      .eq("member_id", memberId)
+      .order("sort_order");
+    this.throwIfError(error, "read member todos");
+    return ((data ?? []) as TodoRow[]).map(toOfficeTodo);
+  }
+
+  async getPublicWorkspaceTodos(workspaceId: string): Promise<PublicOfficeTodo[]> {
+    const { data: memberData, error: memberError } = await this.supabase
+      .from("members")
+      .select("id, name")
+      .eq("workspace_id", workspaceId);
+    this.throwIfError(memberError, "read workspace todo members");
+
+    const members = (memberData ?? []) as Array<{ id: string; name: string }>;
+    if (members.length === 0) {
+      return [];
+    }
+    const memberNames = new Map(members.map((member) => [member.id, member.name]));
+    const { data, error } = await this.supabase
+      .from("todos")
+      .select("id, is_public, member_id, sort_order, status, title")
+      .in("member_id", members.map((member) => member.id))
+      .eq("is_public", true)
+      .order("sort_order");
+    this.throwIfError(error, "read workspace public todos");
+
+    return ((data ?? []) as TodoRow[]).flatMap((todo) => {
+      const memberName = memberNames.get(todo.member_id);
+      return memberName ? [{ ...toOfficeTodo(todo), memberName }] : [];
+    });
+  }
+
+  async updateTodo(todoId: string, request: UpdateOfficeTodoRequest): Promise<OfficeTodo> {
+    const { data: existing, error: findError } = await this.supabase
+      .from("todos")
+      .select("member_id")
+      .eq("id", todoId)
+      .maybeSingle();
+    this.throwIfError(findError, "find office todo");
+    if (!existing) {
+      throw new NotFoundException("Office todo was not found");
+    }
+
+    await this.requireMemberOwnership(existing.member_id as string, request.guestToken);
+    const updates: Record<string, boolean | number | string> = {};
+    if (request.isPublic !== undefined) {
+      updates.is_public = request.isPublic;
+    }
+    if (request.sortOrder !== undefined) {
+      updates.sort_order = request.sortOrder;
+    }
+    if (request.status !== undefined) {
+      updates.status = request.status;
+    }
+    if (request.title !== undefined) {
+      updates.title = request.title.trim();
+    }
+    if (Object.keys(updates).length === 0) {
+      throw new ConflictException("No office todo updates were provided");
+    }
+
+    const { data, error } = await this.supabase
+      .from("todos")
+      .update(updates)
+      .eq("id", todoId)
+      .select("id, is_public, member_id, sort_order, status, title")
+      .single();
+    this.throwIfError(error, "update office todo");
+    return toOfficeTodo(data as TodoRow);
   }
 
   async connectRealtimeMember(
@@ -323,6 +431,18 @@ export class OfficeService {
 
     await this.ensureDesks(workspace.id);
     return workspace;
+  }
+
+  private async getNextTodoSortOrder(memberId: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .from("todos")
+      .select("sort_order")
+      .eq("member_id", memberId)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    this.throwIfError(error, "read next office todo order");
+    return data ? Number(data.sort_order) + 1 : 0;
   }
 
   private async createWorkspace(name: string): Promise<WorkspaceRow> {
@@ -615,6 +735,17 @@ function toPresence(row: PresenceRow): OfficeCollaborationPresence {
     memberId: row.member_id,
     ...(row.status_message ? { statusMessage: row.status_message } : {}),
     updatedAt: row.updated_at
+  };
+}
+
+function toOfficeTodo(row: TodoRow): OfficeTodo {
+  return {
+    id: row.id,
+    isPublic: row.is_public,
+    memberId: row.member_id,
+    sortOrder: row.sort_order,
+    status: row.status,
+    title: row.title
   };
 }
 
