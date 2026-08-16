@@ -346,3 +346,14 @@
 - 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/30
+
+### 2026-08-16 - Meeting Lab camera/mic preflight
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 연결 전에 브라우저 camera/mic 권한과 장치 유무를 분리해서 확인하는 Client preflight UI 구성
+- 입력 맥락: Issue #34, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `getUserMedia` 기반 권한 확인, 장치 수 확인, `idle/checking/ready/permission-denied/device-unavailable` 상태 표시, ready 전 토큰 요청 차단
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/34
