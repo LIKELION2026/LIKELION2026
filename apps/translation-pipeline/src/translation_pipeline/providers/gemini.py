@@ -11,15 +11,16 @@ from ..translator import TranslationRequest, build_system_prompt
 
 # 통역은 지연에 민감해서 flash 계열을 쓴다.
 #
-# 2026-08-15에 후보 모델을 3회씩 호출해 비교했다.
-#   gemini-3.7-flash       성공 1/3, 평균 2.7초  (과부하로 503이 잦았다)
-#   gemini-3.5-flash       성공 3/3, 평균 2.5초
-#   gemini-3-flash-preview 성공 3/3, 평균 3.0초
-#   gemini-3.1-flash-lite  성공 3/3, 평균 1.0초
+# 2026-08-16 재측정. 같은 문장을 3회씩 호출했다.
+#   gemini-3.1-flash-lite  성공 3/3, 평균 2.0초, 사전값 그대로 사용
+#   gemini-3-flash-preview 성공 3/3, 평균 7.3초
+#   gemini-3.5-flash       무료 티어 할당량 소진으로 429
+#   gemma-4-31b-it         성공, 13~21초 (할당량은 여유롭지만 실시간에 못 쓴다)
 #
-# lite가 가장 빠르지만 이 기능의 핵심이 뉘앙스 번역이라 일반 모델을 기본으로 둔다.
-# 지연이 문제가 되면 model 인자로 lite를 넘겨 바꿀 수 있다.
-DEFAULT_MODEL = "gemini-3.5-flash"
+# 처음에는 lite의 번역 품질을 걱정해 일반 모델을 기본으로 뒀지만, 실제로는
+# 품질 저하가 관측되지 않았고 사전 준수는 오히려 나았다. 속도와 할당량 여유가
+# 모두 앞서므로 lite를 기본으로 한다.
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
 
 # 통역은 같은 입력에 같은 결과가 나오는 편이 낫다. 창작이 아니므로 낮게 둔다.
 DEFAULT_TEMPERATURE = 0.3
