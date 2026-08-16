@@ -466,3 +466,23 @@
 - 팀원 검토·수정 내용: 캘린더는 DB Presence를 영구 변경하지 않고 Client가 현재 유효한 상태만 표현에 반영하도록 결정
 - 검증 결과: Shared·Server·Client typecheck, Server·Client production build 통과. Phaser 초기 번들 크기 경고는 기존 과제로 유지
 - 관련 Issue / PR / Discussion: Issue #58, PR 작성 예정
+
+### 2026-08-16 - Production 배포 테스트 시나리오
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: `main`에 병합되는 기능이 Vercel, Render, Supabase, LiveKit Cloud에서 실제로 연결되는지 팀이 같은 기준으로 검증하도록 릴리스 테스트 범위 문서화
+- 입력 맥락: Deployment Runbook, Client·Server Local Runbook, Meeting Lab·자막·게스트 오피스·TODO·공유 캘린더의 현재 구현 경계
+- AI 제안 또는 산출물: 환경별 설정 점검, 배포 직후 스모크, 두 브라우저 E2E, 실패 시나리오, 실제 결과 기록 표가 있는 Production Test Scenarios
+- 팀원 검토·수정 내용: Production URL과 실제 배포 결과는 사람이 실행 후 기록한다. 환경변수 값, token, Secret, 개인 정보는 문서에 남기지 않는다.
+- 검증 결과: 문서 상대 링크와 `git diff --check` 확인 예정. 실제 Production 실행은 이 문서의 체크리스트에 따라 별도 수행 필요.
+- 관련 Issue / PR / Discussion: Issue #61
+
+### 2026-08-16 - Vercel SPA deep-link fallback
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Vercel Production에서 `/office` 직접 접속 또는 새로고침 시 404가 나는 문제의 원인을 확인하고 SPA 경로 fallback 추가
+- 입력 맥락: `apps/client/src/app/App.tsx`의 `BrowserRouter`, Vercel 404 기록, 저장소 루트의 배포 설정 부재
+- AI 제안 또는 산출물: 모든 비정적 요청을 `/index.html`로 전달하는 루트 `vercel.json` rewrite와 deep-link 새로고침 스모크 항목
+- 팀원 검토·수정 내용: Vercel Production 재배포 뒤 `/office`, `/meeting-lab` 직접 접속·새로고침은 사람이 실제로 확인해야 한다.
+- 검증 결과: JSON 형식 검사와 Client production build 확인 예정. Vercel Production 확인은 재배포 후 수행 필요.
+- 관련 Issue / PR / Discussion: Issue #61
