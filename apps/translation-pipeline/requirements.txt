@@ -5,10 +5,15 @@ pytest>=7.0
 # 4단계 번역 provider
 google-genai>=2.18.1
 
+# 2·6단계 Deepgram 음성 인식
+deepgram-sdk>=7.7.0
+
+# 마이크 입력. sounddevice는 PortAudio를 쓰고 numpy 배열로 오디오를 다룬다.
+sounddevice>=0.5.5
+numpy>=2.2.6
+
 # .env에서 API 키를 읽는다
 python-dotenv>=1.2.2
 
 # 이후 단계에서 추가한다. 실제로 설치한 버전을 확인한 뒤 적는다.
-#   2·6단계 Deepgram STT: deepgram-sdk
-#   6단계 마이크 입력: 스트리밍 구현 시 확정
 #   Claude로 전환할 경우: anthropic
