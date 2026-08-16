@@ -8,7 +8,9 @@ export function OfficePage(): JSX.Element {
 
   return (
     <div className="office-page">
-      <VirtualOffice onOpenMeetingLab={() => navigate("/meeting-lab")} />
+      <VirtualOffice
+        onOpenMeetingLab={() => navigate("/meeting-lab?section=meeting-room")}
+      />
     </div>
   );
 }

@@ -5,13 +5,29 @@ import json
 import pytest
 
 from translation_pipeline.errors import GlossaryError, UnsupportedLanguageError
-from translation_pipeline.glossary import Glossary, GlossaryEntry, GlossaryMatch
+from translation_pipeline.glossary import (
+    Glossary,
+    GlossaryEntry,
+    GlossaryMatch,
+    find_unapplied_entries,
+)
+
+ENTRY = GlossaryEntry(
+    source_text="고생하셨습니다", target_text="Cảm ơn anh/chị đã vất vả."
+)
 
 
-@pytest.fixture
-def glossary() -> Glossary:
-    """저장소에 커밋된 기본 사전."""
-    return Glossary.load()
+# 매칭 동작을 검증하기 위한 고정 사전. 저장소의 `data/glossary.json`은 팀이
+# 실사용하며 채우는 데이터라, 그 내용에 테스트를 묶지 않는다.
+TEST_PAYLOAD = {
+    "ko_vi": [
+        {"ko": "고생하셨습니다", "natural_vi": "Cảm ơn anh/chị đã vất vả."},
+        {"ko": "오늘도 고생하셨습니다", "natural_vi": "Hôm nay anh/chị đã vất vả rồi."},
+    ],
+    "vi_ko": [
+        {"vi": "Anh/chị đã vất vả rồi", "natural_ko": "고생하셨습니다"},
+    ],
+}
 
 
 def write_glossary(tmp_path, payload) -> str:
@@ -20,7 +36,25 @@ def write_glossary(tmp_path, payload) -> str:
     return str(path)
 
 
-def test_default_glossary_loads_both_directions(glossary):
+@pytest.fixture
+def glossary(tmp_path) -> Glossary:
+    """매칭 동작 검증용 고정 사전."""
+    return Glossary.load(write_glossary(tmp_path, TEST_PAYLOAD))
+
+
+def test_committed_glossary_file_is_valid():
+    """저장소에 커밋된 사전이 형식상 문제없이 읽히는지만 확인한다.
+
+    항목 내용은 검사하지 않는다. 관용구는 지침으로 옮겼고, 이 파일에는
+    실사용하며 확인된 고정 용어만 쌓기로 했다.
+    """
+    loaded = Glossary.load()
+
+    for source_lang, target_lang in [("ko", "vi"), ("vi", "ko")]:
+        assert isinstance(loaded.entries_for(source_lang, target_lang), tuple)
+
+
+def test_loads_both_directions(glossary):
     assert glossary.entries_for("ko", "vi")
     assert glossary.entries_for("vi", "ko")
 
@@ -178,6 +212,43 @@ def test_direction_without_entries_is_allowed(tmp_path):
 
     assert loaded.entries_for("ko", "vi") == ()
     assert loaded.match("고생하셨습니다", "ko", "vi").matched is False
+
+
+def test_no_entries_means_nothing_to_check():
+    assert find_unapplied_entries("아무 말", ()) == ()
+
+
+def test_applied_entry_is_not_reported():
+    result = "Cảm ơn anh/chị đã vất vả. Hẹn gặp lại ngày mai."
+
+    assert find_unapplied_entries(result, (ENTRY,)) == ()
+
+
+def test_entry_changed_by_the_model_is_reported():
+    # 관측된 실제 사례: 인칭이 anh/chị -> mọi người로 바뀌었다.
+    result = "Cảm ơn mọi người đã vất vả. Hẹn gặp lại ngày mai."
+
+    assert find_unapplied_entries(result, (ENTRY,)) == (ENTRY,)
+
+
+def test_missing_sentence_punctuation_is_not_a_violation():
+    # 문장 안에 들어가면서 사전값의 마침표가 사라지는 것은 위반이 아니다.
+    result = "Cảm ơn anh/chị đã vất vả"
+
+    assert find_unapplied_entries(result, (ENTRY,)) == ()
+
+
+def test_case_difference_is_not_a_violation():
+    result = "cảm ơn anh/chị đã vất vả."
+
+    assert find_unapplied_entries(result, (ENTRY,)) == ()
+
+
+def test_only_the_unapplied_entries_are_reported():
+    applied = GlossaryEntry(source_text="내일", target_text="ngày mai")
+    result = "Cảm ơn mọi người. Hẹn gặp lại ngày mai."
+
+    assert find_unapplied_entries(result, (ENTRY, applied)) == (ENTRY,)
 
 
 def test_missing_direction_returns_no_entries(tmp_path):

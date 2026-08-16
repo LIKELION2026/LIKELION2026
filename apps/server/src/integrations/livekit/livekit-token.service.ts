@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { AccessToken, type VideoGrant } from "livekit-server-sdk";
+import { AccessToken, TrackSource, type VideoGrant } from "livekit-server-sdk";
 
 interface CreateRoomJoinTokenInput {
   attributes?: Record<string, string>;
@@ -43,6 +43,7 @@ export class LiveKitTokenService {
     const videoGrant: VideoGrant = {
       canPublish: true,
       canPublishData: true,
+      canPublishSources: [TrackSource.CAMERA, TrackSource.MICROPHONE],
       canSubscribe: true,
       room: input.roomName,
       roomJoin: true

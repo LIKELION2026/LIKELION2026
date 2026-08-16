@@ -15,7 +15,11 @@
     "dev:client": "corepack pnpm --filter @likelion2026/client dev",
     "dev:server": "corepack pnpm --filter @likelion2026/server start:dev",
     "lint": "corepack pnpm typecheck",
+    "smoke:meeting-subtitle": "corepack pnpm --filter @likelion2026/server smoke:meeting-subtitle",
+    "smoke:livekit-room": "corepack pnpm --filter @likelion2026/server smoke:livekit-room",
+    "smoke:livekit-webhook": "corepack pnpm --filter @likelion2026/server smoke:livekit-webhook",
     "start:server": "corepack pnpm --filter @likelion2026/server start",
+    "test:server": "corepack pnpm --filter @likelion2026/server test",
     "typecheck": "corepack pnpm --filter @likelion2026/shared typecheck && corepack pnpm --filter @likelion2026/client typecheck && corepack pnpm --filter @likelion2026/server typecheck"
   },
   "devDependencies": {

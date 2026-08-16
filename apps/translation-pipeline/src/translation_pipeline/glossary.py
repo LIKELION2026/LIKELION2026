@@ -33,6 +33,26 @@ class GlossaryEntry:
     target_text: str
 
 
+def find_unapplied_entries(
+    translated_text: str, entries: tuple[GlossaryEntry, ...]
+) -> tuple[GlossaryEntry, ...]:
+    """번역 결과에 반영되지 않은 사전 항목을 찾는다.
+
+    프롬프트로 사전 사용을 지시해도 모델이 문맥에 맞춰 표현을 바꾸는 경우가
+    있다. 어떤 항목이 지켜지지 않았는지 확인해야 준수율을 측정하고 런타임에
+    대응할 수 있다.
+
+    비교는 매칭할 때와 같은 기준으로 정규화한다. 문장 안에 들어가면서 끝
+    구두점이 사라지거나 대소문자가 달라지는 것은 위반으로 보지 않는다.
+    """
+    normalized_result = _normalize(translated_text)
+    return tuple(
+        entry
+        for entry in entries
+        if _normalize(entry.target_text) not in normalized_result
+    )
+
+
 @dataclass(frozen=True)
 class GlossaryMatch:
     """한 문장에 대한 사전 조회 결과."""

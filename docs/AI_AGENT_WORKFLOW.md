@@ -65,6 +65,181 @@
 - 검증 결과: `pnpm.cmd typecheck`, `pnpm.cmd build`, 더미 LiveKit 환경변수를 사용한 `GET /health`와 `POST /meeting/token` 수동 확인 통과
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/2
 
+### 2026-08-15 - LiveKit 회의 P0 파이프라인 문서화
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, GitHub Skill
+- 사용 목적: LiveKit Cloud 기반 회의 입장과 자막 Mock 검증 범위를 AI Agent 연결 전 단계로 분리하고, 구현 이슈와 파이프라인 문서를 연결
+- 입력 맥락: 사용자 파이프라인 이미지, `docs/PRD.md`, `docs/FEATURES/realtime-meeting/README.md`, `packages/shared/src/contracts/socket/subtitle.ts`
+- AI 제안 또는 산출물: GitHub Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, README의 관련 Issue와 Pipeline 링크 갱신
+- 팀원 검토·수정 내용: 사용자 요청에 따라 실제 STT, Translation Agent, Meeting AI Agent 연결은 후속 범위로 제외
+- 검증 결과: 문서 변경 사항과 GitHub 이슈 생성 확인
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-15 - 회의 자막 Shared 계약 정리
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Client와 Server가 동일한 socket event 이름과 자막 payload 타입을 사용하도록 P0 계약 확정
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `packages/shared/src/constants/socket-events.ts`
+- AI 제안 또는 산출물: `SocketEventPayloadMap`, `SocketEventPayload` 타입, `SUBTITLE_UPDATE_STRATEGY`, `SubtitleCreatedPayload.revision`, `subtitleId` 기반 partial/final 갱신 규칙
+- 팀원 검토·수정 내용: P0에서는 별도 `segmentId`를 추가하지 않고 같은 `subtitleId`와 증가하는 `revision`으로 자막을 교체하도록 정리
+- 검증 결과: `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-15 - LiveKit token API P0 정책 보강
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Meeting Lab에서 사용할 LiveKit token 발급 API의 room, participant, grant, 환경변수 검증 정책 정리
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, LiveKit Cloud 개발 프로젝트 환경변수, `apps/server/src/modules/meeting`
+- AI 제안 또는 산출물: `lab-<team>-<yyyymmdd>-<slug>` room 정책, `guest-<uuid>` participant fallback, camera/microphone publish grant 제한, `LIVEKIT_URL` wss 검증, shared build 선행 dev script
+- 팀원 검토·수정 내용: 인증 모듈이 붙기 전의 P0 정책으로 제한하고, 인증 이후 identity 정책은 후속 결정으로 남김
+- 검증 결과: `pnpm.cmd typecheck` 통과, 정상 room token 발급 확인, invalid room 400 응답 확인, guest identity 생성 확인, token grant의 `camera,microphone` 제한 확인
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit token API 서버 테스트 추가
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 프론트엔드 구현 전에 Server token API의 P0 room, participant, grant, 환경변수 정책을 자동 테스트로 고정
+- 입력 맥락: Issue #6, `apps/server/src/modules/meeting/meeting.service.ts`, `apps/server/src/integrations/livekit/livekit-token.service.ts`, `apps/server/src/config/environment.ts`
+- AI 제안 또는 산출물: `node:test` 기반 server test script, MeetingService 정책 테스트, LiveKit JWT grant 테스트, 환경변수 검증 테스트
+- 팀원 검토·수정 내용: 새 테스트 프레임워크를 설치하지 않고 기존 `ts-node`와 Node 내장 test runner로 검증하도록 구성
+- 검증 결과: `pnpm.cmd test:server` 10개 테스트 통과, `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit webhook server endpoint
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit Cloud room, participant, track events를 Server에서 signature 검증 후 받을 수 있는 P0 endpoint 추가
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting`, `apps/server/src/integrations/livekit`
+- AI 제안 또는 산출물: `POST /meeting/livekit/webhook`, raw body parser 설정, `LiveKitWebhookService`, webhook summary ACK, 서명/본문 hash 검증 테스트
+- 사용자 검토/수정 내용: P0에서는 저장, transcript 연결, AI Agent handoff 없이 검증된 event ACK까지만 처리하도록 범위 제한
+- 검증 결과: `pnpm.cmd test:server` 16개 테스트 통과, `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit webhook smoke script
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: public LiveKit Cloud webhook 연결 전에 로컬 서버가 LiveKit 서명 방식의 webhook을 수신하고 duplicate ACK까지 처리하는지 재현 가능하게 검증
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting/meeting.controller.ts`, `apps/server/src/modules/meeting/meeting.service.ts`
+- AI 제안 또는 산출물: `pnpm smoke:livekit-webhook`, dry-run 모드, first/duplicate webhook response 검증, 런북 절차
+- 사용자 검토/수정 내용: Pipeline의 P0 검증 범위에 맞춰 실제 STT, Translation Agent, Meeting AI Agent, DB 저장은 추가하지 않음
+- 검증 결과: `pnpm.cmd smoke:livekit-webhook -- --dry-run` 통과, `pnpm.cmd dev:server` 실행 후 `pnpm.cmd smoke:livekit-webhook` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit webhook idempotency
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit Cloud webhook 재전송으로 같은 event가 반복 도착해도 room state가 중복 갱신되지 않도록 방어
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting/meeting.service.ts`
+- AI 제안 또는 산출물: LiveKit `event.id` 기반 in-memory idempotency cache, duplicate ACK 응답, event id 없는 webhook은 기존처럼 처리하는 테스트
+- 사용자 검토/수정 내용: Pipeline의 P0 서버 범위인 in-memory room state 안정화 안에서만 처리하고, DB persistence와 AI Agent handoff는 추가하지 않음
+- 검증 결과: `pnpm.cmd test:server` 22개 테스트 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit webhook room state registry
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit webhook event를 이후 자막, 회의 상태, AI handoff가 참조할 수 있는 최소 room state로 축약
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting/meeting.service.ts`
+- AI 제안 또는 산출물: 인메모리 room state registry, participant/track count snapshot, room finished cleanup, webhook ACK의 `roomState` 반환
+- 사용자 검토/수정 내용: DB persistence와 transcript/AI 연결은 후속으로 남기고 P0에서는 서버 프로세스 내 상태 추적만 구현
+- 검증 결과: `pnpm.cmd test:server` 20개 테스트 통과, `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit room state API
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit Cloud webhook 공개 연결 전에 서버가 반영한 인메모리 room state를 HTTP로 확인할 수 있게 검증 경로 추가
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting`, `packages/shared/src/contracts/http/meeting.ts`
+- AI 제안 또는 산출물: `MeetingRoomStateResponse` shared HTTP 계약, `GET /meeting/rooms/:roomName/state`, smoke script의 room state 조회 검증
+- 사용자 검토/수정 내용: AI Agent, transcript 저장, DB persistence는 붙이지 않고 P0 room state 조회와 smoke 검증만 추가
+- 검증 결과: `pnpm.cmd test:server` 26개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd smoke:livekit-webhook -- --dry-run` 통과, `pnpm.cmd dev:server` 실행 중 `pnpm.cmd smoke:livekit-webhook` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit public webhook smoke safety
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit Cloud webhook target 등록 전에 공개 URL smoke 검증 실수를 줄이고, localhost 외부 HTTP target을 차단
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/scripts/livekit-webhook-smoke.ts`, `docs/RUNBOOKS/server-local.md`
+- AI 제안 또는 산출물: `LIVEKIT_WEBHOOK_SMOKE_URL` 검증, `.env.example` optional smoke override, tunnel/배포 URL smoke 런북, non-local HTTP 거부 테스트
+- 사용자 검토/수정 내용: 실제 Cloud console 등록은 공개 HTTPS URL이 필요하므로 후속 수동 단계로 남기고, 사전 검증 경로만 보강
+- 검증 결과: `pnpm.cmd test:server` 28개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd smoke:livekit-webhook -- --dry-run` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - Mock subtitle source API
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 실제 STT/Translation Agent 연결 전에 서버가 `subtitle.created` payload를 shared 계약대로 생성하고 검증할 수 있게 준비
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `apps/server/src/modules/meeting`
+- AI 제안 또는 산출물: `CreateMockSubtitleRequest`, `CreateMockSubtitleResponse`, `POST /meeting/subtitles/mock`, mock subtitle DTO/Service/Controller 테스트
+- 사용자 검토/수정 내용: Socket gateway emission은 새 의존성과 Client 연결 단계가 필요하므로 후속 작업으로 남기고, P0에서는 HTTP mock source만 구현
+- 검증 결과: `pnpm.cmd test:server` 32개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd dev:server` 실행 중 `POST /meeting/subtitles/mock` 수동 호출 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - Mock subtitle buffer API
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Socket gateway 연결 전에 서버가 room별 최신 mock subtitle payload 목록을 제공해 자막 UI 검증 루프를 준비
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/http/meeting.ts`, `apps/server/src/modules/meeting`
+- AI 제안 또는 산출물: `ListMockSubtitlesResponse`, `GET /meeting/rooms/:roomName/subtitles`, room별 인메모리 subtitle buffer, `subtitleId`별 최고 `revision` 유지 테스트
+- 사용자 검토/수정 내용: DB 저장과 Socket emission은 후속 작업으로 남기고, P0에서는 프로세스 내 mock buffer와 조회 API만 구현
+- 검증 결과: `pnpm.cmd test:server` 36개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd dev:server` 실행 중 `POST /meeting/subtitles/mock` 후 `GET /meeting/rooms/:roomName/subtitles` 수동 호출 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - LiveKit Cloud room lifecycle smoke
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit Cloud console webhook 등록 이후 실제 Cloud room lifecycle event가 Server webhook과 room state API까지 도달하는지 자동 검증
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, LiveKit Cloud 개발 프로젝트, Cloudflare tunnel webhook target
+- AI 제안 또는 산출물: `pnpm smoke:livekit-room`, `apps/server/scripts/livekit-room-smoke.ts`, dry-run/URL safety test, runbook 절차
+- 사용자 검토/수정 내용: 실제 STT, Translation Agent, Meeting AI Agent, Client media flow는 후속 작업으로 유지하고 Cloud room create/delete event 검증만 추가
+- 검증 결과: `pnpm.cmd test:server` 40개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd smoke:livekit-room -- --dry-run` 통과, `pnpm.cmd smoke:livekit-room` 실행 시 `room_started` active 및 `room_finished` finished 확인
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - Mock subtitle Socket gateway emission
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 실제 STT/Translation Agent 연결 전에도 `subtitle.created` shared 계약이 Socket 경로로 room 구독자에게 전달되는지 검증
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `apps/server/src/modules/meeting`
+- AI 제안 또는 산출물: `/meeting` Socket namespace, `meeting.room.subscribe` / `meeting.room.unsubscribe` shared 계약, `MeetingRealtimeGateway`, mock subtitle 생성 시 room-scoped `subtitle.created` emit
+- 사용자 검토/수정 내용: STT, Translation Agent, Meeting AI Agent는 후속 작업으로 유지하고 P0 mock source에서 Socket emission만 연결
+- 검증 결과: `pnpm.cmd test:server` 44개 테스트 통과, `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - Meeting finish mock subtitle cleanup
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit `room_finished` webhook 이후 P0 인메모리 mock subtitle buffer가 남아 다음 검증에 섞이지 않도록 정리
+- 입력 맥락: Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/server/src/modules/meeting/meeting.service.ts`
+- AI 제안 또는 산출물: `room_finished` 처리 시 room별 mock subtitle buffer 삭제, 종료 후 subtitle 조회가 빈 목록을 반환하는 테스트
+- 사용자 검토/수정 내용: 영구 저장과 transcript 보존은 후속 작업으로 남기고, P0 mock buffer cleanup만 구현
+- 검증 결과: `pnpm.cmd test:server` 37개 테스트 통과, `pnpm.cmd typecheck` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+
+### 2026-08-16 - Loginless participant policy
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 로그인 구현 전 P0 Meeting Lab 입장 입력을 사용자 이름과 한국/베트남 선택만으로 제한하고 token 발급 정책을 확정
+- 입력 맥락: 사용자 정책 결정, Issue #6, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/http/meeting.ts`, `apps/server/src/modules/meeting`
+- AI 제안 또는 산출물: `participantCountry` shared 계약, `kr -> ko` 및 `vn -> vi` 언어 파생, `kr-guest-<uuid>` / `vn-guest-<uuid>` LiveKit identity 파생, token attributes 정리
+- 사용자 검토/수정 내용: 로그인 사용자 ID와 직접 입력 `participantIdentity`는 P0 범위에서 제외하고, 인증 도입 시 migration 정책을 후속 결정으로 남김
+- 검증 결과: `pnpm.cmd test:server` 44개 테스트 통과, `pnpm.cmd typecheck` 통과, `pnpm.cmd build:server` 통과, `git diff --check` 통과, 수동 token API smoke에서 `kr -> ko` 및 `vn -> vi` 응답 확인
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
 ### 2026-08-15 - 통역 파이프라인 참가자-언어 매핑과 관용구 사전
 
 - 담당자: seongmin
@@ -160,3 +335,134 @@
 - `stt.py`의 스트리밍 루프에는 단위 테스트가 없다. 마이크와 웹소켓이 필요해서이며, 실제 음성으로만 확인했다.
 - 늦게 도착한 번역을 버리는 처리가 없다 (Issue #11).
 - 무료 티어 할당량이 실제 회의 분량을 감당하지 못할 수 있다 (Issue #11).
+
+### 2026-08-16 - Meeting Lab 프론트 SDK 진입 정책
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, GitHub Skill
+- 사용 목적: Issue #30 범위의 첫 프론트 작업으로, 로그인 없이 이름과 국가를 기억하고 오피스 섹션에서 LiveKit roomName을 파생하도록 Client 진입 흐름 구성
+- 입력 맥락: 사용자 결정(이름/국가만 입력, 룸 번호 직접 입력 없음), `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `DevelopmentProfile` localStorage 저장, `participantCountry` 기반 언어 파생 유지, `meeting-room` 섹션 resolver, Meeting Lab 수동 roomName 입력 제거
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/30
+
+### 2026-08-16 - Meeting Lab camera/mic preflight
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 연결 전에 브라우저 camera/mic 권한과 장치 유무를 분리해서 확인하는 Client preflight UI 구성
+- 입력 맥락: Issue #34, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `getUserMedia` 기반 권한 확인, 장치 수 확인, `idle/checking/ready/permission-denied/device-unavailable` 상태 표시, ready 전 토큰 요청 차단
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/34
+
+### 2026-08-16 - Meeting Lab LiveKit room connect
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Token API 응답의 `serverUrl`과 `token`으로 LiveKit Cloud room에 연결하고 local camera/mic track publish 흐름 구성
+- 입력 맥락: Issue #35, LiveKit client SDK v2.21.0 README와 로컬 타입 정의, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: `Room.connect`, `localParticipant.enableCameraAndMicrophone`, 연결/게시/재연결/실패/종료 상태 hook, `room.disconnect(true)` 기반 cleanup
+- 사용자 검토/수정 내용: 실제 브라우저 camera/mic 연결 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/35
+
+### 2026-08-16 - Meeting Lab media render and controls
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: LiveKit 연결 후 local/remote video/audio track을 화면에 렌더링하고 mic/camera 토글을 실제 track 상태와 연결
+- 입력 맥락: Issue #36, LiveKit client SDK track attach/detach 타입 정의, `apps/client/src/features/realtime-meeting/model/use-livekit-meeting-session.ts`
+- AI 제안 또는 산출물: local/remote media track snapshot, `<video>`/`<audio>` attach 컴포넌트, remote audio sink, mic/camera toggle, participant/track event 기반 UI 갱신
+- 사용자 검토/수정 내용: 두 브라우저 간 실제 video/audio 송수신 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/36
+
+### 2026-08-16 - Meeting Lab subtitle Mock display
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #37 범위에서 Meeting Lab이 `/meeting` Socket namespace를 구독하고 `subtitle.created` Mock payload를 실시간 자막 UI에 표시하도록 구성
+- 입력 맥락: Issue #37, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `packages/shared/src/contracts/socket/subtitle.ts`, `apps/client/src/pages/meeting-lab/MeetingLabPage.tsx`
+- AI 제안 또는 산출물: mock subtitle buffer 조회 API, roomName 기반 Socket subscribe/unsubscribe hook, `subtitleId`와 `revision` 기반 partial/final 교체 로직, 원문/번역문/화자/시각/확정 여부 표시 패널
+- 사용자 검토/수정 내용: 코드 변경 후 사용자 확인 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `git diff --check` 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/37
+
+### 2026-08-16 - Realtime Meeting P0 verification helper
+
+- 해당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #38 범위에서 Meeting Lab P0 데모와 Mock subtitle 확인을 반복 가능한 절차로 정리
+- 입력 맥락: Issue #38, `docs/FEATURES/realtime-meeting/PIPELINE.md`, `docs/RUNBOOKS/client-local.md`, `docs/RUNBOOKS/server-local.md`, 기존 LiveKit smoke script 패턴
+- AI 제안 또는 산출물: `pnpm smoke:meeting-subtitle`, partial/final Mock subtitle smoke script, dry-run 테스트, 두 브라우저 Meeting Lab 데모 절차
+- 사용자 검토/수정 내용: 실제 두 브라우저 카메라/마이크와 화면 표시 확인은 사용자 검토 예정
+- 검증 결과: `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server smoke:meeting-subtitle -- --dry-run` 통과, `corepack pnpm --filter @likelion2026/server test` 47개 테스트 통과
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/38
+### 2026-08-16 - 오피스 영속 Presence 동기화
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 팀원이 실제 근무 화면을 공유하지 않아도 접속·퇴근·마지막 위치를 확인할 수 있도록, 게스트 세션과 Socket.IO Presence를 연결
+- 입력 맥락: Issue #29, PR #26의 게스트 세션·Supabase ERD, 기존 Phaser 오피스 Gateway, `docs/FEATURES/virtual-office/contracts.md`
+- AI 제안 또는 산출물:
+  - `member_presence`를 기준으로 한 workspace snapshot, heartbeat, disconnect, 위치 flush 흐름
+  - guest token을 room broadcast에서 제외하는 Socket 계약
+  - 이동은 Socket으로 즉시 중계하고 1초마다 마지막 좌표만 DB에 저장하는 경계
+  - Phaser ghost/sleeping 표현과 PresenceService 단위 테스트 초안
+- 팀원 검토·수정 내용: 실제 화면 감시가 아닌 사용자가 선택한 상태와 서비스 연결 상태만 공유하며, 휴가·재택 자동 판정과 TODO UI는 후속 Issue로 분리
+- 검증 결과: `corepack pnpm typecheck`, `corepack pnpm build` 통과. 실제 Supabase와 두 브라우저 연결 검증은 Server 환경 변수를 설정한 뒤 수행 필요
+- 관련 Issue / PR / Discussion: Issue #29, PR 작성 예정
+
+### 2026-08-16 - 게스트 첫 입장 흐름
+
+- 담당자: Virtual Office 담당자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: URL query 없이 이름과 한국·베트남 선택만으로 게스트 세션을 만들고 오피스에 입장시키는 흐름 구성
+- 입력 맥락: Issue #40, `POST /office/session` 계약, 게스트 세션과 Presence 동기화 구현
+- AI 제안 또는 산출물: 프로필·guest token의 localStorage 책임 분리, 세션 성공 뒤 Socket 연결, 모달의 입력·로딩·오류 상태, Meeting Lab 호환 기본 프로필
+- 팀원 검토·수정 내용: 실제 화면 감시나 SNS 정보는 저장하지 않고, 이름·국가·언어와 Server 소유권 확인용 guest token만 유지. 아바타 직접 선택은 해커톤 후속 범위로 분리
+- 검증 결과: Client typecheck와 production build 통과. 로컬 `/office` 응답 확인. 실제 세션 성공 흐름은 Supabase Server 환경 변수 설정 후 검증 필요
+- 관련 Issue / PR / Discussion: Issue #40, PR 작성 예정
+
+### 2026-08-16 - 공개 TODO API 계약
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 협업에서 화면 감시 없이 오늘의 업무 맥락을 공유하는 TODO 소유권·공개 범위 설계
+- 입력 맥락: Issue #48, Supabase `todos` 테이블, 게스트 세션 소유권 계약
+- AI 제안 또는 산출물: 공개·비공개 조회 분리, guest token 소유권 확인, TODO 상태 DTO와 API 경로
+- 팀원 검토·수정 내용: `blocked`를 개인 평가가 아닌 지원 요청 신호로 정의. Socket 요약 전파와 UI는 후속 구현으로 분리
+- 검증 결과: Shared·Server typecheck 통과
+- 관련 Issue / PR / Discussion: Issue #48, PR 작성 예정
+
+### 2026-08-16 - TODO UI 디자인 교체 경계
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임 단계의 Figma를 확인해 상세 스타일 확정 전에도 TODO 데이터 계층과 디자인 컴포넌트를 분리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Issue #52, 공개 TODO HTTP 계약
+- AI 제안 또는 산출물: TODO API client, 세션 기반 controller hook, render function 기반 `OfficeTodoPanelSlot`, 디자인 적용 연결 문서
+- 팀원 검토·수정 내용: 임의의 시각 디자인과 에셋을 추가하지 않고, 추후 Figma 컴포넌트로 교체할 수 있는 데이터 계약만 반영
+- 검증 결과: Client typecheck와 production build 통과. Vite의 Phaser 초기 번들 크기 경고는 기존 과제로 유지
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
+
+### 2026-08-16 - Virtual Office 전체 사용자 시나리오
+
+- 사용한 Agent / Skill: Codex / Figma Design-to-Code Skill, Project Workflow Skill
+- 사용 목적: 와이어프레임과 현재 구현 범위를 바탕으로 입장부터 상태·TODO·People·일정·회의·번역까지 연결한 서비스 전체 흐름 정리
+- 입력 맥락: Figma `XNMBF9IXkhkotGr6EoiW4J`, Virtual Office 기능 문서, 구현·후속 범위
+- AI 제안 또는 산출물: 한국·베트남 협업 팀의 6개 사용자 시나리오, 해커톤 데모 4분 흐름, 신뢰·개인정보 경계, 디자인 검토 화면 목록
+- 팀원 검토·수정 내용: 실제 구현 범위와 목표 기능을 분리하고, 화면 감시가 아닌 사용자가 선택한 공개 정보만 공유한다는 원칙을 반영
+- 검증 결과: Client typecheck와 production build 통과. 문서 간 상대 경로와 `git diff --check` 확인
+- 관련 Issue / PR / Discussion: Issue #52, PR 작성 예정
+
+### 2026-08-16 - 공유 캘린더 P0 계약
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 기존 Supabase 일정 테이블을 활용해 일정 소유권, 팀 공개 조회, 현재 시각 기준 파생 상태를 설계
+- 입력 맥락: Issue #58, `calendar_events`, `calendar_event_participants`, Presence 상태 학습 기록
+- AI 제안 또는 산출물: 일정 CRUD HTTP 계약, 생성자 guest token 소유권 검증, 휴가·부재·회의·집중·재택 우선순위, 디자인 교체형 controller·slot
+- 팀원 검토·수정 내용: 캘린더는 DB Presence를 영구 변경하지 않고 Client가 현재 유효한 상태만 표현에 반영하도록 결정
+- 검증 결과: Shared·Server·Client typecheck, Server·Client production build 통과. Phaser 초기 번들 크기 경고는 기존 과제로 유지
+- 관련 Issue / PR / Discussion: Issue #58, PR 작성 예정

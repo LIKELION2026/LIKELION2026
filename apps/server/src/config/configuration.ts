@@ -11,9 +11,16 @@ interface LiveKitConfig {
   url: string;
 }
 
+interface SupabaseConfig {
+  officeWorkspaceName: string;
+  secretKey: string;
+  url: string;
+}
+
 export interface ServerConfiguration {
   app: AppConfig;
   livekit: LiveKitConfig;
+  supabase: SupabaseConfig;
 }
 
 export function configuration(): ServerConfiguration {
@@ -28,6 +35,12 @@ export function configuration(): ServerConfiguration {
       apiSecret: requireEnv("LIVEKIT_API_SECRET"),
       tokenTtlSeconds: Number(process.env.LIVEKIT_TOKEN_TTL_SECONDS ?? 900),
       url: requireEnv("LIVEKIT_URL")
+    },
+    supabase: {
+      officeWorkspaceName:
+        process.env.OFFICE_WORKSPACE_NAME ?? "LIKELION2026 Global Office",
+      secretKey: requireEnv("SUPABASE_SECRET_KEY"),
+      url: requireEnv("SUPABASE_URL")
     }
   };
 }
@@ -50,5 +63,5 @@ function requireEnv(name: string): string {
     throw new Error(`[config] Missing required environment variable: ${name}`);
   }
 
-  return value;
+  return value.trim();
 }

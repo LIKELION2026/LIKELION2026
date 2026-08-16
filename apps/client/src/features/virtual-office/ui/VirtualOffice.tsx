@@ -1,12 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { JSX } from "react";
 import Phaser from "phaser";
+import type { GuestOfficeSessionResponse } from "@likelion2026/shared";
 
-import { getDevelopmentIdentity } from "../../../shared/lib/development-identity";
+import {
+  getStoredGuestProfile,
+  saveGuestProfile,
+  type GuestProfile
+} from "../../../shared/lib/development-identity";
+import { createOrRestoreOfficeSession } from "../api/create-office-session";
 import { OfficeScene } from "../core/office-scene";
 import { useOfficeStore } from "../model/office-store";
 import { useOfficeSocket } from "../model/use-office-socket";
+import { useOfficeCalendar } from "../model/use-office-calendar";
+import { useOfficeTodos } from "../model/use-office-todos";
 import { OfficeHud } from "./OfficeHud";
+import { GuestOnboarding } from "./GuestOnboarding";
+import { OfficeTodoPanelSlot } from "./OfficeTodoPanelSlot";
+import { OfficeCalendarPanelSlot } from "./OfficeCalendarPanelSlot";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
@@ -18,11 +29,44 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const sceneRef = useRef<OfficeScene | null>(null);
   const [isInsideMeetingRoom, setIsInsideMeetingRoom] = useState(false);
   const [isSceneReady, setIsSceneReady] = useState(false);
-  const identity = useMemo(getDevelopmentIdentity, []);
+  const [session, setSession] = useState<GuestOfficeSessionResponse | null>(null);
+  const [isPreparingSession, setIsPreparingSession] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [storedProfile, setStoredProfile] = useState<GuestProfile | null>(() =>
+    getStoredGuestProfile()
+  );
+  const didRestoreStoredProfile = useRef(false);
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
-  const { sendMove, updateStatus } = useOfficeSocket(identity);
+  const { sendMove, updateAttendance, updateStatus } = useOfficeSocket(session);
+  const todoController = useOfficeTodos(session);
+  const calendarController = useOfficeCalendar(session);
+
+  const prepareSession = useCallback(async (profile: GuestProfile) => {
+    setIsPreparingSession(true);
+    setSessionError(null);
+    try {
+      const nextSession = await createOrRestoreOfficeSession(profile);
+      saveGuestProfile(profile);
+      setSession(nextSession);
+      setStoredProfile(profile);
+    } catch (error) {
+      setSession(null);
+      setSessionError(
+        error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다."
+      );
+    } finally {
+      setIsPreparingSession(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (storedProfile && !didRestoreStoredProfile.current) {
+      didRestoreStoredProfile.current = true;
+      void prepareSession(storedProfile);
+    }
+  }, [prepareSession, storedProfile]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -92,9 +136,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       <OfficeHud
         connectionState={connectionState}
         memberCount={members.length}
+        onAttendanceChange={updateAttendance}
         onStatusChange={updateStatus}
+        selfAttendanceStatus={self?.officePresence?.attendanceStatus}
         selfStatus={self?.status}
       />
+      <OfficeTodoPanelSlot controller={todoController} />
+      <OfficeCalendarPanelSlot controller={calendarController} />
       {isInsideMeetingRoom ? (
         <aside className="meeting-prompt">
           <h2>회의실에 들어왔습니다</h2>
@@ -103,6 +151,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
             Meeting Lab 열기
           </button>
         </aside>
+      ) : null}
+      {!session ? (
+        <GuestOnboarding
+          error={sessionError}
+          isSubmitting={isPreparingSession}
+          onSubmit={prepareSession}
+        />
       ) : null}
     </section>
   );
