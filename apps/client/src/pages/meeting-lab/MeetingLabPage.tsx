@@ -13,6 +13,10 @@ import {
 } from "../../features/realtime-meeting/model/device-preflight";
 import { resolveMeetingRoomSection } from "../../features/realtime-meeting/model/meeting-room-section";
 import {
+  useLiveKitMeetingSession,
+  type LiveKitMeetingSessionStatus
+} from "../../features/realtime-meeting/model/use-livekit-meeting-session";
+import {
   getDevelopmentIdentity,
   saveDevelopmentProfile
 } from "../../shared/lib/development-identity";
@@ -30,6 +34,17 @@ const PREFLIGHT_STATUS_LABELS: Record<MeetingDevicePreflightStatus, string> = {
   ready: "입장 가능"
 };
 
+const MEETING_SESSION_STATUS_LABELS: Record<LiveKitMeetingSessionStatus, string> =
+  {
+    connected: "연결됨",
+    connecting: "연결 중",
+    disconnected: "연결 종료",
+    failed: "연결 실패",
+    idle: "대기 중",
+    publishing: "트랙 게시 중",
+    reconnecting: "재연결 중"
+  };
+
 export function MeetingLabPage(): JSX.Element {
   const initialIdentity = useMemo(getDevelopmentIdentity, []);
   const roomSection = useMemo(
@@ -45,8 +60,13 @@ export function MeetingLabPage(): JSX.Element {
   const [devicePreflight, setDevicePreflight] = useState(
     INITIAL_MEETING_DEVICE_PREFLIGHT_STATE
   );
+  const { connect, disconnect, session } = useLiveKitMeetingSession();
   const isCheckingDevices = devicePreflight.status === "checking";
   const isDeviceReady = devicePreflight.status === "ready";
+  const isSessionBusy =
+    session.status === "connecting" ||
+    session.status === "publishing" ||
+    session.status === "reconnecting";
 
   const handleDevicePreflight = useCallback(async () => {
     setError(null);
@@ -81,10 +101,11 @@ export function MeetingLabPage(): JSX.Element {
         participantName: savedProfile.displayName,
         roomName: roomSection.roomName
       });
+      await connect(response);
       setDisplayName(savedProfile.displayName);
       setParticipantCountry(savedProfile.participantCountry);
       setMessage(
-        `${response.roomName} 토큰을 받았습니다. 만료 시각: ${new Date(
+        `${response.roomName} 회의방에 연결했습니다. 토큰 만료 시각: ${new Date(
           response.expiresAt
         ).toLocaleTimeString()}`
       );
@@ -168,12 +189,45 @@ export function MeetingLabPage(): JSX.Element {
           </div>
           <button
             className="primary-button"
-            disabled={isSubmitting || !isDeviceReady}
+            disabled={isSubmitting || isSessionBusy || !isDeviceReady}
             type="submit"
           >
-            {isSubmitting ? "토큰 요청 중" : "토큰 API 확인"}
+            {isSubmitting || isSessionBusy ? "회의 연결 중" : "회의 연결"}
           </button>
         </form>
+        <div className="meeting-session-status" aria-live="polite">
+          <div>
+            <span>LiveKit 상태</span>
+            <strong className={`meeting-session-state ${session.status}`}>
+              {MEETING_SESSION_STATUS_LABELS[session.status]}
+            </strong>
+          </div>
+          {session.roomName ? <code>{session.roomName}</code> : null}
+          {session.participantIdentity ? (
+            <p>참가자 ID: {session.participantIdentity}</p>
+          ) : null}
+          {session.status === "connected" ? (
+            <div className="meeting-device-counts">
+              <span>Published camera {session.videoTrackCount}</span>
+              <span>Published mic {session.audioTrackCount}</span>
+            </div>
+          ) : null}
+          {session.errorMessage ? (
+            <p className="meeting-session-error">{session.errorMessage}</p>
+          ) : null}
+          {session.status === "connected" || session.status === "reconnecting" ? (
+            <button
+              className="secondary-button"
+              onClick={() => {
+                void disconnect();
+                setMessage(null);
+              }}
+              type="button"
+            >
+              회의 나가기
+            </button>
+          ) : null}
+        </div>
         {message ? <div className="result-message">{message}</div> : null}
         {error ? <div className="error-message">{error}</div> : null}
       </div>

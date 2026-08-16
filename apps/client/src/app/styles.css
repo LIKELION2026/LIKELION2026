@@ -328,6 +328,58 @@ button {
   gap: 8px;
 }
 
+.meeting-session-status {
+  border-top: 1px solid #d6dee7;
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.meeting-session-status span {
+  color: #627084;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.meeting-session-status code {
+  color: #486077;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.meeting-session-status p {
+  color: #58687c;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.meeting-session-state {
+  color: #5f6e80;
+  font-size: 14px;
+}
+
+.meeting-session-state.connected {
+  color: #22633f;
+}
+
+.meeting-session-state.connecting,
+.meeting-session-state.publishing,
+.meeting-session-state.reconnecting {
+  color: #8a5a0a;
+}
+
+.meeting-session-state.failed {
+  color: #a33030;
+}
+
+.meeting-session-error {
+  color: #a33030;
+}
+
 .result-message {
   background: #edf8f2;
   border: 1px solid #aad7bd;
