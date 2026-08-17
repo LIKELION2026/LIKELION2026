@@ -40,10 +40,10 @@ Vercel 프로젝트를 GitHub 저장소와 연결하고 Production Branch를 `ma
 
 | 설정 | 값 |
 | --- | --- |
-| Root Directory | 저장소 루트 |
+| Root Directory | `apps/client` |
 | Install Command | `corepack pnpm install --frozen-lockfile` |
-| Build Command | `corepack pnpm build:client` |
-| Output Directory | `apps/client/dist` |
+| Build Command | `corepack pnpm build` |
+| Output Directory | `dist` |
 | Production Branch | `main` |
 
 클라이언트 환경 변수는 Vercel Project Settings -> Environment Variables에 등록한다.
@@ -53,6 +53,10 @@ VITE_SERVER_URL=https://<render-server-url>
 ```
 
 `VITE_` 접두사가 붙은 값은 브라우저 번들에 포함된다. 비밀 키를 이 환경 변수에 넣지 않는다.
+
+Vercel은 Root Directory 안의 `vercel.json`만 읽는다. 따라서 SPA deep-link fallback은
+`apps/client/vercel.json`에 둔다. 이 설정은 `/office`, `/meeting-lab` 같은 React Router
+경로를 `index.html`로 전달한다.
 
 ## Render: Server
 

@@ -526,6 +526,16 @@
 - 팀원 검토·수정 내용: 셀 내부 alpha 경계를 비교해 down idle 하단 `y=236`과 보행 frame 하단 `y=209~228`의 차이를 확인했다. 고정 offset을 방향별로 추가하지 않고 새 에셋에서도 동작하는 alpha 기반 보정으로 채택했다. 최종 체감 자연스러움은 실제 브라우저에서 방향별 `정지 → 이동 → 정지`으로 확인한다.
 - 검증 결과: Client typecheck·build와 `git diff --check` 통과. 실제 Canvas 렌더링은 팀원이 브라우저에서 추가 확인 필요.
 - 관련 Issue / PR / Discussion: Issue #70, PR #71
+
+### 2026-08-17 - Vercel Client Root Directory SPA fallback 수정
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: `main`에 루트 `vercel.json`이 병합된 뒤에도 Production `/office` 새로고침이 Vercel 404를 반환한 원인을 수정
+- 입력 맥락: Production URL의 `/` 200 응답과 `/office` 404 응답, Vercel Client 프로젝트의 `apps/client` Root Directory, Issue #67
+- AI 제안 또는 산출물: Root Directory 안의 `apps/client/vercel.json`에 SPA rewrite를 두고 Deployment Runbook과 smoke test의 실제 설정 기준을 정정
+- 팀원 검토·수정 내용: 설정 파일 문법 자체가 아니라 Vercel이 Root Directory 바깥의 루트 설정 파일을 읽지 않는 배포 경계 문제로 확인했다. 최종 Production 재배포와 새로고침 결과는 사람의 브라우저로 기록한다.
+- 검증 결과: Client build와 JSON 형식 확인 예정. main 병합 뒤 Production `/office`, `/meeting-lab` 직접 접속·새로고침은 Issue #67에 실제 결과를 남긴다.
+- 관련 Issue / PR / Discussion: Issue #67
 ### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
 
 - 사용한 Agent / Skill: Claude Code / Commit Convention Skill
