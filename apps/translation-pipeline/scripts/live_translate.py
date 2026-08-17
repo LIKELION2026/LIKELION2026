@@ -91,11 +91,16 @@ class LiveSession:
 
         self._stats["발화"] += 1
         spoken_at = time.monotonic()
-        print(f"[{utterance.language}] {utterance.text}")
+        # 발화 중간 조각인지 마지막인지 보여야 revision이 왜 올라가는지 읽힌다.
+        marker = "" if utterance.ends_utterance else "  (조각)"
+        print(f"[{utterance.language}] {utterance.text}{marker}")
 
         try:
             result = self._pipeline.handle_utterance(
-                self._speaker_id, utterance.text, spoken_at=spoken_at
+                self._speaker_id,
+                utterance.text,
+                spoken_at=spoken_at,
+                ends_utterance=utterance.ends_utterance,
             )
         except TranslationError as error:
             self._stats["실패"] += 1
@@ -115,7 +120,7 @@ class LiveSession:
         payload = result.subtitle
         source = "모델" if result.used_translation_model else "사전"
         print(f"[{payload.translatedLanguage}] {payload.translatedText}")
-        print(f"  ({source}, {result.elapsed_ms}ms)")
+        print(f"  ({source}, {result.elapsed_ms}ms, rev {payload.revision})")
 
         if result.unapplied_glossary_count:
             print(f"  사전 미반영 {result.unapplied_glossary_count}건")

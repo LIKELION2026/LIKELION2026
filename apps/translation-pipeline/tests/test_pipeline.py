@@ -222,3 +222,118 @@ def test_each_utterance_gets_its_own_subtitle_id(participants, glossary):
     second = pipeline.handle_utterance("user_ko", "두 번째")
 
     assert first.subtitle.subtitleId != second.subtitle.subtitleId
+
+
+# --- 발화 조각 누적 ---
+#
+# Deepgram은 발화를 겹치지 않는 조각으로 확정한다. 조각이 올 때마다 그때까지
+# 쌓인 전체를 번역해 같은 자막을 덮어쓴다.
+
+
+def test_segments_of_one_utterance_share_a_subtitle_id(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    first = pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    second = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert first.subtitle.subtitleId == second.subtitle.subtitleId
+
+
+def test_revision_rises_with_each_segment(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    first = pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    second = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    # Client는 subtitleId가 같으면 revision이 높은 것으로 교체한다.
+    assert (first.subtitle.revision, second.subtitle.revision) == (1, 2)
+
+
+def test_a_mid_utterance_segment_is_not_final(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    result = pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+
+    assert result.subtitle.to_dict()["isFinal"] is False
+
+
+def test_the_model_receives_the_accumulated_text(participants, glossary):
+    translator = FakeTranslator("...")
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    # 조각만 따로 번역하면 문맥이 끊긴다. 매번 전체를 다시 번역한다.
+    assert translator.requests[1].text == "안건은 이번 분기 계획입니다."
+
+
+def test_the_final_subtitle_carries_the_whole_utterance(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    result = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert result.subtitle.sourceText == "안건은 이번 분기 계획입니다."
+
+
+def test_a_new_utterance_starts_after_the_previous_one_ends(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    ended = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+    fresh = pipeline.handle_utterance("user_ko", "다음 안건입니다.")
+
+    assert fresh.subtitle.subtitleId != ended.subtitle.subtitleId
+    assert fresh.subtitle.revision == 1
+    assert fresh.subtitle.sourceText == "다음 안건입니다."
+
+
+def test_mid_utterance_segments_stay_out_of_the_context(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+
+    # 곧 전체 문장으로 덮어써질 미완성 번역이 맥락에 끼면 같은 말이 두 번
+    # 들어간 것처럼 보인다.
+    assert len(pipeline.context) == 0
+
+
+def test_the_context_gets_the_whole_utterance_once(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert len(pipeline.context) == 1
+    assert pipeline.context.recent()[-1].original_text == "안건은 이번 분기 계획입니다."
+
+
+def test_speakers_do_not_share_an_open_utterance(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    korean = pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    vietnamese = pipeline.handle_utterance("user_vi", "Xin chào", ends_utterance=False)
+
+    assert korean.subtitle.subtitleId != vietnamese.subtitle.subtitleId
+    assert vietnamese.subtitle.sourceText == "Xin chào"
+
+
+def test_a_discarded_segment_does_not_break_the_next_utterance(participants, glossary):
+    import time
+
+    pipeline = make_pipeline(participants, glossary, max_staleness_ms=0)
+
+    # 중간 조각이 늦어 버려져도 발화 상태가 남아 다음 발화에 섞이면 안 된다.
+    pipeline.handle_utterance(
+        "user_ko", "안건은", spoken_at=time.monotonic() - 10, ends_utterance=True
+    )
+    fresh = pipeline.handle_utterance("user_ko", "다음 안건입니다.")
+
+    assert fresh.subtitle.revision == 1
+    assert fresh.subtitle.sourceText == "다음 안건입니다."
