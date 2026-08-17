@@ -162,6 +162,7 @@ function wait(milliseconds: number): Promise<void> {
 
 function createMember(memberId: string, displayName: string): OfficeMemberPresence {
   return {
+    avatarId: "office-avatar-01",
     avatar: { animation: "idle", direction: "down", x: 192, y: 264 },
     displayName,
     language: "ko",

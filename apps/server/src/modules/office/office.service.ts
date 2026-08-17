@@ -28,9 +28,10 @@ import {
   type UpdateOfficeAttendanceRequest,
   type UpdateOfficePresenceRequest
 } from "@likelion2026/shared";
-import { randomInt, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { SUPABASE_CLIENT } from "../../integrations/supabase/supabase.constants";
+import { selectNewGuestAvatarId } from "./office-avatar";
 
 interface WorkspaceRow {
   id: string;
@@ -110,15 +111,6 @@ const DEFAULT_DESKS = [
 ] as const satisfies ReadonlyArray<
   Pick<OfficeDesk, "label" | "positionX" | "positionY" | "zone">
 >;
-
-const AVATAR_IDS = [
-  "office-avatar-01",
-  "office-avatar-02",
-  "office-avatar-03",
-  "office-avatar-04",
-  "office-avatar-05",
-  "office-avatar-06"
-] as const;
 
 @Injectable()
 export class OfficeService {
@@ -412,12 +404,18 @@ export class OfficeService {
     guestToken: string
   ): Promise<OfficeMemberPresence> {
     const member = await this.requireMemberOwnership(memberId, guestToken);
+    const now = new Date().toISOString();
     const presence = await this.updateRealtimePresence(memberId, {
+      attendance_status: "working",
+      checked_in_at: now,
+      checked_out_at: null,
       connection_status: "connected",
       disconnected_at: null,
-      last_active_at: new Date().toISOString(),
-      last_heartbeat_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      display_mode: "active",
+      last_active_at: now,
+      last_heartbeat_at: now,
+      status_message: "근무 중",
+      updated_at: now
     });
 
     await this.recordAttendance(memberId, "reconnect");
@@ -712,7 +710,7 @@ export class OfficeService {
     const { data, error } = await this.supabase
       .from("members")
       .insert({
-        avatar_id: AVATAR_IDS[randomInt(AVATAR_IDS.length)],
+        avatar_id: selectNewGuestAvatarId(),
         country_code: request.countryCode,
         guest_token: guestToken,
         name: request.displayName.trim(),
@@ -949,6 +947,7 @@ function toRealtimeMember(
   presence: PresenceRow
 ): OfficeMemberPresence {
   return {
+    avatarId: member.avatar_id,
     avatar: {
       animation: "idle",
       direction: "down",
