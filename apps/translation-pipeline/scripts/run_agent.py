@@ -23,6 +23,7 @@ Ctrl+C로 종료한다. `dev` 명령도 있지만 deprecated 경고를 낸다.
     TRANSLATION_MODEL                 번역 모델
     TRANSLATION_ENDPOINTING_MS        발화 종료로 볼 무음 길이
     TRANSLATION_INTERIM_INTERVAL_MS   중간 결과 번역 간격
+    TRANSLATION_LOAD_THRESHOLD        이 CPU 부하를 넘으면 배정을 받지 않는다
 """
 
 import os
@@ -73,6 +74,17 @@ AGENT_ENDPOINTING_MS = 700
 # 노트북에서 돌리므로 미리 띄우는 프로세스를 줄인다. 기본값은 운영 4개다.
 IDLE_PROCESSES = 1
 
+# CPU 부하가 이 값을 넘으면 프레임워크가 워커를 배정 불가로 표시한다.
+# 부하는 2.5초 평균 CPU 사용률이라 편집기 인덱싱이나 브라우저가 잠깐만
+# 튀어도 1.0에 닿는다. 실제로 0.7과 0.95 둘 다에서 배정을 한 번도 받지
+# 못했다.
+#
+# 이 장치는 워커가 여러 대일 때 부하 높은 워커를 건너뛰라는 뜻이다. 하나뿐이면
+# 거부가 곧 자막 없음이다. 느리게라도 도는 편이 낫다. 프레임워크도 dev 모드
+# 기본값을 무제한으로 둔다. 여러 대로 배포할 때 TRANSLATION_LOAD_THRESHOLD로
+# 되살린다.
+LOAD_THRESHOLD = float("inf")
+
 
 def env_int(name: str, default: int) -> int:
     raw = (os.environ.get(name) or "").strip()
@@ -80,6 +92,17 @@ def env_int(name: str, default: int) -> int:
         return default
     try:
         return int(raw)
+    except ValueError:
+        print(f"{name} 값을 숫자로 읽지 못했습니다: {raw!r}. 기본값 {default}을 씁니다.")
+        return default
+
+
+def env_float(name: str, default: float) -> float:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
     except ValueError:
         print(f"{name} 값을 숫자로 읽지 못했습니다: {raw!r}. 기본값 {default}을 씁니다.")
         return default
@@ -174,6 +197,13 @@ async def translate_room(ctx: JobContext) -> None:
 
     reporter = ConsoleReporter()
     publisher = SubtitlePublisher(server_url=server_url)
+    if server_url is None:
+        # 이 값을 안 넣으면 자막이 로컬 서버로 간다. 발행은 성공하고 에러도
+        # 없는데 배포한 회의 화면에만 아무것도 안 뜬다. 원인을 찾기 어렵다.
+        print(
+            f"[{now()}] 주의: PIPELINE_SERVER_URL이 없어 {publisher.url}로 보냅니다."
+            " 배포한 회의 화면에서 보려면 .env에 배포 서버 주소를 넣으세요."
+        )
     agent = TranslationAgent(
         room_name=room_name,
         translator_factory=lambda: GeminiTranslator(model=model),
@@ -239,5 +269,6 @@ if __name__ == "__main__":
                 hidden=True,
             ),
             num_idle_processes=IDLE_PROCESSES,
+            load_threshold=env_float("TRANSLATION_LOAD_THRESHOLD", LOAD_THRESHOLD),
         )
     )
