@@ -497,12 +497,12 @@
 - 검증 결과: JSON 형식 검사와 Client production build 확인 예정. Vercel Production 확인은 재배포 후 수행 필요.
 - 관련 Issue / PR / Discussion: Issue #61
 
-### 2026-08-16 - 레드판다 아바타 에셋 적용
+### 2026-08-17 - 레드판다 아바타 스프라이트시트 적용
 
 - 사용한 Agent / Skill: Codex / Project Workflow Skill
-- 사용 목적: Virtual Office의 임시 도형 아바타를 디자인팀이 제공한 레드판다 에셋으로 교체
-- 입력 맥락: `apps/client/public/assets/red_panda.webp`, Phaser Scene의 local·remote avatar rendering, Issue #70
-- AI 제안 또는 산출물: 불규칙한 WebP 시트의 전면·후면·측면 보행 frame 배열, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
-- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager 구조를 참고하되, 원본 시트가 격자형이 아니므로 frame 좌표를 명시한다. frame 좌표와 표시 크기는 브라우저에서 사람이 확인한다.
+- 사용 목적: Virtual Office의 임시 도형 아바타를 디자인팀이 제공한 규격화 레드판다 시트로 교체
+- 입력 맥락: `apps/client/public/assets/image.png`, Phaser Scene의 local·remote avatar rendering, Issue #70
+- AI 제안 또는 산출물: `256 x 256px` 고정 frame을 사용하는 `load.spritesheet`, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
+- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager를 참고했다. 새 파일은 6열 x 4행 격자이므로 임의 crop 좌표 대신 방향별 frame index를 명시한다. frame index와 표시 크기는 브라우저에서 사람이 확인한다.
 - 검증 결과: Client typecheck·build 및 브라우저 수동 확인 예정
 - 관련 Issue / PR / Discussion: Issue #70

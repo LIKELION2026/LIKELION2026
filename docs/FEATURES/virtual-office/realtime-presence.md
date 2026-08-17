@@ -1,12 +1,31 @@
 # Realtime Presence Pipeline
 
-## 레드판다 아바타 에셋
+## 아바타 스프라이트시트
 
-`apps/client/public/assets/red_panda.webp`는 규칙적인 격자형 시트가 아니므로 Phaser가 전면·후면·측면 보행 frame을 명시적으로 잘라 사용한다. 좌측 이동은 우측 보행 frame을 반전해 표시한다.
+`apps/client/public/assets/image.png`는 `256 x 256px` 프레임으로 구성된 6열 x 4행 PNG 시트다. Phaser의 `load.spritesheet`로 로드하므로, frame 간격이나 원본 crop 좌표를 별도로 관리하지 않는다.
 
-- Local과 remote avatar는 동일한 texture와 `40 x 52` 표시 크기를 사용하고, `idle/walk × up/down/left/right` 애니메이션 키를 공유한다.
-- 로컬 physics body는 발 주변으로만 잡아 가구 충돌 기준을 유지한다.
-- 이름·상태 label과 ghost/sleeping 투명도는 sprite container에 그대로 적용한다.
+- 1행: `down`, `up`, `right` idle frame (`0`, `1`, `2`)
+- 2행: `down walk` frame `6`~`11`
+- 3행: `up walk` frame `12`~`17`
+- 4행: `right walk` frame `18`~`23`
+- `left`는 `right` frame을 `flipX`로 반전해 재사용한다.
+- Local과 remote avatar는 같은 texture, `idle/walk × up/down/left/right` animation key, `0.23` scale을 공유한다.
+- 로컬 physics body는 발 주변으로만 잡아 가구 충돌 기준을 유지하고, 이름·상태 label과 ghost/sleeping 투명도는 sprite container에 그대로 적용한다.
+
+### Moyo와 동일한 상태·방향 구조
+
+Moyo의 구현처럼 방향별 frame index를 상수로 두고, Scene 시작 시 모든 animation을 미리 등록한다. 이동 payload의 `direction`과 `animation`은 sprite를 새로 만들지 않고 기존 animation key 선택에만 사용한다.
+
+```mermaid
+flowchart TD
+  A[image.png 6 x 4 spritesheet] --> B[load.spritesheet 256 x 256]
+  B --> C[방향별 idle 및 walk frame index 등록]
+  C --> D[idle 또는 walk animation key 생성]
+  D --> E[local 및 remote sprite에 같은 animation 재생]
+```
+
+- 새 아바타를 추가할 때는 같은 6열 x 4행, `256 x 256px` frame 규격을 유지한다.
+- local·remote 아바타 모두에서 네 방향 이동과 정지 상태를 확인한다.
 
 ## 원격 이동 보간
 
