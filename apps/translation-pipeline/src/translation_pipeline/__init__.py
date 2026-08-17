@@ -45,6 +45,7 @@ from .session import (
     SessionEvent,
     TranslationSession,
 )
+from .stt import AudioSource, MicrophoneStream, RealtimeTranscriber, Utterance
 from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
 from .translator import (
     FakeTranslator,
@@ -58,6 +59,7 @@ __all__ = [
     "DEFAULT_MAX_TURNS",
     "LANGUAGE_NAMES",
     "SUPPORTED_LANGUAGES",
+    "AudioSource",
     "ConversationContext",
     "ConversationTurn",
     "FakeTranslator",
@@ -68,7 +70,9 @@ __all__ = [
     "DEFAULT_INTERIM_INTERVAL_MS",
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",
+    "MicrophoneStream",
     "ParticipantRegistry",
+    "RealtimeTranscriber",
     "SubtitleError",
     "SubtitlePayload",
     "SubtitlePublishError",
@@ -85,6 +89,7 @@ __all__ = [
     "TranslationPipelineError",
     "TranslationRequest",
     "Translator",
+    "Utterance",
     "UnknownMeetingSectionError",
     "UnknownParticipantError",
     "UnsupportedLanguageError",
