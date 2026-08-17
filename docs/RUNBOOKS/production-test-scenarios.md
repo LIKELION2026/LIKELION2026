@@ -46,7 +46,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | SMOKE-01 | Render `GET https://<render>/health` | `status: "ok"`, `service: "likelion2026-server"`가 응답한다. | Render Event/로그, 필수 환경변수, 포트 |
 | SMOKE-02 | Vercel Production URL을 시크릿 창에서 연다. | Client shell과 게스트 온보딩 모달이 표시된다. | Vercel 배포 상태, `VITE_SERVER_URL` |
-| SMOKE-02A | `/office`, `/meeting-lab` 주소를 각각 직접 열고 새로고침한다. | Vercel이 `index.html`로 rewrite해 React Router 화면을 유지하며 404를 반환하지 않는다. | 저장소 루트 `vercel.json`의 SPA rewrite, Vercel 재배포 상태 |
+| SMOKE-02A | `/office`, `/meeting-lab` 주소를 각각 직접 열고 새로고침한다. | Vercel이 `index.html`로 rewrite해 React Router 화면을 유지하며 404를 반환하지 않는다. | `apps/client/vercel.json`의 SPA rewrite, Vercel 재배포 상태 |
 | SMOKE-03 | 온보딩에서 이름·국가를 입력해 오피스에 진입한다. | 아바타와 오피스 화면이 열리고 `POST /office/session`이 성공한다. | Render CORS, Supabase Key/Schema |
 | SMOKE-04 | 브라우저 개발자 도구 Network에서 `/office` Socket 연결을 확인한다. | WebSocket이 연결되고 CORS/`connect_error`가 없다. | `CORS_ORIGINS`, `VITE_SERVER_URL`, Render 로그 |
 | SMOKE-05 | 같은 Production URL을 새 시크릿 창에서 다시 연다. | 두 사용자 모두 오피스에 남고 입장/이동/상태 변경이 반대 창에 반영된다. | Socket namespace, Render 단일 인스턴스 상태 |
