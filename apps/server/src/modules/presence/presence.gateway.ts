@@ -88,7 +88,7 @@ export class PresenceGateway implements OnGatewayDisconnect {
       return;
     }
 
-    const member = await this.presenceService.move(client.id, payload);
+    const member = this.presenceService.move(client.id, payload);
     const teamId = this.presenceService.getTeamId(client.id);
     if (!member || !teamId) {
       return;
@@ -98,6 +98,7 @@ export class PresenceGateway implements OnGatewayDisconnect {
       ...member.avatar,
       memberId: member.memberId,
       occurredAt: new Date().toISOString(),
+      sequence: payload.sequence,
       teamId
     });
   }
@@ -219,6 +220,7 @@ function isPresenceMovePayload(value: unknown): value is PresenceMovePayload {
   return (
     isFiniteNumber(value.x) &&
     isFiniteNumber(value.y) &&
+    isNonNegativeSafeInteger(value.sequence) &&
     (value.direction === "up" ||
       value.direction === "down" ||
       value.direction === "left" ||
@@ -239,6 +241,10 @@ function isIdentifier(value: unknown): value is string {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
+}
+
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function isGuestToken(value: unknown): value is string {
