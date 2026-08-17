@@ -193,6 +193,9 @@ cd C:\LIKELION2026\apps\translation-pipeline
 .venv\Scripts\python.exe -u scripts\live_translate.py --speaker user_vi --language vi --publish
 ```
 
+방 이름은 생략하면 오늘 날짜로 만들어지므로 회의 화면과 저절로 맞는다. 다른
+구역이면 `--section`을 준다.
+
 `-u`를 빼면 출력이 버퍼링되어 보이지 않을 수 있다. Ctrl+C로 종료하면 통계가 나온다.
 
 ```text
@@ -208,7 +211,8 @@ cd C:\LIKELION2026\apps\translation-pipeline
 | `--speaker` | 화자 참가자 ID. 자막의 `participantIdentity`가 된다 |
 | `--name` | 자막에 표시할 이름. 생략하면 참가자 ID를 쓴다 |
 | `--language vi` | 베트남어로 말하고 한국어를 받는다 |
-| `--room` | 회의방 이름. `lab-<team>-<yyyymmdd>-<slug>` 형식이어야 한다 |
+| `--room` | 회의방 이름을 직접 지정한다. 생략하면 오늘 날짜로 만든다 |
+| `--section korea-team-zone` | 회의 구역을 고른다. `--room`을 줬으면 무시한다 |
 | `--publish` | Server로 자막을 발행한다 |
 | `--server` | Server 주소. 기본값은 `http://localhost:4000` |
 | `--max-staleness` | 이 시간을 넘겨 도착한 번역은 버린다(ms) |
@@ -219,6 +223,39 @@ cd C:\LIKELION2026\apps\translation-pipeline
 | `--device 17` | 마이크 장치를 지정한다 (스테레오 믹스로 시스템 소리 입력 가능) |
 | `--no-interim` | 인식 중간 결과를 화면에 숨긴다 |
 | `--timeout` | 번역 대기 시간(ms). 생략하면 모델에 맞춰 정한다 |
+
+### 회의방 이름
+
+`--room`을 생략하면 Client와 같은 공식으로 오늘 날짜의 이름을 만든다.
+
+```text
+lab-likelion-20260817-meeting-room
+     ^팀       ^오늘   ^구역
+```
+
+Client가 이 이름을 `new Date()`로 만들기 때문에, 손으로 넣으면 날짜가 바뀔 때
+어긋난다. **어긋나도 아무 신호가 없다.** 이름 형식은 유효하니 검증을 통과하고
+서버 발행도 성공한다. 회의 화면에만 자막이 안 뜬다.
+
+| `--section` | 만들어지는 이름 |
+| --- | --- |
+| `meeting-room` (기본) | `lab-likelion-<오늘>-meeting-room` |
+| `shared-collaboration-zone` | `lab-likelion-<오늘>-shared-collab` |
+| `korea-team-zone` | `lab-likelion-<오늘>-korea-team` |
+| `vietnam-team-zone` | `lab-likelion-<오늘>-vietnam-team` |
+
+날짜는 로컬 기준이다. Client의 `new Date()`가 로컬이라 UTC로 만들면 자정
+부근에 하루가 어긋난다.
+
+구역 표는 Client의 `meeting-room-section.ts`를 옮겨 적은 것이다.
+`packages/shared`에 방 이름 규칙이 없어 지금은 공유할 방법이 없다.
+
+대신 테스트가 그 파일을 읽어 팀 slug, 구역 표, 기본 구역, 이름 형식을 대조한다.
+Client가 바뀌면 자막이 안 뜬 뒤에 찾는 대신 `pytest`에서 깨진다. 파일이 옮겨진
+경우도 실패로 처리한다. 건너뛰면 이 테스트가 아무것도 지키지 않는다.
+
+회의 화면에도 방 이름이 나오므로(`MeetingLabPage`), 확인하고 싶으면 `--room`에
+그대로 넣으면 된다.
 
 ### 말하는 도중 번역
 
