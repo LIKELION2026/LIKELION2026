@@ -1,53 +1,88 @@
-"""회의방에 들어가 참가자 전원을 통역한다.
+"""회의방이 열리면 자동으로 들어가 참가자 전원을 통역한다.
 
-    참가자 브라우저 -> LiveKit -> 이 프로세스 -> Deepgram -> 번역 -> Server
-                                                                      |
-                                                          모든 참가자 화면
+    참가자 브라우저 -> LiveKit -> 이 워커 -> Deepgram -> 번역 -> Server
+                                                                  |
+                                                      모든 참가자 화면
 
-참가자는 브라우저만 열면 된다. 설치도 터미널도 API 키도 필요 없다. 이 프로세스
-하나가 방 전체를 담당한다.
+한 번 켜두면 된다. 워커는 LiveKit에 등록만 해두고 방에는 들어가지 않는다.
+회의방이 생기면 배정을 받아 그때 참가한다. 그래서 대기 중에는 방 참가자로
+잡히지 않는다.
+
+참가자는 브라우저만 열면 된다. 설치도 터미널도 API 키도 필요 없다.
 
 실행:
 
     cd apps/translation-pipeline
-    python scripts/run_agent.py
-    python scripts/run_agent.py --server https://<배포 서버> --section korea-team-zone
+    python scripts/run_agent.py start
 
-Ctrl+C로 종료한다.
+Ctrl+C로 종료한다. `dev` 명령도 있지만 deprecated 경고를 낸다.
+
+설정은 `.env`로 준다. 프레임워크가 명령줄을 쓰기 때문에 인자로 받지 않는다.
+
+    PIPELINE_SERVER_URL               자막을 보낼 Server 주소
+    TRANSLATION_MODEL                 번역 모델
+    TRANSLATION_ENDPOINTING_MS        발화 종료로 볼 무음 길이
+    TRANSLATION_INTERIM_INTERVAL_MS   중간 결과 번역 간격
 """
 
-import argparse
-import asyncio
+import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from dotenv import load_dotenv  # noqa: E402
 
+load_dotenv()
+
+from livekit.agents import (  # noqa: E402
+    AutoSubscribe,
+    JobContext,
+    JobRequest,
+    WorkerOptions,
+    WorkerPermissions,
+    cli,
+)
+
 from translation_pipeline import (  # noqa: E402
     DEFAULT_INTERIM_INTERVAL_MS,
-    DEFAULT_SECTION,
-    SECTION_SLUGS,
+    ParticipantAudioRunner,
     SessionEvent,
     SubtitlePublisher,
     TranslationAgent,
-    build_lab_room_name,
     is_lab_meeting_room,
 )
-from translation_pipeline.livekit_room import ParticipantAudioRunner  # noqa: E402
 from translation_pipeline.providers import GeminiTranslator  # noqa: E402
 from translation_pipeline.providers.gemini import DEFAULT_MODEL  # noqa: E402
 from translation_pipeline.stt import DEFAULT_ENDPOINTING_MS  # noqa: E402
 
-# 방 안에서 이 프로세스가 쓰는 참가자 ID. 오디오를 내보내지 않고 목록에도
-# 뜨지 않지만, 로그에서 구분하려면 이름이 있어야 한다.
+# 방 안에서 이 워커가 쓰는 참가자 ID.
 AGENT_IDENTITY = "translation-agent"
+AGENT_NAME = "통역"
 
 # 마이크로 돌릴 때보다 길게 잡는다. 회의는 한 문장을 길게 말하는 자리라
 # 짧게 끊으면 문맥이 잘린다.
 AGENT_ENDPOINTING_MS = 700
+
+# 노트북에서 돌리므로 미리 띄우는 프로세스를 줄인다. 기본값은 운영 4개다.
+IDLE_PROCESSES = 1
+
+
+def env_int(name: str, default: int) -> int:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"{name} 값을 숫자로 읽지 못했습니다: {raw!r}. 기본값 {default}을 씁니다.")
+        return default
+
+
+def now() -> str:
+    return datetime.now().strftime("%H:%M:%S")
 
 
 class ConsoleReporter:
@@ -75,12 +110,14 @@ class ConsoleReporter:
         payload = result.subtitle
         if event.published:
             self.published += 1
+
         if result.reused_translation:
             source = "재사용"
         elif result.used_translation_model:
             source = "모델"
         else:
             source = "사전"
+
         if event.ends_utterance:
             marker = ""
         elif event.confirmed:
@@ -96,7 +133,7 @@ class ConsoleReporter:
 
     def summarize(self) -> None:
         minutes = (time.monotonic() - self._started_at) / 60
-        print("\n" + "=" * 58)
+        print("=" * 58)
         print(f"자막 발행 {self.published}건, 번역 실패 {self.failures}건")
         if minutes > 0:
             print(
@@ -105,134 +142,97 @@ class ConsoleReporter:
             )
 
 
-def build_agent_token(room_name: str, api_key: str, api_secret: str) -> str:
-    """구독만 하는 토큰을 만든다.
+async def handle_request(request: JobRequest) -> None:
+    """배정 요청을 받을지 정한다.
 
-    오디오를 내보내지 않고 참가자 목록에도 뜨지 않도록 한다. 통역은 듣기만
-    하면 되고, 회의 화면에 정체불명의 참가자가 보이면 안 된다.
+    워커는 방이 열리는 대로 배정받는다. 가상 오피스처럼 회의가 아닌 방까지
+    따라 들어가면 쓸데없이 인식과 번역 호출을 태운다.
     """
-    from livekit import api
+    room_name = request.room.name
+    if not is_lab_meeting_room(room_name):
+        print(f"[{now()}] 배정 거부 (회의방 아님): {room_name}")
+        await request.reject()
+        return
 
-    return (
-        api.AccessToken(api_key, api_secret)
-        .with_identity(AGENT_IDENTITY)
-        .with_name("통역")
-        .with_grants(
-            api.VideoGrants(
-                room_join=True,
-                room=room_name,
-                can_subscribe=True,
-                can_publish=False,
-                can_publish_data=False,
-                hidden=True,
-            )
-        )
-        .to_jwt()
+    print(f"[{now()}] 배정 수락: {room_name}")
+    await request.accept(identity=AGENT_IDENTITY, name=AGENT_NAME)
+
+
+async def translate_room(ctx: JobContext) -> None:
+    """배정받은 회의방에서 참가자 전원을 통역한다."""
+    room_name = ctx.room.name
+    server_url = os.environ.get("PIPELINE_SERVER_URL") or None
+    model = (os.environ.get("TRANSLATION_MODEL") or "").strip() or DEFAULT_MODEL
+    endpointing_ms = env_int("TRANSLATION_ENDPOINTING_MS", AGENT_ENDPOINTING_MS)
+    interim_interval_ms = env_int(
+        "TRANSLATION_INTERIM_INTERVAL_MS", DEFAULT_INTERIM_INTERVAL_MS
     )
 
-
-async def run(args) -> int:
-    import os
-
-    from livekit import rtc
-
-    url = os.environ.get("LIVEKIT_URL")
-    api_key = os.environ.get("LIVEKIT_API_KEY")
-    api_secret = os.environ.get("LIVEKIT_API_SECRET")
-    if not (url and api_key and api_secret):
-        print("LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET가 필요합니다.")
-        print(".env에 채우세요. 배포 환경과 같은 값이어야 합니다.")
-        return 1
-
-    room_name = args.room or build_lab_room_name(args.section)
-    if not is_lab_meeting_room(room_name):
-        print(f"회의방 이름이 아닙니다: {room_name}")
-        return 1
-
-    publisher = SubtitlePublisher(server_url=args.server) if args.publish else None
     reporter = ConsoleReporter()
-    room = rtc.Room()
+    publisher = SubtitlePublisher(server_url=server_url)
     agent = TranslationAgent(
         room_name=room_name,
-        translator_factory=lambda: GeminiTranslator(model=args.model),
+        translator_factory=lambda: GeminiTranslator(model=model),
         publisher=publisher,
-        endpointing_ms=args.endpointing,
-        interim_interval_ms=args.interim_interval,
+        endpointing_ms=endpointing_ms,
+        interim_interval_ms=interim_interval_ms,
         on_event=reporter.on_event,
     )
-    runner = ParticipantAudioRunner(agent=agent, room=room)
-    stopping = asyncio.Event()
+    runner = ParticipantAudioRunner(agent=agent, room=ctx.room)
 
-    @room.on("participant_connected")
+    def attach(participant) -> None:
+        if runner.attach(participant):
+            info = agent.workers()[participant.identity].info
+            print(
+                f"[{now()}] 통역 시작: {info.display_name}"
+                f" ({info.identity}, {info.language})"
+            )
+        else:
+            print(f"[{now()}] 통역 대상 아님: {participant.identity}")
+
+    @ctx.room.on("participant_connected")
     def _on_connected(participant) -> None:
-        if not runner.attach(participant):
-            print(f"  (통역 대상 아님: {getattr(participant, 'identity', '?')})")
+        attach(participant)
 
-    @room.on("participant_disconnected")
+    @ctx.room.on("participant_disconnected")
     def _on_disconnected(participant) -> None:
-        asyncio.create_task(runner.detach(participant.identity))
+        identity = participant.identity
+        print(f"[{now()}] 통역 종료: {identity}")
+        ctx.room.loop.create_task(runner.detach(identity))
 
-    @room.on("disconnected")
-    def _on_room_disconnected(*_args) -> None:
-        stopping.set()
-
-    print(f"회의방: {room_name}")
-    print(f"LiveKit: {url}")
-    print(f"번역 모델: {args.model}")
-    print(f"발화 종료 판정: 무음 {args.endpointing}ms")
-    print(f"중간 결과 번역: {args.interim_interval}ms 간격")
-    print(f"자막 발행: {publisher.url if publisher else '안 함 (--publish로 켠다)'}")
-
-    await room.connect(url, build_agent_token(room_name, api_key, api_secret))
-    print("\n연결됐습니다. 참가자가 말하면 자막이 나갑니다. Ctrl+C로 종료합니다.\n")
-
-    # 에이전트보다 먼저 들어와 있던 참가자도 받는다.
-    for participant in room.remote_participants.values():
-        runner.attach(participant)
-
-    try:
-        await stopping.wait()
-    finally:
+    async def on_shutdown() -> None:
         await runner.shutdown()
-        await room.disconnect()
+        reporter.summarize()
 
-    reporter.summarize()
-    return 0
+    ctx.add_shutdown_callback(on_shutdown)
 
+    # 영상은 받지 않는다. 통역에는 오디오만 필요하고, 받으면 대역폭만 쓴다.
+    await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="회의방 참가자 전원을 통역한다.")
-    parser.add_argument(
-        "--room", default=None, help="회의방 이름. 생략하면 --section과 오늘 날짜로 만든다"
-    )
-    parser.add_argument(
-        "--section", default=DEFAULT_SECTION, choices=sorted(SECTION_SLUGS),
-        help="회의 구역",
-    )
-    parser.add_argument(
-        "--no-publish", dest="publish", action="store_false",
-        help="자막을 Server로 보내지 않고 콘솔에만 찍는다",
-    )
-    parser.add_argument("--server", default=None, help="Server 주소")
-    parser.add_argument("--model", default=DEFAULT_MODEL, help="번역에 쓸 모델")
-    parser.add_argument(
-        "--endpointing", type=int, default=AGENT_ENDPOINTING_MS,
-        help="발화 종료로 볼 무음 길이(ms)",
-    )
-    parser.add_argument(
-        "--interim-interval", type=int, default=DEFAULT_INTERIM_INTERVAL_MS,
-        help="중간 결과를 번역에 올리는 최소 간격(ms)",
-    )
-    args = parser.parse_args()
+    print(f"[{now()}] 회의방 참가: {room_name}")
+    print(f"  번역 모델: {model}")
+    print(f"  발화 종료 판정: 무음 {endpointing_ms}ms")
+    print(f"  중간 결과 번역: {interim_interval_ms}ms 간격")
+    print(f"  자막 발행: {publisher.url}")
 
-    load_dotenv()
-
-    try:
-        return asyncio.run(run(args))
-    except KeyboardInterrupt:
-        print("\n종료합니다.")
-        return 0
+    # 워커가 들어가기 전에 이미 있던 참가자도 받는다.
+    for participant in ctx.room.remote_participants.values():
+        attach(participant)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    cli.run_app(
+        WorkerOptions(
+            entrypoint_fnc=translate_room,
+            request_fnc=handle_request,
+            # 통역은 듣기만 하면 된다. 회의 화면에 정체불명의 참가자가 보이면
+            # 안 되므로 참가자 목록에도 뜨지 않는다.
+            permissions=WorkerPermissions(
+                can_publish=False,
+                can_subscribe=True,
+                can_publish_data=False,
+                hidden=True,
+            ),
+            num_idle_processes=IDLE_PROCESSES,
+        )
+    )
