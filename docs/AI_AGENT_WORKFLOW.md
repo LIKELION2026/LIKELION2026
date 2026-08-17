@@ -536,6 +536,16 @@
 - 팀원 검토·수정 내용: 설정 파일 문법 자체가 아니라 Vercel이 Root Directory 바깥의 루트 설정 파일을 읽지 않는 배포 경계 문제로 확인했다. 최종 Production 재배포와 새로고침 결과는 사람의 브라우저로 기록한다.
 - 검증 결과: Client build와 JSON 형식 확인 예정. main 병합 뒤 Production `/office`, `/meeting-lab` 직접 접속·새로고침은 Issue #67에 실제 결과를 남긴다.
 - 관련 Issue / PR / Discussion: Issue #67
+
+### 2026-08-17 - 원격 아바타 이동 끊김 원인 조사와 해결 계획
+
+- 사용한 Agent / Skill: Codex / Systematic Debugging Skill
+- 사용 목적: 두 브라우저에서 원격 아바타가 끊기거나 과거 위치로 되돌아 보이는 현상의 원인을 수정 전에 추적
+- 입력 맥락: 일반 창·시크릿 창 동시 테스트 영상, Client 60ms 이동 전송, Server의 1초 Supabase 위치 영속화, Phaser 120ms 원격 보간
+- AI 제안 또는 산출물: DB 저장 응답이 과거 좌표를 늦게 중계할 수 있는 비동기 경계 분석, sequence 기반 과거 패킷 폐기와 중계·영속화 분리 계획, 자동·수동 검증 시나리오
+- 팀원 검토·수정 내용: 아바타 에셋이나 보간 계수를 먼저 조정하지 않고, Socket과 DB 사이의 패킷 순서 문제를 우선 해결 대상으로 정의했다. 실제 DB 지연 시간과 수정 뒤 체감 결과는 후속 구현 PR에서 사람이 두 브라우저로 확인한다.
+- 검증 결과: 코드 경로와 영상 재현 조건을 문서화했다. 기능 수정과 지연 저장 재현 테스트는 Issue #87의 후속 구현 범위다.
+- 관련 Issue / PR / Discussion: Issue #87
 ### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
 
 - 사용한 Agent / Skill: Claude Code / Commit Convention Skill

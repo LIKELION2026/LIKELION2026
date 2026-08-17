@@ -8,6 +8,7 @@ import {
   type OfficeMemberLeftPayload,
   type OfficeLifecycleUpdatedPayload,
   type AttendanceStatus,
+  type LocalMovementCommand,
   type OfficeSnapshotPayload,
   type PresenceMovePayload,
   type PresenceMovedPayload
@@ -21,12 +22,14 @@ const MOVEMENT_INTERVAL_MS = 60;
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
 export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
-  sendMove: (payload: PresenceMovePayload) => void;
+  sendMove: (payload: LocalMovementCommand) => void;
   updateAttendance: (attendanceStatus: AttendanceStatus) => void;
   updateStatus: (status: MemberStatus) => void;
 } {
   const socketRef = useRef<Socket | null>(null);
-  const lastMoveRef = useRef<PresenceMovePayload & { sentAt: number } | null>(null);
+  const lastMoveRef = useRef<LocalMovementCommand & { sentAt: number } | null>(null);
+  const nextMoveSequenceRef = useRef(0);
+  const lastReceivedSequenceRef = useRef(new Map<string, number>());
   const setConnectionState = useOfficeStore((state) => state.setConnectionState);
   const setSnapshot = useOfficeStore((state) => state.setSnapshot);
   const upsertMember = useOfficeStore((state) => state.upsertMember);
@@ -50,6 +53,8 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
     socketRef.current = socket;
 
     const handleConnect = () => {
+      nextMoveSequenceRef.current = 0;
+      lastReceivedSequenceRef.current.clear();
       setConnectionState("connected");
       socket?.emit(SOCKET_EVENT_NAMES.OFFICE_JOIN, {
         displayName: session.member.name,
@@ -62,14 +67,26 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
     };
     const handleDisconnect = () => setConnectionState("disconnected");
     const handleReconnectAttempt = () => setConnectionState("reconnecting");
-    const handleSnapshot = (payload: OfficeSnapshotPayload) =>
+    const handleSnapshot = (payload: OfficeSnapshotPayload) => {
+      lastReceivedSequenceRef.current.clear();
       setSnapshot(payload.self, payload.members);
-    const handleMemberJoined = (payload: OfficeMemberJoinedPayload) =>
+    };
+    const handleMemberJoined = (payload: OfficeMemberJoinedPayload) => {
+      lastReceivedSequenceRef.current.delete(payload.member.memberId);
       upsertMember(payload.member);
-    const handleMemberLeft = (payload: OfficeMemberLeftPayload) =>
+    };
+    const handleMemberLeft = (payload: OfficeMemberLeftPayload) => {
+      lastReceivedSequenceRef.current.delete(payload.memberId);
       removeMember(payload.memberId);
-    const handleMemberMoved = (payload: PresenceMovedPayload) =>
+    };
+    const handleMemberMoved = (payload: PresenceMovedPayload) => {
+      const previousSequence = lastReceivedSequenceRef.current.get(payload.memberId);
+      if (previousSequence !== undefined && payload.sequence <= previousSequence) {
+        return;
+      }
+      lastReceivedSequenceRef.current.set(payload.memberId, payload.sequence);
       updateMemberPosition(payload);
+    };
     const handleStatusUpdated = (payload: MemberStatusUpdatedPayload) =>
       updateMemberStatus(payload.member);
     const handleLifecycleUpdated = (payload: OfficeLifecycleUpdatedPayload) =>
@@ -100,6 +117,7 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
       socket?.io.off("reconnect_attempt", handleReconnectAttempt);
       socket?.disconnect();
       socketRef.current = null;
+      lastReceivedSequenceRef.current.clear();
       setConnectionState("disconnected");
     };
   }, [
@@ -113,7 +131,7 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
     upsertMember
   ]);
 
-  const sendMove = useCallback((payload: PresenceMovePayload) => {
+  const sendMove = useCallback((payload: LocalMovementCommand) => {
     const socket = socketRef.current;
     if (!socket?.connected) {
       return;
@@ -131,7 +149,12 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
       return;
     }
 
-    socket.emit(SOCKET_EVENT_NAMES.PRESENCE_MOVE, payload);
+    const sequencedPayload: PresenceMovePayload = {
+      ...payload,
+      sequence: nextMoveSequenceRef.current
+    };
+    nextMoveSequenceRef.current += 1;
+    socket.emit(SOCKET_EVENT_NAMES.PRESENCE_MOVE, sequencedPayload);
     lastMoveRef.current = { ...payload, sentAt: now };
   }, []);
 
