@@ -130,6 +130,15 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     scene.setLocalPosition(self.avatar.x, self.avatar.y);
   }, [isSceneReady, self]);
 
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene || !isSceneReady) {
+      return;
+    }
+
+    scene.setLocalAvatarId(session?.member.avatarId);
+  }, [isSceneReady, session?.member.avatarId]);
+
   return (
     <section className="virtual-office" aria-label="가상 오피스">
       <div className="office-canvas" ref={containerRef} />
