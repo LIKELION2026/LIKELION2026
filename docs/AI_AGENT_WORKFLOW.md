@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-15
+> 마지막 업데이트: 2026-08-17
 
 ## 목적
 
@@ -466,3 +466,102 @@
 - 팀원 검토·수정 내용: 캘린더는 DB Presence를 영구 변경하지 않고 Client가 현재 유효한 상태만 표현에 반영하도록 결정
 - 검증 결과: Shared·Server·Client typecheck, Server·Client production build 통과. Phaser 초기 번들 크기 경고는 기존 과제로 유지
 - 관련 Issue / PR / Discussion: Issue #58, PR 작성 예정
+
+### 2026-08-16 - 원격 아바타 시간 기반 위치 보간
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 원격 협업 오피스에서 상대 아바타가 저주기 Socket 좌표 갱신 사이에 계단형으로 움직이는 문제를 줄임
+- 입력 맥락: 두 브라우저 테스트 영상, `presence.move` 80ms 전송 제한, Phaser 고정 비율 Lerp 렌더링
+- AI 제안 또는 산출물: 최근 좌표 샘플을 수신 시각과 함께 보관하고 120ms 표시 지연 안에서 시간 기반으로 보간하는 Scene 로직, 60ms 이동 전송 간격
+- 팀원 검토·수정 내용: Server Socket payload와 1초 Supabase 위치 영속화는 변경하지 않는다. 실제 두 브라우저의 체감 품질은 배포 환경에서 사람이 확인한다.
+- 검증 결과: Client typecheck·build 및 두 브라우저 수동 검증 예정
+- 관련 Issue / PR / Discussion: Issue #63
+
+### 2026-08-16 - Production 배포 테스트 시나리오
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: `main`에 병합되는 기능이 Vercel, Render, Supabase, LiveKit Cloud에서 실제로 연결되는지 팀이 같은 기준으로 검증하도록 릴리스 테스트 범위 문서화
+- 입력 맥락: Deployment Runbook, Client·Server Local Runbook, Meeting Lab·자막·게스트 오피스·TODO·공유 캘린더의 현재 구현 경계
+- AI 제안 또는 산출물: 환경별 설정 점검, 배포 직후 스모크, 두 브라우저 E2E, 실패 시나리오, 실제 결과 기록 표가 있는 Production Test Scenarios
+- 팀원 검토·수정 내용: Production URL과 실제 배포 결과는 사람이 실행 후 기록한다. 환경변수 값, token, Secret, 개인 정보는 문서에 남기지 않는다.
+- 검증 결과: 문서 상대 링크와 `git diff --check` 확인 예정. 실제 Production 실행은 이 문서의 체크리스트에 따라 별도 수행 필요.
+- 관련 Issue / PR / Discussion: Issue #61
+
+### 2026-08-16 - Vercel SPA deep-link fallback
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Vercel Production에서 `/office` 직접 접속 또는 새로고침 시 404가 나는 문제의 원인을 확인하고 SPA 경로 fallback 추가
+- 입력 맥락: `apps/client/src/app/App.tsx`의 `BrowserRouter`, Vercel 404 기록, 저장소 루트의 배포 설정 부재
+- AI 제안 또는 산출물: 모든 비정적 요청을 `/index.html`로 전달하는 루트 `vercel.json` rewrite와 deep-link 새로고침 스모크 항목
+- 팀원 검토·수정 내용: Vercel Production 재배포 뒤 `/office`, `/meeting-lab` 직접 접속·새로고침은 사람이 실제로 확인해야 한다.
+- 검증 결과: JSON 형식 검사와 Client production build 확인 예정. Vercel Production 확인은 재배포 후 수행 필요.
+- 관련 Issue / PR / Discussion: Issue #61
+
+### 2026-08-17 - 레드판다 아바타 스프라이트시트 적용
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Virtual Office의 임시 도형 아바타를 디자인팀이 제공한 규격화 레드판다 시트로 교체
+- 입력 맥락: `apps/client/public/assets/image.png`, Phaser Scene의 local·remote avatar rendering, Issue #70
+- AI 제안 또는 산출물: `256 x 256px` 고정 frame을 셀 외곽 `2px` 제외 영역으로 등록하는 texture frame, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
+- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager를 참고했다. 새 파일은 6열 x 4행 격자이므로 임의 crop 좌표 대신 방향별 frame index를 명시한다. export된 셀 경계의 비투명 픽셀은 `2px` trim으로 방어한다. 측면 idle과 walk의 원본 시선 방향이 반대여서 상태별 `flipX` 규칙을 분리했으며, frame index와 표시 크기는 브라우저에서 사람이 확인한다.
+- 검증 결과: Client typecheck·build 및 브라우저 수동 확인 예정
+- 관련 Issue / PR / Discussion: Issue #70
+
+### 2026-08-17 - Virtual Office mock 맵 배경 적용
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 빈 격자 Scene을 실제 오피스 공간처럼 검증할 수 있는 타일 기반 배경으로 교체
+- 입력 맥락: 공개 Moyo 저장소의 `lobby.webp`, Phaser Virtual Office Scene, Issue #78
+- AI 제안 또는 산출물: `1.5x` map scale의 `1440 x 816` world, world 중앙 map alignment, 전체 화면 Canvas, responsive camera zoom과 avatar follow, local avatar를 기준으로 한 `0.75`~`3.2` wheel/trackpad zoom, 하단 우측 회의 구역 overlay, temporary map asset 출처·권리 확인·collision 제한사항 문서화
+- 팀원 검토·수정 내용: 배경은 내부 개발·해커톤 mock으로만 사용한다. 가구 충돌과 최종 에셋 권리는 별도 검토 대상이며, 최종 배포 전 팀 제작 맵 또는 사용이 허가된 에셋으로 교체한다.
+- 검증 결과: Client typecheck·build 및 `/office` 브라우저 수동 확인 예정
+- 관련 Issue / PR / Discussion: Issue #78
+
+### 2026-08-17 - 아바타 정지·보행 전환 기준점 정규화
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 레드판다 아바타가 정지에서 보행으로 전환될 때 물리 좌표와 무관하게 그림이 미세하게 튀어 보이는 현상 제거
+- 입력 맥락: `image.png` 6 x 4 스프라이트시트, `office-scene.ts`의 공통 origin·physics body, 정지·보행 전환 녹화
+- AI 제안 또는 산출물: 각 frame의 alpha 경계를 런타임에서 계산해 가로 중심과 발끝 baseline을 정규화한 CanvasTexture, 표시 texture만 변경하고 Socket·physics 좌표를 보존하는 구조
+- 팀원 검토·수정 내용: 셀 내부 alpha 경계를 비교해 down idle 하단 `y=236`과 보행 frame 하단 `y=209~228`의 차이를 확인했다. 고정 offset을 방향별로 추가하지 않고 새 에셋에서도 동작하는 alpha 기반 보정으로 채택했다. 최종 체감 자연스러움은 실제 브라우저에서 방향별 `정지 → 이동 → 정지`으로 확인한다.
+- 검증 결과: Client typecheck·build와 `git diff --check` 통과. 실제 Canvas 렌더링은 팀원이 브라우저에서 추가 확인 필요.
+- 관련 Issue / PR / Discussion: Issue #70, PR #71
+### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 한국어·베트남어 관용구가 고정 사전으로 처리되지 않는 원인 조사와 대안 구현
+- 입력 맥락: `data/glossary.json`의 부분 문자열 매칭 구현, 실제 발화 표본, 사전 준수율 측정 스크립트
+- AI 제안 또는 산출물: 관용구를 `data/idiom_guidelines/{source}_{target}.md` 지침으로 옮기고 번역 방향에 맞는 파일만 시스템 프롬프트에 싣는 구조, 유보 표현 등 지침 항목 초안
+- 팀원 검토·수정 내용: 처음 제안한 "문맥상 완곡한 거절이면 거절로 번역한다"는 규칙은 사용자가 위험하다고 지적해 "모호함을 유지하고 확정적으로 들리게 하지 않는다"로 바꿨다. 금지 규칙만 두면 모델이 직역으로 돌아가는 것을 확인해 대체 표현을 함께 제시하는 형태로 수정했다. 베트남어 표현의 자연스러움은 베트남어 사용자의 검토가 필요하며 Issue #18로 남겼다.
+- 검증 결과: `pytest` 실행. 유보 표현 8건에 대해 금지 표현이 나오지 않는 것을 사람이 확인.
+- 관련 Issue / PR / Discussion: Issue #10, PR #19
+
+### 2026-08-16 - 통역 결과를 자막 계약으로 발행
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 콘솔에만 출력되던 번역 결과를 회의 화면 자막까지 전달
+- 입력 맥락: `packages/shared`의 `SubtitleCreatedPayload` 계약, Server의 `POST /meeting/subtitles/mock`, 원래 스펙의 snake_case 출력 형식
+- AI 제안 또는 산출물: 계약을 그대로 따르는 자막 페이로드 생성기, 방 이름·참가자 ID 사전 검증, 참가자 매핑을 실제로 사용하는 실행 스크립트
+- 팀원 검토·수정 내용: 원래 스펙의 snake_case 형식 대신 `packages/shared` 계약을 따르기로 정했다. 변환 계층이 하나 더 생기는 것을 피하기 위해서다. `used_glossary`는 자막 표시용 값이 아니라 내부 지표이므로 페이로드에서 제외했다. 발행 대상 서버 포트가 3000으로 잘못돼 있어 4000으로 고쳤다.
+- 검증 결과: `pytest` 실행. 로컬 Server를 띄우고 실제 발행 후 브라우저에서 자막이 표시되는 것을 사람이 확인.
+- 관련 Issue / PR / Discussion: PR #31
+
+### 2026-08-17 - 확정된 발화 조각 유실 수정과 조각 단위 자막 갱신
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 실시간 통역에서 문장 앞부분이 자막에 뜨지 않는 원인 규명과 수정
+- 입력 맥락: `stt.py`의 Deepgram 결과 처리 분기, 실제 발화를 녹음해 얻은 이벤트 타이밍 로그, Client의 revision 기반 upsert 구현
+- AI 제안 또는 산출물: 이벤트 관측 스크립트, `is_final`만 선 조각이 어느 분기에도 들어가지 않아 버려진다는 원인 분석, 발화 하나를 자막 하나로 유지하며 조각마다 `revision`을 올리는 구조, 늦은 번역 폐기 규칙을 마지막 조각으로 한정하는 변경
+- 팀원 검토·수정 내용: 사용자가 관측 스크립트를 직접 실행해 `IS_FINAL`과 `SPEECH_FINAL`이 서로 다른 내용임을 확인했고, 이 데이터로 설계 방향이 정해졌다. 처음 제시한 "N+1회 호출"은 사용자가 계산을 지적해 N회로 정정했다. 폐기 규칙의 근거였던 "늦은 자막이 순서를 엉키게 한다"는 Client가 `occurredAt` 순으로 정렬하는 것을 확인해 성립하지 않는 것으로 정정했다. Issue와 PR 본문이 저장소 템플릿을 따르지 않은 것, 커밋에 AI 공동작성자 트레일러가 들어간 것을 사용자가 지적해 모두 수정했다.
+- 검증 결과: `pytest` 213건 통과. 마이크로 실제 발화를 흘려 같은 자막이 `rev 1` → `rev 2`로 갱신되는 것을 사람이 확인. 측정 중 `gemini-3.1-flash-lite`가 5회 중 2회 `504 DEADLINE_EXCEEDED`로 실패했으며, 이는 무료 한도 소진과 다른 서버 측 문제로 PR에 제한사항으로 기록했다.
+- 관련 Issue / PR / Discussion: Issue #72, PR #73
+
+### 2026-08-17 - 말하는 도중 중간 결과를 번역해 자막 지연 단축
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 자막이 말이 끝난 뒤에야 뜨는 체감 지연을 줄임
+- 입력 맥락: PR #73에서 만든 `subtitleId` 고정 + `revision` 갱신 구조, Deepgram이 말하는 도중 1초에 한 번씩 보내는 중간 결과, 마이크 실측 로그
+- AI 제안 또는 산출물: 확정 전 중간 결과를 번역하는 `handle_interim` 경로와 잠정 꼬리 누적, 번역을 워커 스레드 하나로 분리한 `session.py`, 원문이 같으면 직전 번역을 재사용하는 처리, 첫 자막 시간과 분당 호출 수를 내는 실행 스크립트
+- 팀원 검토·수정 내용: 사용자가 "말을 하자마자 바로 자막이 보였으면 좋겠다"는 요구를 제시했고, 첫 자막 1초는 LLM 번역으로 불가능하며 전용 기계번역 엔진이 필요하다는 것을 확인한 뒤 무료로 가능한 범위(중간 결과 번역)를 먼저 하기로 정했다. "이미 하고 있는 방식 아니냐"는 질문에 중간 결과를 번역하지 않고 출력만 하고 있었다는 것이 드러났다. 앞 번역에 이어붙이는 대신 매번 원문 전체를 다시 번역하는 이유는 한국어와 베트남어의 어순 차이로, 실측 결과를 근거로 확인했다. 1차 실측에서 같은 문장을 두 번 번역하는 낭비와 문장이 4조각으로 갈라지는 문제를 사용자가 함께 확인해, 번역 재사용을 추가하고 `--endpointing`을 700으로 올려 재측정했다.
+- 검증 결과: `pytest` 236건 통과. 마이크 실측에서 첫 자막까지 평균 1194ms(인식 결과 도착 기준, 최소 1155 / 최대 1234), 모델 호출 분당 7.1회, 번역·폐기·발행 실패 0건. PR #73 시점 실측은 2422~5344ms였다. `429`는 발생하지 않았다. 이 측정값은 입을 뗀 순간이 아니라 인식 결과가 도착한 시점부터 잰 것이라는 한계를 PR에 남겼다.
+- 관련 Issue / PR / Discussion: Issue #76, PR #77

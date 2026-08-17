@@ -80,8 +80,11 @@ VITE_SERVER_URL=http://localhost:4000
 1. `http://localhost:5173/office?name=Korea-PM`을 연다.
 2. 다른 브라우저 또는 시크릿 창에서 `http://localhost:5173/office?name=Vietnam-Dev`를 연다.
 3. 두 사용자의 입장, 이동, 상태 변경을 확인한다.
-4. 회의실에 들어가 `Meeting Lab`으로 이동한다.
-5. 토큰 API 확인 버튼으로 `POST /meeting/token` 연결을 확인한다.
+4. 브라우저 전체를 Canvas가 채우고 1.5배 확대된 lobby 오피스 배경이 왜곡 없이 보이는지 확인한다. 아바타가 책상·의자보다 과도하게 크지 않고, 이동하면 camera가 local avatar를 따라가야 한다. 가구 충돌은 아직 적용하지 않은 mock 범위다.
+5. 로컬과 상대 아바타가 레드판다 에셋으로 보이고, 위·아래·좌·우 이동마다 보행 frame이 반복되며 정지 시 idle frame으로 돌아오는지 확인한다. 다른 방향의 머리·몸통이 같은 frame에 섞이거나, 화면의 다른 위치에 잘린 조각처럼 보이지 않아야 한다.
+6. 회의실에 들어가 `Meeting Lab`으로 이동한다.
+7. 토큰 API 확인 버튼으로 `POST /meeting/token` 연결을 확인한다.
+8. 오피스 Canvas 위에서 마우스 휠 또는 트랙패드 세로 스크롤로 내 아바타를 기준으로 zoom in/out이 되고, 아바타 이동 시 camera follow가 유지되는지 확인한다.
 
 ## 담당 경계
 

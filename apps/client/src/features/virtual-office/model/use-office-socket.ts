@@ -17,7 +17,7 @@ import { io, type Socket } from "socket.io-client";
 import { SERVER_URL } from "../../../shared/config/environment";
 import { useOfficeStore } from "./office-store";
 
-const MOVEMENT_INTERVAL_MS = 80;
+const MOVEMENT_INTERVAL_MS = 60;
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
 export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {

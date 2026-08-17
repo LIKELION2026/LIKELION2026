@@ -96,6 +96,8 @@ Supabase는 Hosted 프로젝트를 사용한다. URL과 키는 환경별로 Verc
 5. Render Production 배포가 성공하고 `GET /health`가 성공하는지 확인한다.
 6. Vercel 환경의 `VITE_SERVER_URL`로 Socket 연결과 회의 토큰 API를 확인한다.
 
+배포 직후의 구체적인 2인 협업·회의·자막·실패 시나리오와 실행 결과 기록 양식은 [Production Test Scenarios](./production-test-scenarios.md)를 따른다.
+
 ## 실패 대응
 
 | 증상 | 확인 위치 | 첫 조치 |
