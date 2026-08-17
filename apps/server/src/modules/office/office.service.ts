@@ -412,12 +412,18 @@ export class OfficeService {
     guestToken: string
   ): Promise<OfficeMemberPresence> {
     const member = await this.requireMemberOwnership(memberId, guestToken);
+    const now = new Date().toISOString();
     const presence = await this.updateRealtimePresence(memberId, {
+      attendance_status: "working",
+      checked_in_at: now,
+      checked_out_at: null,
       connection_status: "connected",
       disconnected_at: null,
-      last_active_at: new Date().toISOString(),
-      last_heartbeat_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      display_mode: "active",
+      last_active_at: now,
+      last_heartbeat_at: now,
+      status_message: "근무 중",
+      updated_at: now
     });
 
     await this.recordAttendance(memberId, "reconnect");
