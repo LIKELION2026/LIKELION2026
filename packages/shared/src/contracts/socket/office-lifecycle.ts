@@ -19,3 +19,9 @@ export interface OfficeLifecycleUpdatedPayload {
   presence: OfficeCollaborationPresence;
   teamId: string;
 }
+
+export interface OfficeTodosUpdatedPayload {
+  memberId: string;
+  occurredAt: string;
+  teamId: string;
+}

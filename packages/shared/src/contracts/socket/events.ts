@@ -14,6 +14,13 @@ import type {
   MemberStatusUpdatedPayload,
   PresenceUpdatedPayload
 } from "./presence";
+import type { OfficeTodosUpdatedPayload } from "./office-lifecycle";
+import type {
+  OfficeSummonRequestPayload,
+  OfficeSummonRequestedPayload,
+  OfficeSummonRespondPayload,
+  OfficeSummonResolvedPayload
+} from "./office-summon";
 import type { SubtitleCreatedPayload } from "./subtitle";
 
 export type SocketEventPayloadMap = {
@@ -26,6 +33,11 @@ export type SocketEventPayloadMap = {
   [SOCKET_EVENT_NAMES.MEETING_ROOM_UNSUBSCRIBED]: MeetingRoomSubscriptionPayload;
   [SOCKET_EVENT_NAMES.MEETING_REQUESTED]: MeetingRequestedPayload;
   [SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATED]: MemberStatusUpdatedPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUEST]: OfficeSummonRequestPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUESTED]: OfficeSummonRequestedPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESPOND]: OfficeSummonRespondPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESOLVED]: OfficeSummonResolvedPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED]: OfficeTodosUpdatedPayload;
   [SOCKET_EVENT_NAMES.PRESENCE_UPDATED]: PresenceUpdatedPayload;
   [SOCKET_EVENT_NAMES.SUBTITLE_CREATED]: SubtitleCreatedPayload;
 };

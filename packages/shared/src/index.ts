@@ -5,6 +5,7 @@ export * from "./contracts/socket/briefing";
 export * from "./contracts/socket/events";
 export * from "./contracts/socket/meeting";
 export * from "./contracts/socket/office-lifecycle";
+export * from "./contracts/socket/office-summon";
 export * from "./contracts/socket/presence";
 export * from "./contracts/socket/subtitle";
 export * from "./domain/collaboration";
