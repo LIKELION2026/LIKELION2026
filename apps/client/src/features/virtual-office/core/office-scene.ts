@@ -30,6 +30,7 @@ const AVATAR_FRAME_SIZE = 256;
 const AVATAR_FRAME_BORDER_TRIM = 2;
 const AVATAR_FRAME_CONTENT_SIZE = AVATAR_FRAME_SIZE - AVATAR_FRAME_BORDER_TRIM * 2;
 const AVATAR_SHEET_COLUMNS = 6;
+const AVATAR_FOOT_BASELINE = 236;
 const AVATAR_DISPLAY_SCALE = 0.16;
 const CAMERA_VISIBLE_WORLD_RATIO = 0.78;
 const CAMERA_MIN_ZOOM = 0.75;
@@ -155,12 +156,7 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private createLocalAvatar(): void {
-    this.player = this.physics.add.sprite(
-      160,
-      264,
-      AVATAR_TEXTURE_KEY,
-      getAvatarIdleFrame("down")
-    );
+    this.player = this.physics.add.sprite(160, 264, getAvatarIdleFrame("down"));
     this.player.setScale(AVATAR_DISPLAY_SCALE).setOrigin(0.5, 0.82).setDepth(3);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
@@ -326,7 +322,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     const sprite = this.add
-      .sprite(0, 0, AVATAR_TEXTURE_KEY, getAvatarIdleFrame(member.avatar.direction))
+      .sprite(0, 0, getAvatarIdleFrame(member.avatar.direction))
       .setScale(AVATAR_DISPLAY_SCALE)
       .setOrigin(0.5, 0.82)
       .setFlipX(member.avatar.direction === "left");
@@ -371,7 +367,9 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private createAvatarFrames(): void {
-    const texture = this.textures.get(AVATAR_TEXTURE_KEY);
+    const sourceImage = this.textures.get(AVATAR_TEXTURE_KEY).getSourceImage() as
+      | HTMLCanvasElement
+      | HTMLImageElement;
     const frameCount = AVATAR_SHEET_COLUMNS * 4;
 
     for (let frame = 0; frame < frameCount; frame += 1) {
@@ -379,16 +377,54 @@ export class OfficeScene extends Phaser.Scene {
       const row = Math.floor(frame / AVATAR_SHEET_COLUMNS);
       const frameKey = getAvatarFrameKey(frame);
 
-      if (!texture.has(frameKey)) {
-        texture.add(
-          frameKey,
-          0,
-          column * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM,
-          row * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM,
-          AVATAR_FRAME_CONTENT_SIZE,
-          AVATAR_FRAME_CONTENT_SIZE
-        );
+      if (this.textures.exists(frameKey)) {
+        continue;
       }
+
+      const texture = this.textures.createCanvas(
+        frameKey,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+      if (!texture) {
+        throw new Error(`Unable to normalize avatar frame: ${frameKey}`);
+      }
+
+      const sourceX = column * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM;
+      const sourceY = row * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM;
+      texture.context.drawImage(
+        sourceImage,
+        sourceX,
+        sourceY,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE,
+        0,
+        0,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+
+      const bounds = getOpaquePixelBounds(
+        texture.context.getImageData(0, 0, AVATAR_FRAME_CONTENT_SIZE, AVATAR_FRAME_CONTENT_SIZE)
+      );
+      const xOffset = Math.round(
+        AVATAR_FRAME_CONTENT_SIZE / 2 - (bounds.left + bounds.width / 2)
+      );
+      const yOffset = AVATAR_FOOT_BASELINE - bounds.bottom;
+
+      texture.context.clearRect(0, 0, AVATAR_FRAME_CONTENT_SIZE, AVATAR_FRAME_CONTENT_SIZE);
+      texture.context.drawImage(
+        sourceImage,
+        sourceX,
+        sourceY,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE,
+        xOffset,
+        yOffset,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+      texture.refresh();
     }
   }
 
@@ -399,8 +435,7 @@ export class OfficeScene extends Phaser.Scene {
         this.anims.create({
           frameRate: 9,
           frames: AVATAR_WALK_FRAMES_BY_DIRECTION[direction].map((frame) => ({
-            frame: getAvatarFrameKey(frame),
-            key: AVATAR_TEXTURE_KEY
+            key: getAvatarFrameKey(frame)
           })),
           key: walkKey,
           repeat: -1
@@ -413,8 +448,7 @@ export class OfficeScene extends Phaser.Scene {
           frameRate: 1,
           frames: [
             {
-              frame: getAvatarIdleFrame(direction),
-              key: AVATAR_TEXTURE_KEY
+              key: getAvatarIdleFrame(direction)
             }
           ],
           key: idleKey,
@@ -432,6 +466,36 @@ export class OfficeScene extends Phaser.Scene {
     sprite.setFlipX(shouldFlipAvatarSprite(direction, animation));
     sprite.anims.play(getAvatarAnimationKey(direction, animation), true);
   }
+}
+
+function getOpaquePixelBounds(imageData: ImageData): {
+  bottom: number;
+  left: number;
+  width: number;
+} {
+  const { data, height, width } = imageData;
+  let left = width;
+  let right = -1;
+  let bottom = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha === 0) {
+        continue;
+      }
+
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+  }
+
+  if (right === -1 || bottom === -1) {
+    throw new Error("Avatar frame has no visible pixels.");
+  }
+
+  return { bottom, left, width: right - left + 1 };
 }
 
 function getAvatarIdleFrame(direction: PresenceMovePayload["direction"]): string {
