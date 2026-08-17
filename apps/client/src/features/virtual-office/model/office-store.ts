@@ -18,6 +18,7 @@ interface OfficeState {
   self: OfficeMemberPresence | null;
   setConnectionState: (connectionState: OfficeConnectionState) => void;
   setSnapshot: (self: OfficeMemberPresence, members: OfficeMemberPresence[]) => void;
+  updateSelfPosition: (avatar: OfficeMemberPresence["avatar"]) => void;
   upsertMember: (member: OfficeMemberPresence) => void;
   removeMember: (memberId: string) => void;
   updateMemberPosition: (payload: PresenceMovedPayload) => void;
@@ -38,6 +39,15 @@ export const useOfficeStore = create<OfficeState>((set) => ({
     })),
   setConnectionState: (connectionState) => set({ connectionState }),
   setSnapshot: (self, members) => set({ members, self }),
+  updateSelfPosition: (avatar) =>
+    set((state) => ({
+      self: state.self
+        ? {
+            ...state.self,
+            avatar
+          }
+        : null
+    })),
   updateMemberPosition: (payload) =>
     set((state) => ({
       members: state.members.map((member) =>

@@ -24,6 +24,12 @@ interface ConnectionRecord {
   workspaceId: string;
 }
 
+export interface ConnectedOfficeMember {
+  member: OfficeMemberPresence;
+  socketId: string;
+  teamId: string;
+}
+
 @Injectable()
 export class PresenceService {
   private readonly connections = new Map<string, ConnectionRecord>();
@@ -149,6 +155,23 @@ export class PresenceService {
 
   getTeamId(socketId: string): string | null {
     return this.connections.get(socketId)?.teamId ?? null;
+  }
+
+  getConnection(socketId: string): ConnectedOfficeMember | null {
+    const connection = this.connections.get(socketId);
+    return connection
+      ? { member: connection.member, socketId, teamId: connection.teamId }
+      : null;
+  }
+
+  findConnectedMember(memberId: string, teamId: string): ConnectedOfficeMember | null {
+    for (const [socketId, connection] of this.connections) {
+      if (connection.member.memberId === memberId && connection.teamId === teamId) {
+        return { member: connection.member, socketId, teamId: connection.teamId };
+      }
+    }
+
+    return null;
   }
 
   private schedulePositionPersistence(socketId: string, now: number): void {

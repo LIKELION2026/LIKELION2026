@@ -39,6 +39,8 @@ const CAMERA_MIN_ZOOM = 0.75;
 const CAMERA_MAX_ZOOM = 3.2;
 const CAMERA_WHEEL_ZOOM_SENSITIVITY = 0.0012;
 const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
+const NEARBY_AVATAR_OFFSET = 72;
+const AVATAR_POSITION_MARGIN = 48;
 
 interface OfficeSceneCallbacks {
   onLocalMovement: (payload: LocalMovementCommand) => void;
@@ -65,12 +67,16 @@ export class OfficeScene extends Phaser.Scene {
   private cameraZoom: number | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
+  private isFollowingLocalAvatar = true;
   private inMeetingRoom = false;
   private localAvatarId = DEFAULT_AVATAR_ID;
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
-  private wasd!: Record<"down" | "left" | "right" | "up", Phaser.Input.Keyboard.Key>;
+  private wasd!: Record<
+    "down" | "left" | "right" | "up",
+    Phaser.Input.Keyboard.Key
+  >;
 
   constructor(callbacks: OfficeSceneCallbacks) {
     super(OFFICE_SCENE_KEY);
@@ -126,12 +132,69 @@ export class OfficeScene extends Phaser.Scene {
       return;
     }
 
-    this.player.setTexture(getAvatarIdleFrame(this.localAvatarId, this.direction));
-    this.playAvatarAnimation(this.player, this.localAvatarId, this.direction, "idle");
+    this.player.setTexture(
+      getAvatarIdleFrame(this.localAvatarId, this.direction),
+    );
+    this.playAvatarAnimation(
+      this.player,
+      this.localAvatarId,
+      this.direction,
+      "idle",
+    );
   }
 
-  syncRemoteMembers(members: OfficeMemberPresence[], selfMemberId: string | undefined): void {
-    const desiredMembers = members.filter((member) => member.memberId !== selfMemberId);
+  focusMember(x: number, y: number): void {
+    this.isFollowingLocalAvatar = false;
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(x, y, 260, "Quad.easeOut");
+  }
+
+  moveLocalAvatarTo(x: number, y: number): void {
+    this.isFollowingLocalAvatar = true;
+    this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
+    this.player.setPosition(x, y);
+    this.playerBody.reset(x, y);
+    this.playerBody.setVelocity(0, 0);
+    this.playAvatarAnimation(
+      this.player,
+      this.localAvatarId,
+      this.direction,
+      "idle",
+    );
+    this.callbacks.onLocalMovement({
+      animation: "idle",
+      direction: this.direction,
+      x: Math.round(x),
+      y: Math.round(y),
+    });
+  }
+
+  moveLocalAvatarNear(x: number, y: number): void {
+    const rightSideX = x + NEARBY_AVATAR_OFFSET;
+    const nearbyX =
+      rightSideX <= OFFICE_SIZE.width - AVATAR_POSITION_MARGIN
+        ? rightSideX
+        : x - NEARBY_AVATAR_OFFSET;
+    const boundedNearbyX = Phaser.Math.Clamp(
+      nearbyX,
+      AVATAR_POSITION_MARGIN,
+      OFFICE_SIZE.width - AVATAR_POSITION_MARGIN,
+    );
+    const nearbyY = Phaser.Math.Clamp(
+      y,
+      AVATAR_POSITION_MARGIN,
+      OFFICE_SIZE.height - AVATAR_POSITION_MARGIN,
+    );
+    this.moveLocalAvatarTo(boundedNearbyX, nearbyY);
+  }
+
+  syncRemoteMembers(
+    members: OfficeMemberPresence[],
+    selfMemberId: string | undefined,
+  ): void {
+    const desiredMembers = members.filter(
+      (member) => member.memberId !== selfMemberId,
+    );
     const desiredIds = new Set(desiredMembers.map((member) => member.memberId));
 
     for (const [memberId, avatar] of this.remoteAvatars) {

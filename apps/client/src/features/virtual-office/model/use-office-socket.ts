@@ -7,6 +7,9 @@ import {
   type OfficeMemberJoinedPayload,
   type OfficeMemberLeftPayload,
   type OfficeLifecycleUpdatedPayload,
+  type OfficeSummonRequestedPayload,
+  type OfficeSummonResolvedPayload,
+  type OfficeTodosUpdatedPayload,
   type AttendanceStatus,
   type LocalMovementCommand,
   type OfficeSnapshotPayload,
@@ -21,12 +24,24 @@ import { useOfficeStore } from "./office-store";
 const MOVEMENT_INTERVAL_MS = 60;
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
-export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
+interface OfficeSocketCallbacks {
+  onSummonRequested?: (payload: OfficeSummonRequestedPayload) => void;
+  onSummonResolved?: (payload: OfficeSummonResolvedPayload) => void;
+  onTodosUpdated?: () => void;
+}
+
+export function useOfficeSocket(
+  session: GuestOfficeSessionResponse | null,
+  callbacks: OfficeSocketCallbacks = {}
+): {
+  respondToSummon: (requestId: string, decision: "accepted" | "declined") => void;
+  sendSummonRequest: (targetMemberId: string) => boolean;
   sendMove: (payload: LocalMovementCommand) => void;
   updateAttendance: (attendanceStatus: AttendanceStatus) => void;
   updateStatus: (status: MemberStatus) => void;
 } {
   const socketRef = useRef<Socket | null>(null);
+  const callbacksRef = useRef(callbacks);
   const lastMoveRef = useRef<LocalMovementCommand & { sentAt: number } | null>(null);
   const nextMoveSequenceRef = useRef(0);
   const lastReceivedSequenceRef = useRef(new Map<string, number>());
@@ -37,6 +52,11 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
   const updateMemberPosition = useOfficeStore((state) => state.updateMemberPosition);
   const updateMemberStatus = useOfficeStore((state) => state.updateMemberStatus);
   const updateMemberLifecycle = useOfficeStore((state) => state.updateMemberLifecycle);
+  const updateSelfPosition = useOfficeStore((state) => state.updateSelfPosition);
+
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   useEffect(() => {
     let heartbeatTimer: number | undefined;
@@ -91,6 +111,21 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
       updateMemberStatus(payload.member);
     const handleLifecycleUpdated = (payload: OfficeLifecycleUpdatedPayload) =>
       updateMemberLifecycle(payload.memberId, payload.presence);
+    const handleTodosUpdated = (payload: OfficeTodosUpdatedPayload) => {
+      if (payload.teamId === session.member.workspaceId && payload.memberId !== session.member.id) {
+        callbacksRef.current.onTodosUpdated?.();
+      }
+    };
+    const handleSummonRequested = (payload: OfficeSummonRequestedPayload) => {
+      if (payload.teamId === session.member.workspaceId) {
+        callbacksRef.current.onSummonRequested?.(payload);
+      }
+    };
+    const handleSummonResolved = (payload: OfficeSummonResolvedPayload) => {
+      if (payload.teamId === session.member.workspaceId) {
+        callbacksRef.current.onSummonResolved?.(payload);
+      }
+    };
 
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
@@ -101,11 +136,11 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
     socket.on(SOCKET_EVENT_NAMES.PRESENCE_MOVED, handleMemberMoved);
     socket.on(SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATED, handleStatusUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, handleLifecycleUpdated);
+    socket.on(SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED, handleTodosUpdated);
+    socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUESTED, handleSummonRequested);
+    socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESOLVED, handleSummonResolved);
     heartbeatTimer = window.setInterval(() => {
-      const self = useOfficeStore.getState().self;
-      if (self) {
-        socket?.emit(SOCKET_EVENT_NAMES.OFFICE_HEARTBEAT, { avatar: self.avatar });
-      }
+      socket?.emit(SOCKET_EVENT_NAMES.OFFICE_HEARTBEAT, {});
     }, HEARTBEAT_INTERVAL_MS);
 
     return () => {
@@ -154,9 +189,10 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
       sequence: nextMoveSequenceRef.current
     };
     nextMoveSequenceRef.current += 1;
+    updateSelfPosition(payload);
     socket.emit(SOCKET_EVENT_NAMES.PRESENCE_MOVE, sequencedPayload);
     lastMoveRef.current = { ...payload, sentAt: now };
-  }, []);
+  }, [updateSelfPosition]);
 
   const updateStatus = useCallback((status: MemberStatus) => {
     socketRef.current?.emit(SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATE, { status });
@@ -168,5 +204,22 @@ export function useOfficeSocket(session: GuestOfficeSessionResponse | null): {
     });
   }, []);
 
-  return { sendMove, updateAttendance, updateStatus };
+  const sendSummonRequest = useCallback((targetMemberId: string) => {
+    const socket = socketRef.current;
+    if (!socket?.connected) {
+      return false;
+    }
+
+    socket.emit(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUEST, { targetMemberId });
+    return true;
+  }, []);
+
+  const respondToSummon = useCallback(
+    (requestId: string, decision: "accepted" | "declined") => {
+      socketRef.current?.emit(SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESPOND, { decision, requestId });
+    },
+    []
+  );
+
+  return { respondToSummon, sendMove, sendSummonRequest, updateAttendance, updateStatus };
 }
