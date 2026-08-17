@@ -166,7 +166,10 @@ briefing.confirmed
 - **범위**: 검증용이다. 확정된 로직은 `apps/server/src/integrations/speech`와 `integrations/llm`으로 옮기고, 그 시점에 이 폴더의 존속 여부를 다시 판단한다.
 - **의존 경계**: Client·Server·Shared 코드를 import하지 않는다. 반대로 다른 앱이 이 폴더를 import하지도 않는다.
 
-관련 기록은 `docs/ADR/0001-translation-provider-abstraction.md`와 PR #5에 있다.
+관련 기록은 아래에 있다.
+
+- `docs/ADR/0001-translation-provider-abstraction.md`, PR #5 — 번역 provider를 교체 가능하게 둔 이유
+- `docs/ADR/0002-participant-local-translation-pipeline.md` — 파이프라인을 서버가 아니라 참가자 PC에서 돌리는 이유
 
 ## 초기 구현 순서
 
