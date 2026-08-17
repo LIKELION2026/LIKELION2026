@@ -50,6 +50,7 @@ export interface OfficeAvatarState {
 }
 
 export interface OfficeMemberPresence extends MemberPresence {
+  avatarId: string;
   avatar: OfficeAvatarState;
   officePresence?: OfficeCollaborationPresence;
 }
