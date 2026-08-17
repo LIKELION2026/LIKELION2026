@@ -50,16 +50,23 @@ class _OpenUtterance:
 
     ``subtitle_id``와 ``occurred_at``은 발화 내내 고정한다. 그래야 Client가
     같은 자막으로 알아보고 덮어쓴다.
+
+    확정된 조각과 아직 확정되지 않은 부분은 다르게 다뤄야 한다. 확정 조각은
+    Deepgram이 다시 보내지 않으므로 ``segments``에 쌓는다. 중간 결과는 같은
+    조각이 자라는 중이라 매번 통째로 다시 오므로 ``provisional`` 하나를
+    갈아끼운다. 이걸 섞으면 "이번 이번 회의 이번 회의에서"가 된다.
     """
 
     subtitle_id: str
     occurred_at: str
     segments: list[str]
+    provisional: str = ""
     revision: int = 0
 
     @property
     def text(self) -> str:
-        return " ".join(self.segments)
+        parts = [*self.segments, self.provisional] if self.provisional else self.segments
+        return " ".join(parts)
 
 
 class TranslationPipeline:
@@ -98,7 +105,7 @@ class TranslationPipeline:
         spoken_at: float | None = None,
         ends_utterance: bool = True,
     ) -> UtteranceResult:
-        """발화 조각 하나를 자막으로 만든다.
+        """확정된 발화 조각 하나를 자막으로 만든다.
 
         ``text``는 이번에 확정된 조각이고, 번역 대상은 그때까지 쌓인 전체다.
         ``ends_utterance``가 False면 뒤에 조각이 더 오므로 발화를 열어 둔 채
@@ -107,6 +114,33 @@ class TranslationPipeline:
         ``spoken_at``은 조각이 확정된 시각(``time.monotonic()`` 기준)이다.
         번역이 끝난 뒤 이 시각과 비교해 너무 늦었으면 자막을 만들지 않는다.
         """
+        return self._handle(
+            speaker_id, text, spoken_at, ends_utterance=ends_utterance, confirmed=True
+        )
+
+    def handle_interim(
+        self, speaker_id: str, text: str, spoken_at: float | None = None
+    ) -> UtteranceResult:
+        """아직 확정되지 않은 인식 결과를 자막으로 만든다.
+
+        말이 멈추기를 기다리지 않고 자막을 띄우기 위한 경로다. 확정 조각과
+        달리 ``text``는 같은 조각이 자라는 중이라 매번 통째로 다시 온다.
+        그래서 쌓지 않고 잠정 꼬리 하나를 갈아끼운다.
+
+        발화를 끝내지 않으므로 뒤이어 확정 조각이 오면 같은 자막을 덮어쓴다.
+        """
+        return self._handle(
+            speaker_id, text, spoken_at, ends_utterance=False, confirmed=False
+        )
+
+    def _handle(
+        self,
+        speaker_id: str,
+        text: str,
+        spoken_at: float | None,
+        ends_utterance: bool,
+        confirmed: bool,
+    ) -> UtteranceResult:
         started = spoken_at if spoken_at is not None else time.monotonic()
 
         source_lang, target_lang = self._participants.resolve_direction(speaker_id)
@@ -121,7 +155,13 @@ class TranslationPipeline:
             )
             self._open[speaker_id] = open_utterance
 
-        open_utterance.segments.append(text.strip())
+        if confirmed:
+            # 확정된 내용은 잠정 꼬리를 대체한다. 같은 말이 두 번 들어가면 안 된다.
+            open_utterance.segments.append(text.strip())
+            open_utterance.provisional = ""
+        else:
+            open_utterance.provisional = text.strip()
+
         open_utterance.revision += 1
         # 발화가 끝나면 다음 조각은 새 자막이다. 번역이 실패하거나 늦어
         # 중간에 빠져나가도 상태는 남지 않도록 여기서 미리 닫는다.

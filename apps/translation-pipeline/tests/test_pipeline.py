@@ -324,6 +324,80 @@ def test_speakers_do_not_share_an_open_utterance(participants, glossary):
     assert vietnamese.subtitle.sourceText == "Xin chào"
 
 
+# --- 확정 전 중간 결과 ---
+#
+# 확정 조각은 이어붙이지만 중간 결과는 같은 조각이 자라는 중이라 매번 통째로
+# 다시 온다. 갈아끼우지 않고 쌓으면 같은 말이 반복된다.
+
+
+def test_an_interim_result_replaces_the_previous_one(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_interim("user_ko", "이번")
+    pipeline.handle_interim("user_ko", "이번 회의")
+    result = pipeline.handle_interim("user_ko", "이번 회의에서")
+
+    assert result.subtitle.sourceText == "이번 회의에서"
+
+
+def test_an_interim_result_follows_the_confirmed_segments(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    result = pipeline.handle_interim("user_ko", "이번 분기")
+
+    assert result.subtitle.sourceText == "안건은 이번 분기"
+
+
+def test_a_confirmed_segment_replaces_the_interim_tail(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_interim("user_ko", "이번 분기")
+    result = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    # 확정된 내용이 중간 결과를 이미 포함한다. 둘 다 남기면 말이 두 번 들어간다.
+    assert result.subtitle.sourceText == "이번 분기 계획입니다."
+
+
+def test_an_interim_result_is_never_final(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    result = pipeline.handle_interim("user_ko", "이번 분기")
+
+    assert result.subtitle.to_dict()["isFinal"] is False
+
+
+def test_an_interim_result_keeps_the_subtitle_id(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    interim = pipeline.handle_interim("user_ko", "이번 분기")
+    final = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert interim.subtitle.subtitleId == final.subtitle.subtitleId
+    assert (interim.subtitle.revision, final.subtitle.revision) == (1, 2)
+
+
+def test_interim_results_stay_out_of_the_context(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_interim("user_ko", "이번")
+    pipeline.handle_interim("user_ko", "이번 분기")
+
+    assert len(pipeline.context) == 0
+
+
+def test_an_interim_result_is_not_discarded_when_late(participants, glossary):
+    import time
+
+    pipeline = make_pipeline(participants, glossary, max_staleness_ms=0)
+
+    result = pipeline.handle_interim(
+        "user_ko", "이번 분기", spoken_at=time.monotonic() - 10
+    )
+
+    assert result.subtitle is not None
+
+
 def test_a_late_mid_utterance_segment_is_kept(participants, glossary):
     import time
 
