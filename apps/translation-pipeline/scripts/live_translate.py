@@ -80,6 +80,7 @@ class ConsoleReporter:
             "중간번역": 0,
             "확정번역": 0,
             "사전만": 0,
+            "재사용": 0,
             "번역실패": 0,
             "늦어서버림": 0,
             "발행실패": 0,
@@ -122,14 +123,24 @@ class ConsoleReporter:
                 int((time.monotonic() - self._utterance_started) * 1000)
             )
 
-        if event.confirmed:
+        if result.reused_translation:
+            self.stats["재사용"] += 1
+        elif event.confirmed:
             self.stats["확정번역" if result.used_translation_model else "사전만"] += 1
-            marker = "" if event.ends_utterance else "  (조각)"
         else:
             self.stats["중간번역"] += 1
+
+        if event.confirmed:
+            marker = "" if event.ends_utterance else "  (조각)"
+        else:
             marker = "  (중간)"
 
-        source = "모델" if result.used_translation_model else "사전"
+        if result.reused_translation:
+            source = "재사용"
+        elif result.used_translation_model:
+            source = "모델"
+        else:
+            source = "사전"
         print(f"[{payload.sourceLanguage}] {payload.sourceText}{marker}")
         print(f"[{payload.translatedLanguage}] {payload.translatedText}")
         print(f"  ({source}, {result.elapsed_ms}ms, rev {payload.revision})")
@@ -152,7 +163,7 @@ class ConsoleReporter:
         print("\n" + "=" * 58)
         print(
             f"중간번역 {self.stats['중간번역']}, 확정번역 {self.stats['확정번역']}"
-            f", 사전만 {self.stats['사전만']}"
+            f", 사전만 {self.stats['사전만']}, 재사용 {self.stats['재사용']}"
         )
         print(
             f"번역실패 {self.stats['번역실패']}, 늦어서버림 {self.stats['늦어서버림']}"

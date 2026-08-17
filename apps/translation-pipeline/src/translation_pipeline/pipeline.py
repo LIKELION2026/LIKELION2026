@@ -42,6 +42,7 @@ class UtteranceResult:
     used_translation_model: bool = False
     skip_reason: str | None = None
     unapplied_glossary_count: int = 0
+    reused_translation: bool = False
 
 
 @dataclass
@@ -62,6 +63,11 @@ class _OpenUtterance:
     segments: list[str]
     provisional: str = ""
     revision: int = 0
+    # 직전에 번역한 원문과 그 결과. 중간 결과가 이미 조각 전체였으면 확정될 때
+    # 내용이 같아 모델을 또 부를 이유가 없다. 실측에서 호출 11번 중 2번이
+    # 이 경우였다.
+    last_text: str = ""
+    last_translated: str = ""
 
     @property
     def text(self) -> str:
@@ -171,26 +177,42 @@ class TranslationPipeline:
         text = open_utterance.text
         occurred_at = open_utterance.occurred_at
 
-        match = self._glossary.match(text, source_lang, target_lang)
-        used_glossary = bool(match.entries)
-        unapplied = 0
-
-        if match.can_skip_translation_model:
-            translated = match.direct_translation
+        # 중간 결과가 이미 조각 전체였으면 확정될 때 원문이 그대로다. 같은
+        # 문장을 다시 번역해봐야 결과도 같으니 직전 번역을 재사용한다. 발행은
+        # 그대로 한다. isFinal이 바뀌어야 자막이 미확정으로 남지 않는다.
+        reused = bool(open_utterance.last_translated) and (
+            text == open_utterance.last_text
+        )
+        if reused:
+            match = self._glossary.match(text, source_lang, target_lang)
+            translated = open_utterance.last_translated
+            used_glossary = bool(match.entries)
             used_model = False
+            unapplied = 0
         else:
-            translated = self._translator.translate(
-                TranslationRequest(
-                    text=text,
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    glossary_entries=match.entries,
-                    context_turns=self._context.recent(),
+            match = self._glossary.match(text, source_lang, target_lang)
+            used_glossary = bool(match.entries)
+            unapplied = 0
+
+            if match.can_skip_translation_model:
+                translated = match.direct_translation
+                used_model = False
+            else:
+                translated = self._translator.translate(
+                    TranslationRequest(
+                        text=text,
+                        source_lang=source_lang,
+                        target_lang=target_lang,
+                        glossary_entries=match.entries,
+                        context_turns=self._context.recent(),
+                    )
                 )
-            )
-            used_model = True
-            if match.entries:
-                unapplied = len(find_unapplied_entries(translated, match.entries))
+                used_model = True
+                if match.entries:
+                    unapplied = len(find_unapplied_entries(translated, match.entries))
+
+            open_utterance.last_text = text
+            open_utterance.last_translated = translated
 
         elapsed_ms = int((time.monotonic() - started) * 1000)
 
@@ -241,4 +263,5 @@ class TranslationPipeline:
             used_glossary=used_glossary,
             used_translation_model=used_model,
             unapplied_glossary_count=unapplied,
+            reused_translation=reused,
         )

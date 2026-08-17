@@ -386,6 +386,72 @@ def test_interim_results_stay_out_of_the_context(participants, glossary):
     assert len(pipeline.context) == 0
 
 
+def test_unchanged_text_reuses_the_previous_translation(participants, glossary):
+    translator = FakeTranslator("...")
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+    )
+
+    # 중간 결과가 이미 조각 전체였던 경우다. 확정될 때 원문이 그대로다.
+    pipeline.handle_interim("user_ko", "이번 분기 계획입니다.")
+    result = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert len(translator.requests) == 1
+    assert result.reused_translation is True
+    assert result.used_translation_model is False
+
+
+def test_a_reused_translation_is_still_published_as_final(participants, glossary):
+    pipeline = make_pipeline(participants, glossary, translation="Kế hoạch quý này.")
+
+    pipeline.handle_interim("user_ko", "이번 분기 계획입니다.")
+    result = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    # 발행을 건너뛰면 자막이 미확정으로 남는다.
+    payload = result.subtitle.to_dict()
+    assert payload["isFinal"] is True
+    assert payload["revision"] == 2
+    assert payload["translatedText"] == "Kế hoạch quý này."
+
+
+def test_changed_text_is_translated_again(participants, glossary):
+    translator = FakeTranslator("...")
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+    )
+
+    pipeline.handle_interim("user_ko", "이번 분기")
+    result = pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    assert len(translator.requests) == 2
+    assert result.reused_translation is False
+
+
+def test_a_new_utterance_does_not_reuse_the_previous_translation(
+    participants, glossary
+):
+    translator = FakeTranslator("...")
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+    )
+
+    pipeline.handle_utterance("user_ko", "같은 말입니다.")
+    result = pipeline.handle_utterance("user_ko", "같은 말입니다.")
+
+    # 재사용은 한 발화 안에서만이다. 발화가 다르면 맥락도 다르다.
+    assert len(translator.requests) == 2
+    assert result.reused_translation is False
+
+
 def test_an_interim_result_is_not_discarded_when_late(participants, glossary):
     import time
 
