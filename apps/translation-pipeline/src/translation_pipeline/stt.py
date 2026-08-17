@@ -36,10 +36,19 @@ class SpeechRecognitionError(TranslationPipelineError):
 
 @dataclass(frozen=True)
 class Utterance:
-    """끝난 것으로 판단된 발화 하나."""
+    """Deepgram이 확정한 발화 조각 하나.
+
+    Deepgram은 발화를 겹치지 않는 조각으로 나눠 확정한다. 조각 하나가
+    확정되면 ``is_final``이 서고, 그 중 발화의 마지막 조각에만
+    ``speech_final``이 선다. 즉 조각을 이어붙인 것이 전체 발화다.
+
+    ``ends_utterance``가 False면 뒤에 조각이 더 온다는 뜻이다. 이 조각만
+    보고 발화가 끝났다고 판단하면 안 된다.
+    """
 
     text: str
     language: str
+    ends_utterance: bool = True
 
 
 class MicrophoneStream:
@@ -185,11 +194,20 @@ class RealtimeTranscriber:
                 if not transcript:
                     continue
 
-                # speech_final은 Deepgram이 endpointing으로 발화가 끝났다고
-                # 판단한 시점이다. is_final만으로는 문장 중간일 수 있다.
-                if getattr(message, "speech_final", False):
-                    on_utterance(Utterance(text=transcript, language=self._language))
-                elif on_interim is not None and not getattr(message, "is_final", False):
+                # is_final이 선 조각은 Deepgram이 확정한 것이라 다시 오지
+                # 않는다. 그래서 speech_final만 처리하면 발화 앞부분이
+                # 통째로 사라진다. 확정된 조각은 전부 넘기고, 발화가
+                # 끝났는지는 speech_final로 따로 알린다.
+                speech_final = bool(getattr(message, "speech_final", False))
+                if speech_final or getattr(message, "is_final", False):
+                    on_utterance(
+                        Utterance(
+                            text=transcript,
+                            language=self._language,
+                            ends_utterance=speech_final,
+                        )
+                    )
+                elif on_interim is not None:
                     on_interim(transcript)
         except Exception:
             # 소켓이 닫히면 반복이 끊긴다. 종료 경로이므로 조용히 빠져나간다.

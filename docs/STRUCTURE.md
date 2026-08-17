@@ -165,8 +165,12 @@ briefing.confirmed
 - **workspace 경계**: pnpm workspace에는 포함하지 않는다. 자체 `requirements.txt`와 가상환경으로 실행하므로 `pnpm install`과 루트 스크립트의 영향을 받지 않는다.
 - **범위**: 검증용이다. 확정된 로직은 `apps/server/src/integrations/speech`와 `integrations/llm`으로 옮기고, 그 시점에 이 폴더의 존속 여부를 다시 판단한다.
 - **의존 경계**: Client·Server·Shared 코드를 import하지 않는다. 반대로 다른 앱이 이 폴더를 import하지도 않는다.
+- **경계의 예외**: 테스트가 Client 파일을 **텍스트로 읽어 계약을 대조하는 것**은 허용한다. 실행 코드가 아니므로 런타임 의존이 생기지 않고, `packages/shared`에 해당 규칙이 없는 동안 어긋남을 잡을 방법이 이것뿐이다. 지금은 회의방 이름 규칙(`tests/test_rooms.py` -> `meeting-room-section.ts`) 한 곳이다. 규칙이 `packages/shared`로 올라가면 이 예외는 없앤다.
 
-관련 기록은 `docs/ADR/0001-translation-provider-abstraction.md`와 PR #5에 있다.
+관련 기록은 아래에 있다.
+
+- `docs/ADR/0001-translation-provider-abstraction.md`, PR #5 — 번역 provider를 교체 가능하게 둔 이유
+- `docs/ADR/0002-participant-local-translation-pipeline.md` — 파이프라인을 서버가 아니라 참가자 PC에서 돌리는 이유
 
 ## 초기 구현 순서
 
