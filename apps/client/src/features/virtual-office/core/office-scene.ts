@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import {
   MEMBER_STATUS_LABELS,
+  type LocalMovementCommand,
   type OfficeMemberPresence,
   type PresenceMovePayload
 } from "@likelion2026/shared";
@@ -51,7 +52,7 @@ const AVATAR_WALK_FRAMES_BY_DIRECTION = {
 const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
 
 interface OfficeSceneCallbacks {
-  onLocalMovement: (payload: PresenceMovePayload) => void;
+  onLocalMovement: (payload: LocalMovementCommand) => void;
   onMeetingRoomState: (isInside: boolean) => void;
   onReady: () => void;
 }
