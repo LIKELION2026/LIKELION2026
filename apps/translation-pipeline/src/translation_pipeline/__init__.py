@@ -4,6 +4,12 @@ LiveKit 연동 전에 STT, 관용구 매칭, 번역 로직을 단독으로 검�
 패키지다.
 """
 
+from .agent import (
+    ParticipantInfo,
+    ParticipantWorker,
+    TranslationAgent,
+    read_participant,
+)
 from .context import DEFAULT_MAX_TURNS, ConversationContext, ConversationTurn
 from .errors import (
     GlossaryError,
@@ -36,6 +42,7 @@ from .pipeline import (
 from .publisher import SubtitlePublisher, SubtitlePublishError
 from .rooms import (
     DEFAULT_SECTION,
+    is_lab_meeting_room,
     SECTION_SLUGS,
     UnknownMeetingSectionError,
     build_lab_room_name,
@@ -71,7 +78,9 @@ __all__ = [
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",
     "MicrophoneStream",
+    "ParticipantInfo",
     "ParticipantRegistry",
+    "ParticipantWorker",
     "RealtimeTranscriber",
     "SubtitleError",
     "SubtitlePayload",
@@ -79,11 +88,14 @@ __all__ = [
     "SECTION_SLUGS",
     "SessionEvent",
     "SubtitlePublisher",
+    "TranslationAgent",
     "TranslationError",
     "TranslationPipeline",
     "TranslationSession",
     "UtteranceResult",
     "build_lab_room_name",
+    "is_lab_meeting_room",
+    "read_participant",
     "build_subtitle",
     "utc_now_iso",
     "TranslationPipelineError",
