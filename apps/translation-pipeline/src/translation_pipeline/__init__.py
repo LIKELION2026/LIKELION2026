@@ -34,6 +34,11 @@ from .pipeline import (
     UtteranceResult,
 )
 from .publisher import SubtitlePublisher, SubtitlePublishError
+from .session import (
+    DEFAULT_INTERIM_INTERVAL_MS,
+    SessionEvent,
+    TranslationSession,
+)
 from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
 from .translator import (
     FakeTranslator,
@@ -54,14 +59,17 @@ __all__ = [
     "GlossaryEntry",
     "GlossaryError",
     "GlossaryMatch",
+    "DEFAULT_INTERIM_INTERVAL_MS",
     "DEFAULT_MAX_STALENESS_MS",
     "ParticipantRegistry",
     "SubtitleError",
     "SubtitlePayload",
     "SubtitlePublishError",
+    "SessionEvent",
     "SubtitlePublisher",
     "TranslationError",
     "TranslationPipeline",
+    "TranslationSession",
     "UtteranceResult",
     "build_subtitle",
     "utc_now_iso",
