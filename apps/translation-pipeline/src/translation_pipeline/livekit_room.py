@@ -65,3 +65,45 @@ class ParticipantAudioRunner:
         for identity in list(self._tasks):
             await self.detach(identity)
         await asyncio.to_thread(self._agent.stop)
+
+
+def register_participant_events(
+    room,
+    runner: ParticipantAudioRunner,
+    on_attached: Callable | None = None,
+    on_skipped: Callable | None = None,
+    on_detached: Callable | None = None,
+) -> None:
+    """방의 참가자 입·퇴장을 러너에 잇는다.
+
+    퇴장 처리는 코루틴이라 태스크로 띄운다. 이 콜백은 이벤트 루프 스레드에서
+    불리므로 ``asyncio.create_task``로 충분하다. 여기가 두 번 틀린 자리라
+    스크립트에 두지 않고 모듈로 옮겨 테스트한다.
+    """
+
+    def _connected(participant) -> None:
+        if runner.attach(participant):
+            if on_attached is not None:
+                on_attached(participant)
+        elif on_skipped is not None:
+            on_skipped(participant)
+
+    def _disconnected(participant) -> None:
+        identity = participant.identity
+        if on_detached is not None:
+            on_detached(identity)
+        # 이걸 놓치면 워커 스레드와 오디오 태스크가 그대로 남는다.
+        asyncio.create_task(runner.detach(identity))
+
+    room.on("participant_connected", _connected)
+    room.on("participant_disconnected", _disconnected)
+
+
+def attach_existing_participants(room, runner: ParticipantAudioRunner, on_attached=None, on_skipped=None) -> None:
+    """워커가 들어가기 전에 이미 있던 참가자를 받는다."""
+    for participant in list(room.remote_participants.values()):
+        if runner.attach(participant):
+            if on_attached is not None:
+                on_attached(participant)
+        elif on_skipped is not None:
+            on_skipped(participant)

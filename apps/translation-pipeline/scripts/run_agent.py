@@ -54,6 +54,10 @@ from translation_pipeline import (  # noqa: E402
     TranslationAgent,
     is_lab_meeting_room,
 )
+from translation_pipeline.livekit_room import (  # noqa: E402
+    attach_existing_participants,
+    register_participant_events,
+)
 from translation_pipeline.providers import GeminiTranslator  # noqa: E402
 from translation_pipeline.providers.gemini import DEFAULT_MODEL  # noqa: E402
 from translation_pipeline.stt import DEFAULT_ENDPOINTING_MS  # noqa: E402
@@ -180,25 +184,26 @@ async def translate_room(ctx: JobContext) -> None:
     )
     runner = ParticipantAudioRunner(agent=agent, room=ctx.room)
 
-    def attach(participant) -> None:
-        if runner.attach(participant):
-            info = agent.workers()[participant.identity].info
-            print(
-                f"[{now()}] 통역 시작: {info.display_name}"
-                f" ({info.identity}, {info.language})"
-            )
-        else:
-            print(f"[{now()}] 통역 대상 아님: {participant.identity}")
+    def report_attached(participant) -> None:
+        info = agent.workers()[participant.identity].info
+        print(
+            f"[{now()}] 통역 시작: {info.display_name}"
+            f" ({info.identity}, {info.language})"
+        )
 
-    @ctx.room.on("participant_connected")
-    def _on_connected(participant) -> None:
-        attach(participant)
+    def report_skipped(participant) -> None:
+        print(f"[{now()}] 통역 대상 아님: {participant.identity}")
 
-    @ctx.room.on("participant_disconnected")
-    def _on_disconnected(participant) -> None:
-        identity = participant.identity
+    def report_detached(identity: str) -> None:
         print(f"[{now()}] 통역 종료: {identity}")
-        ctx.room.loop.create_task(runner.detach(identity))
+
+    register_participant_events(
+        ctx.room,
+        runner,
+        on_attached=report_attached,
+        on_skipped=report_skipped,
+        on_detached=report_detached,
+    )
 
     async def on_shutdown() -> None:
         await runner.shutdown()
@@ -215,9 +220,9 @@ async def translate_room(ctx: JobContext) -> None:
     print(f"  중간 결과 번역: {interim_interval_ms}ms 간격")
     print(f"  자막 발행: {publisher.url}")
 
-    # 워커가 들어가기 전에 이미 있던 참가자도 받는다.
-    for participant in ctx.room.remote_participants.values():
-        attach(participant)
+    attach_existing_participants(
+        ctx.room, runner, on_attached=report_attached, on_skipped=report_skipped
+    )
 
 
 if __name__ == "__main__":
