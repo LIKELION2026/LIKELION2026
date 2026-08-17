@@ -33,6 +33,7 @@ from .languages import (
     is_supported,
     language_name,
 )
+from .livekit_room import ParticipantAudioRunner
 from .participants import ParticipantRegistry
 from .pipeline import (
     DEFAULT_MAX_STALENESS_MS,
@@ -78,6 +79,7 @@ __all__ = [
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",
     "MicrophoneStream",
+    "ParticipantAudioRunner",
     "ParticipantInfo",
     "ParticipantRegistry",
     "ParticipantWorker",

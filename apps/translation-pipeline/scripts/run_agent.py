@@ -36,10 +36,7 @@ from translation_pipeline import (  # noqa: E402
     build_lab_room_name,
     is_lab_meeting_room,
 )
-from translation_pipeline.livekit_audio import (  # noqa: E402
-    open_participant_audio,
-    pump_audio,
-)
+from translation_pipeline.livekit_room import ParticipantAudioRunner  # noqa: E402
 from translation_pipeline.providers import GeminiTranslator  # noqa: E402
 from translation_pipeline.providers.gemini import DEFAULT_MODEL  # noqa: E402
 from translation_pipeline.stt import DEFAULT_ENDPOINTING_MS  # noqa: E402
@@ -134,46 +131,6 @@ def build_agent_token(room_name: str, api_key: str, api_secret: str) -> str:
     )
 
 
-class AgentRunner:
-    """LiveKit 방 연결과 참가자 오디오 태스크를 관리한다.
-
-    통역 자체는 ``TranslationAgent``가 한다. 여기서는 asyncio 쪽만 다룬다.
-    """
-
-    def __init__(self, room, agent: TranslationAgent) -> None:
-        self._room = room
-        self._agent = agent
-        self._audio_tasks: dict[str, asyncio.Task] = {}
-
-    def attach(self, participant) -> None:
-        worker = self._agent.add_participant(participant)
-        if worker is None:
-            print(f"  (통역 대상 아님: {getattr(participant, 'identity', '?')})")
-            return
-
-        stream = open_participant_audio(self._room, participant)
-        task = asyncio.create_task(pump_audio(stream, worker.audio))
-        self._audio_tasks[worker.info.identity] = task
-        print(
-            f"  통역 시작: {worker.info.display_name}"
-            f" ({worker.info.identity}, {worker.info.language})"
-        )
-
-    async def detach(self, identity: str) -> None:
-        task = self._audio_tasks.pop(identity, None)
-        if task is not None:
-            task.cancel()
-        # 워커 정지는 스레드를 join한다. 여기서 그대로 기다리면 방 전체의
-        # 오디오 수신이 함께 멈춘다.
-        await asyncio.to_thread(self._agent.remove_participant, identity)
-        print(f"  통역 종료: {identity}")
-
-    async def shutdown(self) -> None:
-        for identity in list(self._audio_tasks):
-            await self.detach(identity)
-        await asyncio.to_thread(self._agent.stop)
-
-
 async def run(args) -> int:
     import os
 
@@ -203,12 +160,13 @@ async def run(args) -> int:
         interim_interval_ms=args.interim_interval,
         on_event=reporter.on_event,
     )
-    runner = AgentRunner(room, agent)
+    runner = ParticipantAudioRunner(agent=agent, room=room)
     stopping = asyncio.Event()
 
     @room.on("participant_connected")
     def _on_connected(participant) -> None:
-        runner.attach(participant)
+        if not runner.attach(participant):
+            print(f"  (통역 대상 아님: {getattr(participant, 'identity', '?')})")
 
     @room.on("participant_disconnected")
     def _on_disconnected(participant) -> None:
