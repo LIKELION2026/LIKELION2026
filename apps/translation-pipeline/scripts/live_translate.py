@@ -29,11 +29,14 @@ from dotenv import load_dotenv  # noqa: E402
 
 from translation_pipeline import (  # noqa: E402
     DEFAULT_INTERIM_INTERVAL_MS,
+    DEFAULT_SECTION,
+    SECTION_SLUGS,
     ParticipantRegistry,
     SessionEvent,
     SubtitlePublisher,
     TranslationPipeline,
     TranslationSession,
+    build_lab_room_name,
     get_target_lang,
     language_name,
 )
@@ -190,7 +193,12 @@ def main() -> int:
     parser.add_argument("--name", default=None, help="자막에 표시할 이름")
     parser.add_argument("--language", default="ko", help="말할 언어 (ko 또는 vi)")
     parser.add_argument(
-        "--room", default="lab-ai-20260816-demo", help="회의방 이름 (lab-<team>-<yyyymmdd>-<slug>)"
+        "--room", default=None,
+        help="회의방 이름. 생략하면 --section과 오늘 날짜로 만든다",
+    )
+    parser.add_argument(
+        "--section", default=DEFAULT_SECTION, choices=sorted(SECTION_SLUGS),
+        help="회의 구역. --room을 줬으면 무시한다",
     )
     parser.add_argument("--publish", action="store_true", help="Server로 자막을 발행한다")
     parser.add_argument("--server", default=None, help="Server 주소")
@@ -219,12 +227,16 @@ def main() -> int:
     load_dotenv()
     timeout_ms = resolve_timeout_ms(args.model, args.timeout)
 
+    # Client는 방 이름을 오늘 날짜로 만든다. 손으로 넣으면 날짜가 바뀔 때
+    # 조용히 어긋나고, 자막만 안 뜬다.
+    room_name = args.room or build_lab_room_name(args.section)
+
     participants = ParticipantRegistry()
     publisher = None
     try:
         participants.set_language(args.speaker, args.language, display_name=args.name)
         pipeline = TranslationPipeline(
-            room_name=args.room,
+            room_name=room_name,
             participants=participants,
             translator=GeminiTranslator(model=args.model, timeout_ms=timeout_ms),
             max_staleness_ms=args.max_staleness,
@@ -255,7 +267,8 @@ def main() -> int:
     target_lang = get_target_lang(args.language)
     print(f"{language_name(args.language)} -> {language_name(target_lang)}")
     print(f"화자: {args.speaker} ({args.name or args.speaker})")
-    print(f"회의방: {pipeline.room_name}")
+    origin = "직접 지정" if args.room else f"{args.section}, 오늘 날짜"
+    print(f"회의방: {pipeline.room_name}  ({origin})")
     print(f"번역 모델: {args.model} (timeout {timeout_ms / 1000:.0f}초)")
     print(f"발화 종료 판정: 무음 {args.endpointing}ms")
     print(f"늦은 번역 폐기 기준: {args.max_staleness}ms")
