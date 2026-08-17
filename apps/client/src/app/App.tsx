@@ -1,4 +1,4 @@
-import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { JSX } from "react";
 
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
@@ -7,7 +7,18 @@ import { OfficePage } from "../pages/office/OfficePage";
 export function App(): JSX.Element {
   return (
     <BrowserRouter>
-      <div className="app-shell">
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+function AppContent(): JSX.Element {
+  const location = useLocation();
+  const isOfficeRoute = location.pathname === "/office";
+
+  return (
+    <div className={isOfficeRoute ? "app-shell app-shell-office" : "app-shell"}>
+      {isOfficeRoute ? null : (
         <header className="app-header">
           <NavLink className="brand" to="/office">
             GLOBAL OFFICE
@@ -17,14 +28,14 @@ export function App(): JSX.Element {
             <NavLink to="/meeting-lab">Meeting Lab</NavLink>
           </nav>
         </header>
-        <main className="app-main">
-          <Routes>
-            <Route element={<OfficePage />} path="/office" />
-            <Route element={<MeetingLabPage />} path="/meeting-lab" />
-            <Route element={<Navigate replace to="/office" />} path="*" />
-          </Routes>
-        </main>
-      </div>
-    </BrowserRouter>
+      )}
+      <main className="app-main">
+        <Routes>
+          <Route element={<OfficePage />} path="/office" />
+          <Route element={<MeetingLabPage />} path="/meeting-lab" />
+          <Route element={<Navigate replace to="/office" />} path="*" />
+        </Routes>
+      </main>
+    </div>
   );
 }

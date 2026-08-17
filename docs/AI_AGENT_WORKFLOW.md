@@ -497,6 +497,35 @@
 - 검증 결과: JSON 형식 검사와 Client production build 확인 예정. Vercel Production 확인은 재배포 후 수행 필요.
 - 관련 Issue / PR / Discussion: Issue #61
 
+### 2026-08-17 - 레드판다 아바타 스프라이트시트 적용
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Virtual Office의 임시 도형 아바타를 디자인팀이 제공한 규격화 레드판다 시트로 교체
+- 입력 맥락: `apps/client/public/assets/image.png`, Phaser Scene의 local·remote avatar rendering, Issue #70
+- AI 제안 또는 산출물: `256 x 256px` 고정 frame을 셀 외곽 `2px` 제외 영역으로 등록하는 texture frame, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
+- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager를 참고했다. 새 파일은 6열 x 4행 격자이므로 임의 crop 좌표 대신 방향별 frame index를 명시한다. export된 셀 경계의 비투명 픽셀은 `2px` trim으로 방어한다. 측면 idle과 walk의 원본 시선 방향이 반대여서 상태별 `flipX` 규칙을 분리했으며, frame index와 표시 크기는 브라우저에서 사람이 확인한다.
+- 검증 결과: Client typecheck·build 및 브라우저 수동 확인 예정
+- 관련 Issue / PR / Discussion: Issue #70
+
+### 2026-08-17 - Virtual Office mock 맵 배경 적용
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 빈 격자 Scene을 실제 오피스 공간처럼 검증할 수 있는 타일 기반 배경으로 교체
+- 입력 맥락: 공개 Moyo 저장소의 `lobby.webp`, Phaser Virtual Office Scene, Issue #78
+- AI 제안 또는 산출물: `1.5x` map scale의 `1440 x 816` world, world 중앙 map alignment, 전체 화면 Canvas, responsive camera zoom과 avatar follow, local avatar를 기준으로 한 `0.75`~`3.2` wheel/trackpad zoom, 하단 우측 회의 구역 overlay, temporary map asset 출처·권리 확인·collision 제한사항 문서화
+- 팀원 검토·수정 내용: 배경은 내부 개발·해커톤 mock으로만 사용한다. 가구 충돌과 최종 에셋 권리는 별도 검토 대상이며, 최종 배포 전 팀 제작 맵 또는 사용이 허가된 에셋으로 교체한다.
+- 검증 결과: Client typecheck·build 및 `/office` 브라우저 수동 확인 예정
+- 관련 Issue / PR / Discussion: Issue #78
+
+### 2026-08-17 - 아바타 정지·보행 전환 기준점 정규화
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 레드판다 아바타가 정지에서 보행으로 전환될 때 물리 좌표와 무관하게 그림이 미세하게 튀어 보이는 현상 제거
+- 입력 맥락: `image.png` 6 x 4 스프라이트시트, `office-scene.ts`의 공통 origin·physics body, 정지·보행 전환 녹화
+- AI 제안 또는 산출물: 각 frame의 alpha 경계를 런타임에서 계산해 가로 중심과 발끝 baseline을 정규화한 CanvasTexture, 표시 texture만 변경하고 Socket·physics 좌표를 보존하는 구조
+- 팀원 검토·수정 내용: 셀 내부 alpha 경계를 비교해 down idle 하단 `y=236`과 보행 frame 하단 `y=209~228`의 차이를 확인했다. 고정 offset을 방향별로 추가하지 않고 새 에셋에서도 동작하는 alpha 기반 보정으로 채택했다. 최종 체감 자연스러움은 실제 브라우저에서 방향별 `정지 → 이동 → 정지`으로 확인한다.
+- 검증 결과: Client typecheck·build와 `git diff --check` 통과. 실제 Canvas 렌더링은 팀원이 브라우저에서 추가 확인 필요.
+- 관련 Issue / PR / Discussion: Issue #70, PR #71
 ### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
 
 - 사용한 Agent / Skill: Claude Code / Commit Convention Skill

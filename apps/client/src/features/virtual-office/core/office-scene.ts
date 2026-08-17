@@ -7,20 +7,48 @@ import {
 
 export const OFFICE_SCENE_KEY = "office-scene";
 
+const MOCK_OFFICE_MAP_SCALE = 1.5;
 const OFFICE_SIZE = {
-  height: 768,
-  width: 1200
+  height: 544 * MOCK_OFFICE_MAP_SCALE,
+  width: 960 * MOCK_OFFICE_MAP_SCALE
 } as const;
 
 const MEETING_ROOM = {
-  height: 176,
-  width: 256,
-  x: 864,
-  y: 120
+  height: 128 * MOCK_OFFICE_MAP_SCALE,
+  width: 128 * MOCK_OFFICE_MAP_SCALE,
+  x: 624 * MOCK_OFFICE_MAP_SCALE,
+  y: 304 * MOCK_OFFICE_MAP_SCALE
 } as const;
 
 const REMOTE_INTERPOLATION_DELAY_MS = 120;
 const MAX_REMOTE_POSITION_SAMPLES = 4;
+const AVATAR_TEXTURE_KEY = "office-avatar";
+const AVATAR_ASSET_PATH = "/assets/image.png";
+const MOCK_OFFICE_MAP_TEXTURE_KEY = "mock-office-map";
+const MOCK_OFFICE_MAP_ASSET_PATH = "/assets/maps/moyo-lobby.webp";
+const AVATAR_FRAME_SIZE = 256;
+const AVATAR_FRAME_BORDER_TRIM = 2;
+const AVATAR_FRAME_CONTENT_SIZE = AVATAR_FRAME_SIZE - AVATAR_FRAME_BORDER_TRIM * 2;
+const AVATAR_SHEET_COLUMNS = 6;
+const AVATAR_FOOT_BASELINE = 236;
+const AVATAR_DISPLAY_SCALE = 0.16;
+const CAMERA_VISIBLE_WORLD_RATIO = 0.78;
+const CAMERA_MIN_ZOOM = 0.75;
+const CAMERA_MAX_ZOOM = 3.2;
+const CAMERA_WHEEL_ZOOM_SENSITIVITY = 0.0012;
+const AVATAR_IDLE_FRAME_BY_DIRECTION = {
+  down: 0,
+  left: 2,
+  right: 2,
+  up: 1
+} as const;
+const AVATAR_WALK_FRAMES_BY_DIRECTION = {
+  down: [6, 7, 8, 9, 10, 11],
+  left: [18, 19, 20, 21, 22, 23],
+  right: [18, 19, 20, 21, 22, 23],
+  up: [12, 13, 14, 15, 16, 17]
+} as const;
+const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
 
 interface OfficeSceneCallbacks {
   onLocalMovement: (payload: PresenceMovePayload) => void;
@@ -32,6 +60,7 @@ interface RemoteAvatar {
   container: Phaser.GameObjects.Container;
   label: Phaser.GameObjects.Text;
   positionSamples: RemotePositionSample[];
+  sprite: Phaser.GameObjects.Sprite;
 }
 
 interface RemotePositionSample {
@@ -42,10 +71,11 @@ interface RemotePositionSample {
 
 export class OfficeScene extends Phaser.Scene {
   private readonly callbacks: OfficeSceneCallbacks;
+  private cameraZoom: number | null = null;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
   private inMeetingRoom = false;
-  private player!: Phaser.GameObjects.Rectangle;
+  private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
   private wasd!: Record<"down" | "left" | "right" | "up", Phaser.Input.Keyboard.Key>;
@@ -55,15 +85,28 @@ export class OfficeScene extends Phaser.Scene {
     this.callbacks = callbacks;
   }
 
+  preload(): void {
+    this.load.image(MOCK_OFFICE_MAP_TEXTURE_KEY, MOCK_OFFICE_MAP_ASSET_PATH);
+    this.load.image(AVATAR_TEXTURE_KEY, AVATAR_ASSET_PATH);
+  }
+
   create(): void {
-    this.cameras.main.setBackgroundColor("#dbe5ef");
+    this.cameras.main.setBackgroundColor("#bda79a");
     this.cameras.main.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
     this.physics.world.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
 
+    this.createAvatarFrames();
+    this.createAvatarAnimations();
     this.drawOffice();
     this.createLocalAvatar();
-    this.createObstacles();
     this.createInput();
+    this.syncCameraViewport();
+    this.scale.on(Phaser.Scale.Events.RESIZE, this.syncCameraViewport, this);
+    this.input.on(Phaser.Input.Events.POINTER_WHEEL, this.handleCameraWheel, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.scale.off(Phaser.Scale.Events.RESIZE, this.syncCameraViewport, this);
+      this.input.off(Phaser.Input.Events.POINTER_WHEEL, this.handleCameraWheel, this);
+    });
     this.callbacks.onReady();
   }
 
@@ -80,6 +123,7 @@ export class OfficeScene extends Phaser.Scene {
 
     this.player.setPosition(x, y);
     this.playerBody.reset(x, y);
+    this.cameras.main.centerOn(x, y);
   }
 
   syncRemoteMembers(members: OfficeMemberPresence[], selfMemberId: string | undefined): void {
@@ -112,73 +156,79 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private createLocalAvatar(): void {
-    this.player = this.add.rectangle(160, 264, 26, 34, 0x175cd3).setDepth(3);
-    this.physics.add.existing(this.player);
+    this.player = this.physics.add.sprite(160, 264, getAvatarIdleFrame("down"));
+    this.player.setScale(AVATAR_DISPLAY_SCALE).setOrigin(0.5, 0.82).setDepth(3);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
-    this.playerBody.setSize(22, 22);
-    this.playerBody.setOffset(2, 10);
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
-    this.cameras.main.setZoom(1.1);
-  }
-
-  private createObstacle(x: number, y: number, width: number, height: number): void {
-    const obstacle = this.add
-      .rectangle(x, y, width, height, 0x435466)
-      .setStrokeStyle(2, 0x2d3948)
-      .setDepth(2);
-    this.physics.add.existing(obstacle, true);
-    this.physics.add.collider(this.player, obstacle);
+    this.playerBody.setSize(96, 64);
+    this.playerBody.setOffset(80, 164);
+    this.playAvatarAnimation(this.player, "down", "idle");
+    this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
   }
 
   private drawOffice(): void {
-    this.add.rectangle(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height, 0xe9eef3).setOrigin(0);
-
-    const grid = this.add.graphics().setDepth(0);
-    grid.lineStyle(1, 0xd2dbe5, 0.8);
-    for (let x = 0; x <= OFFICE_SIZE.width; x += 48) {
-      grid.lineBetween(x, 0, x, OFFICE_SIZE.height);
-    }
-    for (let y = 0; y <= OFFICE_SIZE.height; y += 48) {
-      grid.lineBetween(0, y, OFFICE_SIZE.width, y);
-    }
+    this.add
+      .image(OFFICE_SIZE.width / 2, OFFICE_SIZE.height / 2, MOCK_OFFICE_MAP_TEXTURE_KEY)
+      .setOrigin(0.5)
+      .setScale(MOCK_OFFICE_MAP_SCALE)
+      .setDepth(0);
 
     this.add
-      .rectangle(MEETING_ROOM.x, MEETING_ROOM.y, MEETING_ROOM.width, MEETING_ROOM.height, 0xdde9ff)
+      .rectangle(MEETING_ROOM.x, MEETING_ROOM.y, MEETING_ROOM.width, MEETING_ROOM.height, 0x315da9, 0.18)
       .setOrigin(0)
-      .setStrokeStyle(2, 0x5d85cc)
+      .setStrokeStyle(2, 0x315da9)
       .setDepth(1);
     this.add
-      .text(MEETING_ROOM.x + 16, MEETING_ROOM.y + 16, "MEETING ROOM", {
+      .text(MEETING_ROOM.x + 18, MEETING_ROOM.y + 16, "MEETING ROOM", {
         color: "#315da9",
         fontFamily: "monospace",
         fontSize: "16px",
         fontStyle: "bold"
       })
       .setDepth(2);
-
-    this.add.text(76, 76, "GLOBAL TEAM OFFICE", {
-      color: "#26384c",
-      fontFamily: "monospace",
-      fontSize: "18px",
-      fontStyle: "bold"
-    });
-    this.add.text(76, 104, "WASD or arrow keys to move", {
-      color: "#617386",
-      fontFamily: "monospace",
-      fontSize: "13px"
-    });
   }
 
-  private createObstacles(): void {
-    this.createObstacle(600, 24, OFFICE_SIZE.width, 48);
-    this.createObstacle(600, OFFICE_SIZE.height - 24, OFFICE_SIZE.width, 48);
-    this.createObstacle(24, 384, 48, OFFICE_SIZE.height);
-    this.createObstacle(OFFICE_SIZE.width - 24, 384, 48, OFFICE_SIZE.height);
-    this.createObstacle(376, 296, 208, 64);
-    this.createObstacle(376, 488, 208, 64);
-    this.createObstacle(716, 404, 64, 248);
-    this.createObstacle(992, 456, 224, 56);
+  private syncCameraViewport(): void {
+    const responsiveZoom = Math.max(
+      1.35,
+      this.scale.width / (OFFICE_SIZE.width * CAMERA_VISIBLE_WORLD_RATIO),
+      this.scale.height / (OFFICE_SIZE.height * CAMERA_VISIBLE_WORLD_RATIO)
+    );
+    this.cameraZoom ??= responsiveZoom;
+    this.cameraZoom = Phaser.Math.Clamp(this.cameraZoom, CAMERA_MIN_ZOOM, CAMERA_MAX_ZOOM);
+    this.applyCameraZoom();
+  }
+
+  private handleCameraWheel(
+    _pointer: Phaser.Input.Pointer,
+    _gameObjects: Phaser.GameObjects.GameObject[],
+    _deltaX: number,
+    deltaY: number
+  ): void {
+    const zoomDelta = Phaser.Math.Clamp(
+      -deltaY * CAMERA_WHEEL_ZOOM_SENSITIVITY,
+      -0.18,
+      0.18
+    );
+
+    if (zoomDelta === 0) {
+      return;
+    }
+
+    this.cameraZoom = Phaser.Math.Clamp(
+      (this.cameraZoom ?? this.cameras.main.zoom) + zoomDelta,
+      CAMERA_MIN_ZOOM,
+      CAMERA_MAX_ZOOM
+    );
+    this.applyCameraZoom();
+  }
+
+  private applyCameraZoom(): void {
+    this.cameras.main.setZoom(this.cameraZoom ?? this.cameras.main.zoom);
+
+    if (this.player) {
+      this.cameras.main.centerOn(this.player.x, this.player.y);
+    }
   }
 
   private updateLocalMovement(): void {
@@ -200,6 +250,7 @@ export class OfficeScene extends Phaser.Scene {
       .normalize()
       .scale(190);
     this.playerBody.setVelocity(velocity.x, velocity.y);
+    this.playAvatarAnimation(this.player, this.direction, isMoving ? "walk" : "idle");
     this.player.setDepth(this.player.y);
 
     this.callbacks.onLocalMovement({
@@ -264,14 +315,19 @@ export class OfficeScene extends Phaser.Scene {
     const existing = this.remoteAvatars.get(member.memberId);
     if (existing) {
       this.addRemotePositionSample(existing, member.avatar.x, member.avatar.y);
+      this.playAvatarAnimation(existing.sprite, member.avatar.direction, member.avatar.animation);
       existing.label.setText(getRemoteLabel(member));
       existing.container.setAlpha(getRemoteAvatarAlpha(member));
       return;
     }
 
-    const circle = this.add.circle(0, 0, 13, getMemberColor(member.memberId));
+    const sprite = this.add
+      .sprite(0, 0, getAvatarIdleFrame(member.avatar.direction))
+      .setScale(AVATAR_DISPLAY_SCALE)
+      .setOrigin(0.5, 0.82)
+      .setFlipX(member.avatar.direction === "left");
     const label = this.add
-      .text(0, -30, getRemoteLabel(member), {
+      .text(0, -38, getRemoteLabel(member), {
         align: "center",
         backgroundColor: "#172235cc",
         color: "#ffffff",
@@ -280,8 +336,9 @@ export class OfficeScene extends Phaser.Scene {
         padding: { x: 5, y: 3 }
       })
       .setOrigin(0.5, 1);
-    const container = this.add.container(member.avatar.x, member.avatar.y, [circle, label]);
+    const container = this.add.container(member.avatar.x, member.avatar.y, [sprite, label]);
     container.setAlpha(getRemoteAvatarAlpha(member));
+    this.playAvatarAnimation(sprite, member.avatar.direction, member.avatar.animation);
 
     this.remoteAvatars.set(member.memberId, {
       container,
@@ -292,7 +349,8 @@ export class OfficeScene extends Phaser.Scene {
           x: member.avatar.x,
           y: member.avatar.y
         }
-      ]
+      ],
+      sprite
     });
   }
 
@@ -307,12 +365,164 @@ export class OfficeScene extends Phaser.Scene {
       avatar.positionSamples.shift();
     }
   }
+
+  private createAvatarFrames(): void {
+    const sourceImage = this.textures.get(AVATAR_TEXTURE_KEY).getSourceImage() as
+      | HTMLCanvasElement
+      | HTMLImageElement;
+    const frameCount = AVATAR_SHEET_COLUMNS * 4;
+
+    for (let frame = 0; frame < frameCount; frame += 1) {
+      const column = frame % AVATAR_SHEET_COLUMNS;
+      const row = Math.floor(frame / AVATAR_SHEET_COLUMNS);
+      const frameKey = getAvatarFrameKey(frame);
+
+      if (this.textures.exists(frameKey)) {
+        continue;
+      }
+
+      const texture = this.textures.createCanvas(
+        frameKey,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+      if (!texture) {
+        throw new Error(`Unable to normalize avatar frame: ${frameKey}`);
+      }
+
+      const sourceX = column * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM;
+      const sourceY = row * AVATAR_FRAME_SIZE + AVATAR_FRAME_BORDER_TRIM;
+      texture.context.drawImage(
+        sourceImage,
+        sourceX,
+        sourceY,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE,
+        0,
+        0,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+
+      const bounds = getOpaquePixelBounds(
+        texture.context.getImageData(0, 0, AVATAR_FRAME_CONTENT_SIZE, AVATAR_FRAME_CONTENT_SIZE)
+      );
+      const xOffset = Math.round(
+        AVATAR_FRAME_CONTENT_SIZE / 2 - (bounds.left + bounds.width / 2)
+      );
+      const yOffset = AVATAR_FOOT_BASELINE - bounds.bottom;
+
+      texture.context.clearRect(0, 0, AVATAR_FRAME_CONTENT_SIZE, AVATAR_FRAME_CONTENT_SIZE);
+      texture.context.drawImage(
+        sourceImage,
+        sourceX,
+        sourceY,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE,
+        xOffset,
+        yOffset,
+        AVATAR_FRAME_CONTENT_SIZE,
+        AVATAR_FRAME_CONTENT_SIZE
+      );
+      texture.refresh();
+    }
+  }
+
+  private createAvatarAnimations(): void {
+    for (const direction of AVATAR_DIRECTIONS) {
+      const walkKey = getAvatarAnimationKey(direction, "walk");
+      if (!this.anims.exists(walkKey)) {
+        this.anims.create({
+          frameRate: 9,
+          frames: AVATAR_WALK_FRAMES_BY_DIRECTION[direction].map((frame) => ({
+            key: getAvatarFrameKey(frame)
+          })),
+          key: walkKey,
+          repeat: -1
+        });
+      }
+
+      const idleKey = getAvatarAnimationKey(direction, "idle");
+      if (!this.anims.exists(idleKey)) {
+        this.anims.create({
+          frameRate: 1,
+          frames: [
+            {
+              key: getAvatarIdleFrame(direction)
+            }
+          ],
+          key: idleKey,
+          repeat: -1
+        });
+      }
+    }
+  }
+
+  private playAvatarAnimation(
+    sprite: Phaser.GameObjects.Sprite,
+    direction: PresenceMovePayload["direction"],
+    animation: PresenceMovePayload["animation"]
+  ): void {
+    sprite.setFlipX(shouldFlipAvatarSprite(direction, animation));
+    sprite.anims.play(getAvatarAnimationKey(direction, animation), true);
+  }
 }
 
-function getMemberColor(memberId: string): number {
-  const palette = [0xe26078, 0x5d8bd5, 0x45a779, 0xd58b3d, 0x8064c6];
-  const hash = [...memberId].reduce((value, character) => value + character.charCodeAt(0), 0);
-  return palette[hash % palette.length]!;
+function getOpaquePixelBounds(imageData: ImageData): {
+  bottom: number;
+  left: number;
+  width: number;
+} {
+  const { data, height, width } = imageData;
+  let left = width;
+  let right = -1;
+  let bottom = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha === 0) {
+        continue;
+      }
+
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+  }
+
+  if (right === -1 || bottom === -1) {
+    throw new Error("Avatar frame has no visible pixels.");
+  }
+
+  return { bottom, left, width: right - left + 1 };
+}
+
+function getAvatarIdleFrame(direction: PresenceMovePayload["direction"]): string {
+  return getAvatarFrameKey(AVATAR_IDLE_FRAME_BY_DIRECTION[direction]);
+}
+
+function getAvatarFrameKey(frame: number): string {
+  return `office-avatar-frame-${frame}`;
+}
+
+function shouldFlipAvatarSprite(
+  direction: PresenceMovePayload["direction"],
+  animation: PresenceMovePayload["animation"]
+): boolean {
+  if (direction !== "left" && direction !== "right") {
+    return false;
+  }
+
+  // The idle side image faces left while the walk side frames face right.
+  return direction === "left" ? animation === "walk" : animation === "idle";
+}
+
+function getAvatarAnimationKey(
+  direction: PresenceMovePayload["direction"],
+  animation: PresenceMovePayload["animation"]
+): string {
+  return `office-avatar-${animation}-${direction}`;
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {

@@ -29,6 +29,13 @@ button {
   min-height: 100vh;
 }
 
+.app-shell-office,
+.app-shell-office .app-main,
+.app-shell-office .office-page {
+  height: 100vh;
+  min-height: 0;
+}
+
 .app-header {
   align-items: center;
   background: #ffffff;
@@ -76,12 +83,20 @@ button {
   padding: 20px;
 }
 
+.app-shell-office .office-page {
+  padding: 0;
+}
+
 .virtual-office {
   background: #1d2530;
   border: 1px solid #cad3dd;
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+.app-shell-office .virtual-office {
+  border: 0;
 }
 
 .office-canvas {
