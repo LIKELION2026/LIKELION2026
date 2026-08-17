@@ -9,7 +9,9 @@ test("validateEnvironment normalizes valid LiveKit server config", () => {
     LIVEKIT_API_SECRET: " secret ",
     LIVEKIT_TOKEN_TTL_SECONDS: "120",
     LIVEKIT_URL: " wss://example.livekit.cloud ",
-    PORT: "4100"
+    PORT: "4100",
+    SUPABASE_SECRET_KEY: "test-supabase-secret",
+    SUPABASE_URL: "https://example.supabase.co"
   });
 
   assert.equal(result.LIVEKIT_URL, "wss://example.livekit.cloud");
@@ -24,7 +26,9 @@ test("validateEnvironment rejects missing LiveKit secrets", () => {
       validateEnvironment({
         LIVEKIT_API_KEY: "",
         LIVEKIT_API_SECRET: "secret",
-        LIVEKIT_URL: "wss://example.livekit.cloud"
+        LIVEKIT_URL: "wss://example.livekit.cloud",
+        SUPABASE_SECRET_KEY: "test-supabase-secret",
+        SUPABASE_URL: "https://example.supabase.co"
       }),
     /LIVEKIT_API_KEY/
   );
@@ -36,7 +40,9 @@ test("validateEnvironment rejects non-wss LiveKit URLs", () => {
       validateEnvironment({
         LIVEKIT_API_KEY: "key",
         LIVEKIT_API_SECRET: "secret",
-        LIVEKIT_URL: "https://example.livekit.cloud"
+        LIVEKIT_URL: "https://example.livekit.cloud",
+        SUPABASE_SECRET_KEY: "test-supabase-secret",
+        SUPABASE_URL: "https://example.supabase.co"
       }),
     /LIVEKIT_URL must start with wss:\/\//
   );
@@ -49,7 +55,9 @@ test("validateEnvironment rejects token TTL shorter than 60 seconds", () => {
         LIVEKIT_API_KEY: "key",
         LIVEKIT_API_SECRET: "secret",
         LIVEKIT_TOKEN_TTL_SECONDS: "30",
-        LIVEKIT_URL: "wss://example.livekit.cloud"
+        LIVEKIT_URL: "wss://example.livekit.cloud",
+        SUPABASE_SECRET_KEY: "test-supabase-secret",
+        SUPABASE_URL: "https://example.supabase.co"
       }),
     /LIVEKIT_TOKEN_TTL_SECONDS/
   );

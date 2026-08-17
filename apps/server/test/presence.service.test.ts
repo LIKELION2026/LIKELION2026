@@ -24,6 +24,7 @@ test("move broadcasts the local position without writing each event to storage",
   const member = await service.move("socket-1", {
     animation: "walk",
     direction: "right",
+    sequence: 0,
     x: 320,
     y: 280
   });
@@ -33,6 +34,38 @@ test("move broadcasts the local position without writing each event to storage",
   assert.equal(officeService.positionCalls.length, 0);
 });
 
+test("move returns immediately while a due position persistence is still pending", async () => {
+  const officeService = createOfficeService();
+  const service = new PresenceService(officeService as never);
+  const originalDateNow = Date.now;
+  let now = 1_000;
+
+  Date.now = () => now;
+  try {
+    await service.join("socket-1", createJoinPayload());
+    officeService.deferNextPositionUpdate();
+    now += 1_000;
+
+    const result = await Promise.race([
+      service.move("socket-1", {
+        animation: "walk",
+        direction: "right",
+        sequence: 0,
+        x: 320,
+        y: 280
+      }),
+      wait(10).then(() => "timed-out" as const)
+    ]);
+
+    if (result === "timed-out") {
+      assert.fail("move must not wait for deferred position persistence");
+    }
+    assert.equal(result?.avatar.x, 320);
+  } finally {
+    Date.now = originalDateNow;
+  }
+});
+
 test("leave persists the last position and switches the member to disconnected", async () => {
   const officeService = createOfficeService();
   const service = new PresenceService(officeService as never);
@@ -40,6 +73,7 @@ test("leave persists the last position and switches the member to disconnected",
   await service.move("socket-1", {
     animation: "walk",
     direction: "down",
+    sequence: 0,
     x: 250,
     y: 300
   });
@@ -66,10 +100,14 @@ function createJoinPayload() {
 function createOfficeService() {
   const self = createMember("member-1", "Korea PM");
   const peer = createMember("member-2", "Vietnam Dev");
+  let deferPositionUpdate = false;
   const officeService = {
     connectCalls: [] as string[][],
     disconnectCalls: [] as Array<[string, string, number, number]>,
     positionCalls: [] as Array<[string, string, number, number]>,
+    deferNextPositionUpdate() {
+      deferPositionUpdate = true;
+    },
     async connectRealtimeMember(memberId: string, guestToken: string) {
       officeService.connectCalls.push([memberId, guestToken]);
       return self;
@@ -102,6 +140,10 @@ function createOfficeService() {
       avatar: OfficeMemberPresence["avatar"]
     ) {
       officeService.positionCalls.push([memberId, guestToken, avatar.x, avatar.y]);
+      if (deferPositionUpdate) {
+        deferPositionUpdate = false;
+        await new Promise<void>(() => undefined);
+      }
       return { ...self, avatar };
     },
     async updateRealtimeMemberStatus() {
@@ -110,6 +152,12 @@ function createOfficeService() {
   };
 
   return officeService;
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 function createMember(memberId: string, displayName: string): OfficeMemberPresence {
