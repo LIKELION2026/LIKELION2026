@@ -16,6 +16,7 @@ from translation_pipeline.rooms import (
     SECTION_SLUGS,
     UnknownMeetingSectionError,
     build_lab_room_name,
+    is_lab_meeting_room,
 )
 from translation_pipeline.subtitle import validate_room_name
 
@@ -144,3 +145,29 @@ def test_the_name_format_matches_the_client_template():
 
     # `lab-${LAB_MEETING_TEAM_SLUG}-${formatDateStamp(date)}-${roomSlug}`
     assert "lab-${LAB_MEETING_TEAM_SLUG}-${formatDateStamp(date)}-${roomSlug}" in source
+
+
+# --- 회의방 판별 ---
+#
+# 에이전트는 방이 열리는 대로 배정받는다. 회의가 아닌 방까지 따라 들어가면
+# 쓸데없이 인식·번역 호출을 태운다.
+
+
+@pytest.mark.parametrize("section", list(SECTION_SLUGS))
+def test_generated_rooms_are_recognized(section):
+    assert is_lab_meeting_room(build_lab_room_name(section, today=date(2026, 8, 17)))
+
+
+@pytest.mark.parametrize(
+    "room_name",
+    [
+        "lab-likelion-20260817-office",
+        "lab-other-20260817-meeting-room",
+        "lab-likelion-2026817-meeting-room",
+        "meeting-likelion-20260817-meeting-room",
+        "lab-likelion-20260817-",
+        "",
+    ],
+)
+def test_other_rooms_are_rejected(room_name):
+    assert is_lab_meeting_room(room_name) is False
