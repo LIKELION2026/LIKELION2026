@@ -36,9 +36,12 @@ export interface OfficeMemberLeftPayload {
 export interface PresenceMovePayload {
   animation: AvatarAnimation;
   direction: AvatarDirection;
+  sequence: number;
   x: number;
   y: number;
 }
+
+export type LocalMovementCommand = Omit<PresenceMovePayload, "sequence">;
 
 export interface PresenceMovedPayload extends PresenceMovePayload {
   memberId: string;
