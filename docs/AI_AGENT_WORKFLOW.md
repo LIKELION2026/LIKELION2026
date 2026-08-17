@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-15
+> 마지막 업데이트: 2026-08-17
 
 ## 목적
 
@@ -496,3 +496,33 @@
 - 팀원 검토·수정 내용: Vercel Production 재배포 뒤 `/office`, `/meeting-lab` 직접 접속·새로고침은 사람이 실제로 확인해야 한다.
 - 검증 결과: JSON 형식 검사와 Client production build 확인 예정. Vercel Production 확인은 재배포 후 수행 필요.
 - 관련 Issue / PR / Discussion: Issue #61
+
+### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 한국어·베트남어 관용구가 고정 사전으로 처리되지 않는 원인 조사와 대안 구현
+- 입력 맥락: `data/glossary.json`의 부분 문자열 매칭 구현, 실제 발화 표본, 사전 준수율 측정 스크립트
+- AI 제안 또는 산출물: 관용구를 `data/idiom_guidelines/{source}_{target}.md` 지침으로 옮기고 번역 방향에 맞는 파일만 시스템 프롬프트에 싣는 구조, 유보 표현 등 지침 항목 초안
+- 팀원 검토·수정 내용: 처음 제안한 "문맥상 완곡한 거절이면 거절로 번역한다"는 규칙은 사용자가 위험하다고 지적해 "모호함을 유지하고 확정적으로 들리게 하지 않는다"로 바꿨다. 금지 규칙만 두면 모델이 직역으로 돌아가는 것을 확인해 대체 표현을 함께 제시하는 형태로 수정했다. 베트남어 표현의 자연스러움은 베트남어 사용자의 검토가 필요하며 Issue #18로 남겼다.
+- 검증 결과: `pytest` 실행. 유보 표현 8건에 대해 금지 표현이 나오지 않는 것을 사람이 확인.
+- 관련 Issue / PR / Discussion: Issue #10, PR #19
+
+### 2026-08-16 - 통역 결과를 자막 계약으로 발행
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 콘솔에만 출력되던 번역 결과를 회의 화면 자막까지 전달
+- 입력 맥락: `packages/shared`의 `SubtitleCreatedPayload` 계약, Server의 `POST /meeting/subtitles/mock`, 원래 스펙의 snake_case 출력 형식
+- AI 제안 또는 산출물: 계약을 그대로 따르는 자막 페이로드 생성기, 방 이름·참가자 ID 사전 검증, 참가자 매핑을 실제로 사용하는 실행 스크립트
+- 팀원 검토·수정 내용: 원래 스펙의 snake_case 형식 대신 `packages/shared` 계약을 따르기로 정했다. 변환 계층이 하나 더 생기는 것을 피하기 위해서다. `used_glossary`는 자막 표시용 값이 아니라 내부 지표이므로 페이로드에서 제외했다. 발행 대상 서버 포트가 3000으로 잘못돼 있어 4000으로 고쳤다.
+- 검증 결과: `pytest` 실행. 로컬 Server를 띄우고 실제 발행 후 브라우저에서 자막이 표시되는 것을 사람이 확인.
+- 관련 Issue / PR / Discussion: PR #31
+
+### 2026-08-17 - 확정된 발화 조각 유실 수정과 조각 단위 자막 갱신
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 실시간 통역에서 문장 앞부분이 자막에 뜨지 않는 원인 규명과 수정
+- 입력 맥락: `stt.py`의 Deepgram 결과 처리 분기, 실제 발화를 녹음해 얻은 이벤트 타이밍 로그, Client의 revision 기반 upsert 구현
+- AI 제안 또는 산출물: 이벤트 관측 스크립트, `is_final`만 선 조각이 어느 분기에도 들어가지 않아 버려진다는 원인 분석, 발화 하나를 자막 하나로 유지하며 조각마다 `revision`을 올리는 구조, 늦은 번역 폐기 규칙을 마지막 조각으로 한정하는 변경
+- 팀원 검토·수정 내용: 사용자가 관측 스크립트를 직접 실행해 `IS_FINAL`과 `SPEECH_FINAL`이 서로 다른 내용임을 확인했고, 이 데이터로 설계 방향이 정해졌다. 처음 제시한 "N+1회 호출"은 사용자가 계산을 지적해 N회로 정정했다. 폐기 규칙의 근거였던 "늦은 자막이 순서를 엉키게 한다"는 Client가 `occurredAt` 순으로 정렬하는 것을 확인해 성립하지 않는 것으로 정정했다. Issue와 PR 본문이 저장소 템플릿을 따르지 않은 것, 커밋에 AI 공동작성자 트레일러가 들어간 것을 사용자가 지적해 모두 수정했다.
+- 검증 결과: `pytest` 213건 통과. 마이크로 실제 발화를 흘려 같은 자막이 `rev 1` → `rev 2`로 갱신되는 것을 사람이 확인. 측정 중 `gemini-3.1-flash-lite`가 5회 중 2회 `504 DEADLINE_EXCEEDED`로 실패했으며, 이는 무료 한도 소진과 다른 서버 측 문제로 PR에 제한사항으로 기록했다.
+- 관련 Issue / PR / Discussion: Issue #72, PR #73
