@@ -23,9 +23,10 @@ from .participants import ParticipantRegistry
 from .subtitle import SubtitlePayload, build_subtitle, utc_now_iso, validate_room_name
 from .translator import TranslationRequest, Translator
 
-# 발화가 끝나고 이 시간을 넘겨 도착한 번역은 버린다. 늦게 뜬 자막은 이후
-# 발화와 순서가 엉켜 대화를 방해하므로, 없는 편이 낫다.
-DEFAULT_MAX_STALENESS_MS = 5_000
+# 발화가 끝나고 이 시간을 넘겨 도착한 번역은 버린다. Client가 occurredAt 순으로
+# 정렬하므로 늦게 도착해도 자막 순서는 엉키지 않는다. 그래서 이 값은 대화를
+# 지키는 규칙이 아니라, 응답이 비정상적으로 늦어질 때를 막는 안전장치다.
+DEFAULT_MAX_STALENESS_MS = 15_000
 
 
 @dataclass(frozen=True)
@@ -153,8 +154,14 @@ class TranslationPipeline:
 
         elapsed_ms = int((time.monotonic() - started) * 1000)
 
+        # 중간 조각은 늦어도 버리지 않는다. 늦게 도착하면 Client가 revision으로
+        # 걸러내고, 버려봐야 다음 조각이 어차피 전체를 다시 번역한다. 이미 쓴
+        # 호출의 결과만 잃는다. 버렸을 때 실제로 손해가 나는 쪽은 마지막
+        # 조각뿐이다. 그때만 미완성 번역이 화면에 남거나, 조각이 하나뿐이었다면
+        # 자막이 아예 뜨지 않는다.
+        #
         # 사전만으로 끝난 경우는 지연이 사실상 없으므로 폐기 판단을 하지 않는다.
-        if used_model and elapsed_ms > self._max_staleness_ms:
+        if ends_utterance and used_model and elapsed_ms > self._max_staleness_ms:
             return UtteranceResult(
                 subtitle=None,
                 elapsed_ms=elapsed_ms,

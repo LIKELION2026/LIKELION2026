@@ -324,6 +324,33 @@ def test_speakers_do_not_share_an_open_utterance(participants, glossary):
     assert vietnamese.subtitle.sourceText == "Xin chào"
 
 
+def test_a_late_mid_utterance_segment_is_kept(participants, glossary):
+    import time
+
+    pipeline = make_pipeline(participants, glossary, max_staleness_ms=0)
+
+    result = pipeline.handle_utterance(
+        "user_ko", "안건은", spoken_at=time.monotonic() - 10, ends_utterance=False
+    )
+
+    # 늦은 중간 조각은 Client가 revision으로 거른다. 여기서 또 버리면 이미 쓴
+    # 번역 호출의 결과만 잃는다.
+    assert result.subtitle is not None
+
+
+def test_a_late_final_segment_is_still_discarded(participants, glossary):
+    import time
+
+    pipeline = make_pipeline(participants, glossary, max_staleness_ms=0)
+
+    result = pipeline.handle_utterance(
+        "user_ko", "이번 분기 계획입니다.", spoken_at=time.monotonic() - 10
+    )
+
+    # 안전장치는 살아 있어야 한다. 마지막 조각에서만 발동한다.
+    assert result.subtitle is None
+
+
 def test_a_discarded_segment_does_not_break_the_next_utterance(participants, glossary):
     import time
 
