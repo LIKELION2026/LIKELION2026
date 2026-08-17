@@ -2,14 +2,15 @@
 
 ## 아바타 스프라이트시트
 
-`apps/client/public/assets/image.png`는 `256 x 256px` 프레임으로 구성된 6열 x 4행 PNG 시트다. Phaser의 `load.spritesheet`로 로드하므로, frame 간격이나 원본 crop 좌표를 별도로 관리하지 않는다.
+`apps/client/public/assets/image.png`는 `256 x 256px` 프레임으로 구성된 6열 x 4행 PNG 시트다. Phaser는 각 셀 외곽 `2px`을 제외한 `252 x 252px` 내부만 texture frame으로 등록한다. export 과정에서 생길 수 있는 셀 경계의 비투명 픽셀이 화면에 보이지 않도록 하기 위함이다.
 
 - 1행: `down`, `up`, `right` idle frame (`0`, `1`, `2`)
 - 2행: `down walk` frame `6`~`11`
 - 3행: `up walk` frame `12`~`17`
 - 4행: `right walk` frame `18`~`23`
 - `left`는 `right` frame을 `flipX`로 반전해 재사용한다.
-- Local과 remote avatar는 같은 texture, `idle/walk × up/down/left/right` animation key, `0.23` scale을 공유한다.
+- 현재 에셋은 측면 idle frame이 왼쪽을, 측면 walk frame이 오른쪽을 본다. 따라서 같은 `left/right` 방향이라도 idle과 walk에는 반대 `flipX` 규칙을 적용한다.
+- Local과 remote avatar는 같은 texture, `idle/walk × up/down/left/right` animation key, `0.16` scale을 공유한다.
 - 로컬 physics body는 발 주변으로만 잡아 가구 충돌 기준을 유지하고, 이름·상태 label과 ghost/sleeping 투명도는 sprite container에 그대로 적용한다.
 
 ### Moyo와 동일한 상태·방향 구조
@@ -18,13 +19,14 @@ Moyo의 구현처럼 방향별 frame index를 상수로 두고, Scene 시작 시
 
 ```mermaid
 flowchart TD
-  A[image.png 6 x 4 spritesheet] --> B[load.spritesheet 256 x 256]
+  A[image.png 6 x 4 spritesheet] --> B[셀 외곽 2px 제외 frame 등록]
   B --> C[방향별 idle 및 walk frame index 등록]
   C --> D[idle 또는 walk animation key 생성]
   D --> E[local 및 remote sprite에 같은 animation 재생]
 ```
 
 - 새 아바타를 추가할 때는 같은 6열 x 4행, `256 x 256px` frame 규격을 유지한다.
+- 각 셀의 외곽은 완전 투명으로 export하는 것이 원칙이다. 현재 `2px` trim은 경계선이 포함된 에셋을 위한 방어 처리다.
 - local·remote 아바타 모두에서 네 방향 이동과 정지 상태를 확인한다.
 
 ## 원격 이동 보간

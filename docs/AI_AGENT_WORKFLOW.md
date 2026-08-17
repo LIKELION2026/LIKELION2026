@@ -502,7 +502,17 @@
 - 사용한 Agent / Skill: Codex / Project Workflow Skill
 - 사용 목적: Virtual Office의 임시 도형 아바타를 디자인팀이 제공한 규격화 레드판다 시트로 교체
 - 입력 맥락: `apps/client/public/assets/image.png`, Phaser Scene의 local·remote avatar rendering, Issue #70
-- AI 제안 또는 산출물: `256 x 256px` 고정 frame을 사용하는 `load.spritesheet`, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
-- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager를 참고했다. 새 파일은 6열 x 4행 격자이므로 임의 crop 좌표 대신 방향별 frame index를 명시한다. frame index와 표시 크기는 브라우저에서 사람이 확인한다.
+- AI 제안 또는 산출물: `256 x 256px` 고정 frame을 셀 외곽 `2px` 제외 영역으로 등록하는 texture frame, `idle/walk × 방향` Phaser animation, 좌측 이동 반전, local physics body와 remote label·상태 표현 유지
+- 팀원 검토·수정 내용: Moyo의 direction·state 기반 animation manager를 참고했다. 새 파일은 6열 x 4행 격자이므로 임의 crop 좌표 대신 방향별 frame index를 명시한다. export된 셀 경계의 비투명 픽셀은 `2px` trim으로 방어한다. 측면 idle과 walk의 원본 시선 방향이 반대여서 상태별 `flipX` 규칙을 분리했으며, frame index와 표시 크기는 브라우저에서 사람이 확인한다.
 - 검증 결과: Client typecheck·build 및 브라우저 수동 확인 예정
 - 관련 Issue / PR / Discussion: Issue #70
+
+### 2026-08-17 - Virtual Office mock 맵 배경 적용
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 빈 격자 Scene을 실제 오피스 공간처럼 검증할 수 있는 타일 기반 배경으로 교체
+- 입력 맥락: 공개 Moyo 저장소의 `lobby.webp`, Phaser Virtual Office Scene, Issue #78
+- AI 제안 또는 산출물: `1.5x` map scale의 `1440 x 816` world, world 중앙 map alignment, 전체 화면 Canvas, responsive camera zoom과 avatar follow, local avatar를 기준으로 한 `0.75`~`3.2` wheel/trackpad zoom, 하단 우측 회의 구역 overlay, temporary map asset 출처·권리 확인·collision 제한사항 문서화
+- 팀원 검토·수정 내용: 배경은 내부 개발·해커톤 mock으로만 사용한다. 가구 충돌과 최종 에셋 권리는 별도 검토 대상이며, 최종 배포 전 팀 제작 맵 또는 사용이 허가된 에셋으로 교체한다.
+- 검증 결과: Client typecheck·build 및 `/office` 브라우저 수동 확인 예정
+- 관련 Issue / PR / Discussion: Issue #78
