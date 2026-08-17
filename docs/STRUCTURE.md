@@ -163,14 +163,15 @@ briefing.confirmed
 - **왜 `apps/`인가**: `apps/`는 독립 실행 가능한 애플리케이션 단위이고 이 파이프라인이 정확히 그것이다. `packages/shared`는 Client와 Server가 함께 쓰는 TypeScript 계약 자리이므로 맞지 않는다.
 - **왜 다른 언어인가**: Deepgram과 LLM SDK를 LiveKit 연동 전에 오디오 파일·마이크만으로 검증하기 위해서다. Python SDK 쪽 예제와 실시간 스트리밍 지원이 이 검증에 유리하다.
 - **workspace 경계**: pnpm workspace에는 포함하지 않는다. 자체 `requirements.txt`와 가상환경으로 실행하므로 `pnpm install`과 루트 스크립트의 영향을 받지 않는다.
-- **범위**: 검증용이다. 확정된 로직은 `apps/server/src/integrations/speech`와 `integrations/llm`으로 옮기고, 그 시점에 이 폴더의 존속 여부를 다시 판단한다.
+- **범위**: 검증용으로 시작했으나, 지금은 회의방 통역 에이전트(`scripts/run_agent.py`)를 여기서 실행한다. Server로 옮기려면 번역 로직 전체를 TypeScript로 다시 써야 해서 당분간 Python으로 남는다. 근거는 ADR 0003에 있다.
 - **의존 경계**: Client·Server·Shared 코드를 import하지 않는다. 반대로 다른 앱이 이 폴더를 import하지도 않는다.
 - **경계의 예외**: 테스트가 Client 파일을 **텍스트로 읽어 계약을 대조하는 것**은 허용한다. 실행 코드가 아니므로 런타임 의존이 생기지 않고, `packages/shared`에 해당 규칙이 없는 동안 어긋남을 잡을 방법이 이것뿐이다. 지금은 회의방 이름 규칙(`tests/test_rooms.py` -> `meeting-room-section.ts`) 한 곳이다. 규칙이 `packages/shared`로 올라가면 이 예외는 없앤다.
 
 관련 기록은 아래에 있다.
 
 - `docs/ADR/0001-translation-provider-abstraction.md`, PR #5 — 번역 provider를 교체 가능하게 둔 이유
-- `docs/ADR/0002-participant-local-translation-pipeline.md` — 파이프라인을 서버가 아니라 참가자 PC에서 돌리는 이유
+- `docs/ADR/0002-participant-local-translation-pipeline.md` — 파이프라인을 참가자 PC에서 돌리던 이유. ADR 0003이 대체했다
+- `docs/ADR/0003-livekit-translation-agent.md` — 통역을 회의방 에이전트 한 프로세스로 옮긴 이유
 
 ## 초기 구현 순서
 
