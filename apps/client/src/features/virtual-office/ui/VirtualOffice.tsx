@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 import Phaser from "phaser";
-import type { GuestOfficeSessionResponse } from "@likelion2026/shared";
+import type {
+  GuestOfficeSessionResponse,
+  OfficeSummonRequestedPayload,
+  OfficeSummonResolvedPayload
+} from "@likelion2026/shared";
 
 import {
   getStoredGuestProfile,
@@ -14,16 +18,21 @@ import { useOfficeStore } from "../model/office-store";
 import { useOfficeSocket } from "../model/use-office-socket";
 import { useOfficeCalendar } from "../model/use-office-calendar";
 import { useOfficeTodos } from "../model/use-office-todos";
+import { createPeopleContext } from "../model/people-context";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
-import { OfficeTodoPanelSlot } from "./OfficeTodoPanelSlot";
+import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarPanelSlot } from "./OfficeCalendarPanelSlot";
+import { OfficePeoplePanel } from "./OfficePeoplePanel";
+import { OfficeSummonModal } from "./OfficeSummonModal";
+import { useRequestFeedback } from "../../../app/request-feedback";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
 }
 
 export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Element {
+  const { showError } = useRequestFeedback();
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
@@ -31,6 +40,9 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const [isSceneReady, setIsSceneReady] = useState(false);
   const [session, setSession] = useState<GuestOfficeSessionResponse | null>(null);
   const [isPreparingSession, setIsPreparingSession] = useState(false);
+  const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
+  const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
+  const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [storedProfile, setStoredProfile] = useState<GuestProfile | null>(() =>
     getStoredGuestProfile()
@@ -39,9 +51,46 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
-  const { sendMove, updateAttendance, updateStatus } = useOfficeSocket(session);
   const todoController = useOfficeTodos(session);
+  const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
+    setPendingSummon(request);
+  }, []);
+  const handleSummonResolved = useCallback(
+    (resolution: OfficeSummonResolvedPayload) => {
+      if (
+        resolution.decision === "accepted" &&
+        resolution.targetMemberId === session?.member.id &&
+        resolution.targetPosition
+      ) {
+        sceneRef.current?.moveLocalAvatarNear(
+          resolution.targetPosition.x,
+          resolution.targetPosition.y
+        );
+      }
+      if (resolution.requestId === pendingSummon?.requestId) {
+        setPendingSummon(null);
+      }
+    },
+    [pendingSummon?.requestId, session?.member.id]
+  );
+  const socketCallbacks = useMemo(
+    () => ({
+      onSummonRequested: handleSummonRequested,
+      onSummonResolved: handleSummonResolved,
+      onTodosUpdated: todoController.refresh
+    }),
+    [handleSummonRequested, handleSummonResolved, todoController.refresh]
+  );
+  const { respondToSummon, sendMove, sendSummonRequest, updateAttendance, updateStatus } = useOfficeSocket(
+    session,
+    socketCallbacks
+  );
   const calendarController = useOfficeCalendar(session);
+  const peopleContext = createPeopleContext(
+    members,
+    todoController.publicTodos,
+    self?.memberId
+  );
 
   const prepareSession = useCallback(async (profile: GuestProfile) => {
     setIsPreparingSession(true);
@@ -53,13 +102,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       setStoredProfile(profile);
     } catch (error) {
       setSession(null);
-      setSessionError(
-        error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다."
-      );
+      const message = error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다.";
+      setSessionError(message);
+      showError(error, "오피스 세션을 준비하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setIsPreparingSession(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     if (storedProfile && !didRestoreStoredProfile.current) {
@@ -128,7 +177,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     }
 
     scene.setLocalPosition(self.avatar.x, self.avatar.y);
-  }, [isSceneReady, self]);
+  }, [isSceneReady, self?.memberId]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -146,12 +195,37 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         connectionState={connectionState}
         memberCount={members.length}
         onAttendanceChange={updateAttendance}
+        onOpenPeople={() => setIsPeoplePanelOpen(true)}
+        onOpenTodo={() => setIsTodoPanelOpen(true)}
         onStatusChange={updateStatus}
         selfAttendanceStatus={self?.officePresence?.attendanceStatus}
         selfStatus={self?.status}
       />
-      <OfficeTodoPanelSlot controller={todoController} />
+      <OfficeTodoPanel
+        controller={todoController}
+        isOpen={isTodoPanelOpen}
+        onClose={() => setIsTodoPanelOpen(false)}
+      />
       <OfficeCalendarPanelSlot controller={calendarController} />
+      <OfficePeoplePanel
+        isOpen={isPeoplePanelOpen}
+        members={peopleContext}
+        onClose={() => setIsPeoplePanelOpen(false)}
+        onFocusMember={(context) =>
+          sceneRef.current?.moveLocalAvatarNear(context.member.avatar.x, context.member.avatar.y)
+        }
+        onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
+        todoError={todoController.error}
+        todoIsLoading={todoController.isLoading}
+      />
+      <OfficeSummonModal
+        onRespond={(decision) => {
+          if (pendingSummon) {
+            respondToSummon(pendingSummon.requestId, decision);
+          }
+        }}
+        request={pendingSummon}
+      />
       {isInsideMeetingRoom ? (
         <aside className="meeting-prompt">
           <h2>회의실에 들어왔습니다</h2>

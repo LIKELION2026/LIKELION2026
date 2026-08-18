@@ -107,6 +107,8 @@ sequenceDiagram
     Socket->>DB: 마지막 좌표와 연결 상태 저장
 ```
 
+`presence.move`가 Server connection의 최신 avatar를 갱신한다. heartbeat는 Browser store의 좌표를 다시 전송하지 않고, Server가 이미 보관 중인 최신 avatar를 마지막 위치로 저장한다. 따라서 자기 자신에게 이동 중계 이벤트가 오지 않아도 오래된 최초 좌표가 다음 heartbeat에서 되돌아가지 않는다.
+
 ## 개인정보·신뢰 경계
 
 - 작업 화면, 키보드 입력, 카메라·마이크 데이터는 수집하지 않는다.

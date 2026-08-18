@@ -10,9 +10,8 @@
     "smoke:livekit-room": "ts-node scripts/livekit-room-smoke.ts",
     "smoke:livekit-webhook": "ts-node scripts/livekit-webhook-smoke.ts",
     "start": "node dist/main.js",
-    "start:dev": "pnpm --filter @likelion2026/shared build && nest start --watch",
-    "test": "pnpm --filter @likelion2026/shared build && node --test -r ts-node/register test/meeting.service.test.ts test/meeting.controller.test.ts test/meeting-realtime.gateway.test.ts test/livekit-token.service.test.ts test/livekit-webhook.service.test.ts test/livekit-webhook-smoke.test.ts test/livekit-room-smoke.test.ts test/meeting-subtitle-smoke.test.ts test/environment.test.ts",
-    "test": "pnpm --filter @likelion2026/shared build && node --test -r ts-node/register test/meeting.service.test.ts test/meeting.controller.test.ts test/meeting-realtime.gateway.test.ts test/livekit-token.service.test.ts test/livekit-webhook.service.test.ts test/livekit-webhook-smoke.test.ts test/livekit-room-smoke.test.ts test/environment.test.ts test/presence.service.test.ts",
+    "start:dev": "corepack pnpm --filter @likelion2026/shared build && nest start --watch",
+    "test": "corepack pnpm --filter @likelion2026/shared build && node --test -r ts-node/register test/meeting.service.test.ts test/meeting.controller.test.ts test/meeting-realtime.gateway.test.ts test/livekit-token.service.test.ts test/livekit-webhook.service.test.ts test/livekit-webhook-smoke.test.ts test/livekit-room-smoke.test.ts test/meeting-subtitle-smoke.test.ts test/environment.test.ts test/presence.service.test.ts test/presence.gateway.test.ts test/office.controller.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

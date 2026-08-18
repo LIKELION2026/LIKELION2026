@@ -234,6 +234,24 @@ export class OfficeService {
     return ((data ?? []) as TodoRow[]).map(toOfficeTodo);
   }
 
+  async getMemberWorkspaceId(memberId: string, guestToken: string): Promise<string> {
+    return (await this.requireMemberOwnership(memberId, guestToken)).workspace_id;
+  }
+
+  async getTodoWorkspaceId(todoId: string, guestToken: string): Promise<string> {
+    const { data, error } = await this.supabase
+      .from("todos")
+      .select("member_id")
+      .eq("id", todoId)
+      .maybeSingle();
+    this.throwIfError(error, "find office todo workspace");
+    if (!data) {
+      throw new NotFoundException("Office todo was not found");
+    }
+
+    return this.getMemberWorkspaceId(data.member_id as string, guestToken);
+  }
+
   async getPublicWorkspaceTodos(workspaceId: string): Promise<PublicOfficeTodo[]> {
     const { data: memberData, error: memberError } = await this.supabase
       .from("members")

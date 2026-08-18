@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent, JSX } from "react";
 
 import type { GuestProfile } from "../../../shared/lib/development-identity";
+import { RequestSpinner } from "../../../app/request-feedback";
 
 interface GuestOnboardingProps {
   error: string | null;
@@ -78,7 +79,7 @@ export function GuestOnboarding({
           </fieldset>
           {error ? <p className="guest-onboarding-error">{error}</p> : null}
           <button className="guest-onboarding-submit" disabled={isSubmitting} type="submit">
-            {isSubmitting ? "오피스 준비 중" : "오피스 입장"}
+            {isSubmitting ? <><RequestSpinner />오피스 준비 중</> : "오피스 입장"}
           </button>
         </form>
       </section>
