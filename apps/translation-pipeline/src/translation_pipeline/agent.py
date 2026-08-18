@@ -25,7 +25,11 @@ from .livekit_audio import LiveKitAudioSource
 from .participants import ParticipantRegistry
 from .pipeline import TranslationPipeline
 from .publisher import SubtitlePublisher
-from .session import DEFAULT_INTERIM_INTERVAL_MS, TranslationSession
+from .session import (
+    DEFAULT_FINALIZE_AFTER_MS,
+    DEFAULT_INTERIM_INTERVAL_MS,
+    TranslationSession,
+)
 from .stt import DEFAULT_ENDPOINTING_MS, RealtimeTranscriber, Utterance
 from .translator import Translator
 
@@ -85,6 +89,7 @@ class ParticipantWorker:
         publisher: SubtitlePublisher | None = None,
         endpointing_ms: int = DEFAULT_ENDPOINTING_MS,
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
+        finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
         on_event=None,
     ) -> None:
         self.info = info
@@ -104,6 +109,7 @@ class ParticipantWorker:
             speaker_id=info.identity,
             publisher=publisher,
             interim_interval_ms=interim_interval_ms,
+            finalize_after_ms=finalize_after_ms,
             on_event=on_event,
         )
         self.transcriber = RealtimeTranscriber(
@@ -154,6 +160,7 @@ class TranslationAgent:
         publisher: SubtitlePublisher | None = None,
         endpointing_ms: int = DEFAULT_ENDPOINTING_MS,
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
+        finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
         on_event=None,
         worker_factory: Callable[..., ParticipantWorker] | None = None,
     ) -> None:
@@ -162,6 +169,7 @@ class TranslationAgent:
         self._publisher = publisher
         self._endpointing_ms = endpointing_ms
         self._interim_interval_ms = interim_interval_ms
+        self._finalize_after_ms = finalize_after_ms
         self._on_event = on_event
         self._worker_factory = worker_factory or ParticipantWorker
         self._workers: dict[str, ParticipantWorker] = {}
@@ -188,6 +196,7 @@ class TranslationAgent:
             publisher=self._publisher,
             endpointing_ms=self._endpointing_ms,
             interim_interval_ms=self._interim_interval_ms,
+            finalize_after_ms=self._finalize_after_ms,
             on_event=self._on_event,
         )
         self._workers[info.identity] = worker

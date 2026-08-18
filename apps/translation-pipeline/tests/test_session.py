@@ -129,8 +129,9 @@ def test_an_interim_result_is_translated(participants, empty_glossary):
 
 
 def test_interim_results_are_throttled(participants, empty_glossary):
+    # 간격 제한만 본다. 종료 시 확정은 여기서 셈에 넣지 않는다.
     session, events, arrived = make_session(
-        participants, empty_glossary, interim_interval_ms=10_000
+        participants, empty_glossary, interim_interval_ms=10_000, finalize_after_ms=0
     )
 
     with session:
@@ -277,3 +278,87 @@ def test_starting_twice_is_rejected(participants, empty_glossary):
     with session:
         with pytest.raises(RuntimeError):
             session.start()
+
+
+# --- 발화 닫기 ---
+#
+# speech_final이 끝내 오지 않으면 자막이 영영 미확정으로 남는다. 참가자가 말을
+# 마치고 바로 나가는 경우가 그렇다.
+
+
+def test_stopping_finalizes_an_open_utterance(participants, empty_glossary):
+    session, events, arrived = make_session(participants, empty_glossary)
+
+    session.start()
+    session.submit_utterance("안건은", ends_utterance=False)
+    wait_for(arrived, 1)
+    session.stop()
+
+    assert len(events) == 2
+    assert events[-1].result.subtitle.to_dict()["isFinal"] is True
+
+
+def test_stopping_does_not_finalize_a_closed_utterance(participants, empty_glossary):
+    session, events, arrived = make_session(participants, empty_glossary)
+
+    session.start()
+    session.submit_utterance("끝났습니다.")
+    wait_for(arrived, 1)
+    session.stop()
+
+    # 이미 확정된 발화를 다시 발행하면 안 된다.
+    assert len(events) == 1
+
+
+def test_stopping_with_nothing_open_is_safe(participants, empty_glossary):
+    session, events, arrived = make_session(participants, empty_glossary)
+
+    session.start()
+    session.stop()
+
+    assert events == []
+
+
+def test_silence_finalizes_an_open_utterance(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=100
+    )
+
+    with session:
+        session.submit_utterance("안건은", ends_utterance=False)
+        wait_for(arrived, 1)
+        # 새 입력 없이 기다리면 스스로 닫는다.
+        wait_for(arrived, 1, timeout=3.0)
+
+    assert events[-1].result.subtitle.to_dict()["isFinal"] is True
+
+
+def test_silence_finalizes_only_once(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=100
+    )
+
+    with session:
+        session.submit_utterance("안건은", ends_utterance=False)
+        wait_for(arrived, 2, timeout=3.0)
+        # 계속 조용해도 다시 닫으려 들면 안 된다.
+        assert arrived.acquire(timeout=0.6) is False
+
+    assert len(events) == 2
+
+
+def test_finalizing_does_not_call_the_model_again(participants, empty_glossary):
+    translator = BlockingTranslator()
+    translator.gate.set()
+    session, events, arrived = make_session(
+        participants, empty_glossary, translator=translator
+    )
+
+    session.start()
+    session.submit_utterance("안건은", ends_utterance=False)
+    wait_for(arrived, 1)
+    session.stop()
+
+    # 원문이 그대로라 직전 번역을 재사용한다.
+    assert len(translator.requests) == 1
+    assert events[-1].result.reused_translation is True
