@@ -3,13 +3,16 @@ import type { JSX } from "react";
 
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
 import { OfficePage } from "../pages/office/OfficePage";
+import { OfficeConnectionProvider } from "../features/virtual-office/model/office-connection-context";
 import { RequestFeedbackProvider } from "./request-feedback";
 
 export function App(): JSX.Element {
   return (
     <BrowserRouter>
       <RequestFeedbackProvider>
-        <AppContent />
+        <OfficeConnectionProvider>
+          <AppContent />
+        </OfficeConnectionProvider>
       </RequestFeedbackProvider>
     </BrowserRouter>
   );
