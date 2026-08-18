@@ -25,7 +25,7 @@ import { useOfficeStore } from "./office-store";
 const MOVEMENT_INTERVAL_MS = 60;
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
-interface OfficeSocketCallbacks {
+export interface OfficeSocketCallbacks {
   onCalendarUpdated?: () => void;
   onSummonRequested?: (payload: OfficeSummonRequestedPayload) => void;
   onSummonResolved?: (payload: OfficeSummonResolvedPayload) => void;

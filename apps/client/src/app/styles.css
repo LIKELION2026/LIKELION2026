@@ -414,6 +414,23 @@ button {
   background: #9aa7b6;
 }
 
+.office-member-status.vacation,
+.office-member-status.absent {
+  background: #b45c5c;
+}
+
+.office-member-status.remote_work {
+  background: #2a8a61;
+}
+
+.office-member-status.meeting {
+  background: #8253aa;
+}
+
+.office-member-status.focus {
+  background: #d28a24;
+}
+
 .office-panel-message,
 .office-panel-error {
   color: #58687c;
