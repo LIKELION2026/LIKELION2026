@@ -58,7 +58,9 @@ from .session import (
 from .stt import AudioSource, MicrophoneStream, RealtimeTranscriber, Utterance
 from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
 from .translator import (
+    DEFAULT_HEDGE_AFTER_MS,
     FakeTranslator,
+    HedgedTranslator,
     TranslationRequest,
     Translator,
     build_system_prompt,
@@ -76,11 +78,13 @@ __all__ = [
     "Glossary",
     "GlossaryEntry",
     "GlossaryError",
+    "HedgedTranslator",
     "GlossaryMatch",
     "DEFAULT_FINALIZE_AFTER_MS",
     "DEFAULT_INTERIM_INTERVAL_MS",
     "DEFAULT_MIN_INTERIM_CHARS",
     "DEFAULT_SECTION",
+    "DEFAULT_HEDGE_AFTER_MS",
     "DEFAULT_MAX_STALENESS_MS",
     "MicrophoneStream",
     "ParticipantAudioRunner",

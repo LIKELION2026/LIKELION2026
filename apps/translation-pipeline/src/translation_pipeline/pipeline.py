@@ -21,7 +21,7 @@ from .context import ConversationContext
 from .glossary import Glossary, find_unapplied_entries
 from .participants import ParticipantRegistry
 from .subtitle import SubtitlePayload, build_subtitle, utc_now_iso, validate_room_name
-from .translator import TranslationRequest, Translator
+from .translator import DEFAULT_HEDGE_AFTER_MS, HedgedTranslator, TranslationRequest, Translator
 
 # 발화가 끝나고 이 시간을 넘겨 도착한 번역은 버린다. Client가 occurredAt 순으로
 # 정렬하므로 늦게 도착해도 자막 순서는 엉키지 않는다. 그래서 이 값은 대화를
@@ -86,10 +86,19 @@ class TranslationPipeline:
         glossary: Glossary | None = None,
         context: ConversationContext | None = None,
         max_staleness_ms: int = DEFAULT_MAX_STALENESS_MS,
+        hedge_after_ms: int | None = DEFAULT_HEDGE_AFTER_MS,
     ) -> None:
         self._room_name = validate_room_name(room_name)
         self._participants = participants
         self._translator = translator
+        # 발화의 첫 호출에만 쓴다. 이후 조각·확정 호출까지 이중화하면 호출량이
+        # 너무 늘어난다. None이거나 0 이하면 이중 요청을 끈다. 0을 "끄기"로
+        # 보는 규칙은 finalize_after_ms와 같다.
+        self._hedged_translator = (
+            HedgedTranslator(translator, hedge_after_ms)
+            if hedge_after_ms is not None and hedge_after_ms > 0
+            else None
+        )
         self._glossary = glossary if glossary is not None else Glossary.load()
         self._context = context if context is not None else ConversationContext()
         self._max_staleness_ms = max_staleness_ms
@@ -231,7 +240,15 @@ class TranslationPipeline:
                 translated = match.direct_translation
                 used_model = False
             else:
-                translated = self._translator.translate(
+                # 발화의 첫 호출일 때만 이중 요청을 쓴다. 브라우저에 처음 뜨는
+                # 자막이라 체감 지연에 가장 큰 영향을 준다.
+                is_first_call = open_utterance.revision == 1
+                caller = (
+                    self._hedged_translator
+                    if is_first_call and self._hedged_translator is not None
+                    else self._translator
+                )
+                translated = caller.translate(
                     TranslationRequest(
                         text=text,
                         source_lang=source_lang,
