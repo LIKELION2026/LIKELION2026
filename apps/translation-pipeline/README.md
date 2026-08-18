@@ -249,6 +249,7 @@ cd C:\LIKELION2026\apps\translation-pipeline
 | `TRANSLATION_MODEL` | 번역 모델 |
 | `TRANSLATION_ENDPOINTING_MS` | 발화 종료로 볼 무음 길이. 기본 700 |
 | `TRANSLATION_INTERIM_INTERVAL_MS` | 중간 결과 번역 간격 |
+| `TRANSLATION_FINALIZE_AFTER_MS` | 이만큼 조용하면 열린 발화를 확정한다. 기본 2500 |
 
 결정 배경은 `docs/ADR/0003-livekit-translation-agent.md`에 있다.
 
@@ -361,6 +362,31 @@ Client가 바뀌면 자막이 안 뜬 뒤에 찾는 대신 `pytest`에서 깨진
 `--endpointing`을 낮게 둘 이유가 없어졌다. 예전에는 자막을 빨리 띄우려고
 낮췄지만, 이제 중간 결과가 그 역할을 한다. 값을 올리면 문장이 잘게 쪼개지지
 않아 번역 품질이 좋아지고, 첫 자막은 늦어지지 않는다.
+
+### 발화 닫기
+
+자막이 확정(`isFinal: true`)되는 것은 Deepgram이 `speech_final`을 보낼 때다.
+그런데 그게 끝내 오지 않는 경우가 있다.
+
+```text
+말 끝냄 -> 무음 700ms -> speech_final -> 확정
+              ^ 참가자가 바로 나가면 여기서 연결이 끊긴다
+                배경 소음이 있으면 무음으로 치지 않는다
+```
+
+그러면 열린 발화를 아무도 닫지 않아 자막이 영영 "임시"로 남는다. 그래서 닫는
+경로를 두 개 더 뒀다.
+
+| 언제 | |
+| --- | --- |
+| 새 인식 결과 없이 `TRANSLATION_FINALIZE_AFTER_MS`가 지나면 | 스스로 닫는다 |
+| 참가자가 나가 세션이 끝날 때 | 열려 있으면 닫는다 |
+
+기본값은 2500ms다. 발화 종료 판정(700ms)보다 넉넉히 잡는다. 정상적으로
+`speech_final`이 올 상황에서 먼저 끼어들면 안 된다.
+
+**모델을 다시 부르지 않는다.** 원문이 그대로라 직전 번역이 재사용되고
+`isFinal`과 `revision`만 바뀐다. 이미 확정된 발화는 다시 발행하지 않는다.
 
 ### 번역 스레드 분리
 
