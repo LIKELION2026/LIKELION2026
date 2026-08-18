@@ -51,7 +51,11 @@ Client는 `member_presence`를 수정하지 않고, 현재 유효한 `CalendarMe
 
 ## 화상회의 상태 연동
 
-Meeting Lab은 LiveKit 연결이 실제로 `connected`가 된 뒤에만 같은 guest token으로 오피스 socket 세션을 복원하고 `회의 중` 상태를 broadcast한다. 회의 나가기, 연결 실패, 페이지 이탈 시에는 회의 전의 수동 협업 상태로 복구한다. 회의실 구역에 들어간 것만으로는 상태를 바꾸지 않는다.
+오피스 socket 세션은 `/office`와 `/meeting-lab`을 감싸는 앱 수준 provider가 유지한다. 따라서 Meeting Lab으로 화면을 전환해도 아바타가 연결 해제 상태가 되지 않는다. LiveKit이 실제로 `connected`가 된 뒤에만 이 연결에서 `회의 중` 상태를 broadcast하며, 회의 나가기·연결 실패·페이지 이탈 시에는 회의 전의 수동 협업 상태로 복구한다. 회의실 구역에 들어간 것만으로는 상태를 바꾸지 않는다.
+
+## 오피스 씬 초기화
+
+새로고침 시에는 socket snapshot의 `self.avatar`가 준비된 뒤에만 Phaser 오피스 씬을 생성한다. 저장된 좌표와 방향을 아바타 및 카메라의 초기값으로 사용하므로, 기본 좌표를 잠시 보였다가 이동하는 현상을 방지한다.
 
 ## 제외 범위
 
