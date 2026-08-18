@@ -49,6 +49,7 @@ from .rooms import (
     build_lab_room_name,
 )
 from .session import (
+    DEFAULT_FINALIZE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
     SessionEvent,
     TranslationSession,
@@ -75,6 +76,7 @@ __all__ = [
     "GlossaryEntry",
     "GlossaryError",
     "GlossaryMatch",
+    "DEFAULT_FINALIZE_AFTER_MS",
     "DEFAULT_INTERIM_INTERVAL_MS",
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",

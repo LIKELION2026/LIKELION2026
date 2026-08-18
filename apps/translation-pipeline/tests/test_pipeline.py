@@ -504,3 +504,104 @@ def test_a_discarded_segment_does_not_break_the_next_utterance(participants, glo
 
     assert fresh.subtitle.revision == 1
     assert fresh.subtitle.sourceText == "다음 안건입니다."
+
+
+# --- 발화 닫기 ---
+#
+# Deepgram의 speech_final이 끝내 오지 않는 경우가 있다. 참가자가 말을 마치고
+# 바로 나가면 무음 판정 전에 연결이 끊긴다. 그러면 자막이 영영 미확정으로 남는다.
+
+
+def test_finalizing_marks_the_subtitle_final(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    result = pipeline.finalize("user_ko")
+
+    assert result.subtitle.to_dict()["isFinal"] is True
+
+
+def test_finalizing_keeps_the_text(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    # 중간 결과는 확정 조각 뒤에 붙는 새 조각이다. 누적 전체가 아니다.
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    pipeline.handle_interim("user_ko", "이번 분기")
+    result = pipeline.finalize("user_ko")
+
+    assert result.subtitle.sourceText == "안건은 이번 분기"
+
+
+def test_finalizing_does_not_call_the_model_again(participants, glossary):
+    translator = FakeTranslator("...")
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    result = pipeline.finalize("user_ko")
+
+    # 원문이 그대로라 직전 번역을 재사용한다.
+    assert len(translator.requests) == 1
+    assert result.reused_translation is True
+
+
+def test_finalizing_keeps_the_subtitle_id_and_raises_the_revision(
+    participants, glossary
+):
+    pipeline = make_pipeline(participants, glossary)
+
+    opened = pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    result = pipeline.finalize("user_ko")
+
+    assert result.subtitle.subtitleId == opened.subtitle.subtitleId
+    assert result.subtitle.revision == 2
+
+
+def test_finalizing_closes_the_utterance(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    pipeline.finalize("user_ko")
+    fresh = pipeline.handle_utterance("user_ko", "다음 안건입니다.")
+
+    assert fresh.subtitle.subtitleId != pipeline._open.get("user_ko")
+    assert fresh.subtitle.revision == 1
+    assert fresh.subtitle.sourceText == "다음 안건입니다."
+
+
+def test_finalizing_adds_the_utterance_to_the_context(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    pipeline.finalize("user_ko")
+
+    assert len(pipeline.context) == 1
+
+
+def test_finalizing_nothing_is_safe(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    assert pipeline.finalize("user_ko") is None
+
+
+def test_finalizing_after_the_utterance_ended_is_safe(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    pipeline.handle_utterance("user_ko", "끝났습니다.")
+
+    # 이미 확정된 발화를 다시 발행하면 안 된다.
+    assert pipeline.finalize("user_ko") is None
+
+
+def test_an_open_utterance_is_reported(participants, glossary):
+    pipeline = make_pipeline(participants, glossary)
+
+    assert pipeline.has_open_utterance("user_ko") is False
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    assert pipeline.has_open_utterance("user_ko") is True
+    pipeline.finalize("user_ko")
+    assert pipeline.has_open_utterance("user_ko") is False
