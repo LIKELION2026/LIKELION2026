@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-17
+> 마지막 업데이트: 2026-08-18
 
 ## 목적
 
@@ -645,3 +645,63 @@
 - 팀원 검토·수정 내용: gray-cat 원본을 크롭 좌표로 임시 매핑하는 방식은 사용하지 않는다. 표준 `1536 x 1024 / 6 x 4 / 256px` 시트를 받은 뒤 다시 적용한다.
 - 검증 결과: avatar 단위 테스트, Client·Server typecheck, Client production build 통과. 브라우저 UI 수동 확인은 별도 진행한다.
 - 관련 Issue / PR / Discussion: Issue #95
+
+### 2026-08-18 - 회의방 참가자 전원 자동 통역 에이전트
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 참가자마다 로컬에서 스크립트를 직접 실행해야 했던 방식을 없애고, 브라우저만 열면 통역되도록 회의방에 자동으로 들어가는 에이전트 구성
+- 입력 맥락: 기존 `stt.py`/`translator.py`/`session.py`/`pipeline.py`, `apps/server`가 LiveKit 참가자에 실어 보내는 `preferredLanguage`/`participantCountry` attributes, Issue #72·#76·#81 선행 결과
+- AI 제안 또는 산출물: 마이크 대신 LiveKit 참가자 오디오를 받는 `AudioSource` 주입 구조, 참가자별 통역 세션을 여는 `TranslationAgent`, 통역 대상 회의방 판별, `docs/ADR/0003` 작성
+- 팀원 검토·수정 내용: 밀린 오디오는 큐가 차면 가장 오래된 것을 버리도록(대기하면 방 전체 오디오 수신이 끊김) 설계를 정했고, 워커 정지는 `asyncio.to_thread`로 돌려 같은 이유의 정지를 피했다. `close()`가 꽉 찬 큐에 블로킹 `put`을 해 영원히 멈추는 교착을 테스트 타임아웃으로 발견해 플래그 기반으로 고쳤다.
+- 검증 결과: `pytest` 313건 통과(신규 56건). 실제 LiveKit 방에 브라우저로 접속해 터미널 명령 없이 자막이 뜨는 것 확인. 짧은 조각 번역 지어냄(Issue #101)과 지연 증가는 제한사항으로 남김.
+- 관련 Issue / PR / Discussion: Issue #99, PR #100
+
+### 2026-08-18 - 통역 에이전트를 LiveKit 워커로 전환
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 회의 때마다 에이전트를 직접 켜고 꺼야 했던 방식을, 한 번 켜두면 회의방이 열릴 때 자동 배정받는 워커 방식으로 전환
+- 입력 맥락: PR #100 결과물, `livekit-agents` 프레임워크의 `cli.run_app`/`WorkerOptions`, 배포 환경(Vercel Client + Render Server) 실측
+- AI 제안 또는 산출물: `request_fnc` 기반 회의방 배정 수락/거부, 환경변수로 옮긴 설정, README·ADR 0003 갱신
+- 팀원 검토·수정 내용: 실행 중 발견한 버그 3건을 사용자와 함께 확인 후 수정 — 참가자 퇴장 처리가 `Room` 객체에 없는 `.loop` 속성 접근으로 통째로 안 돌던 것(같은 자리에서 두 번째 실수라 방 이벤트 연결을 스크립트에서 모듈로 옮기고 가짜 방으로 테스트 추가), CPU 부하 게이팅이 워커 한 대뿐인 상황에서 배정 자체를 막던 것(`TRANSLATION_LOAD_THRESHOLD` 무제한으로 완화), `PIPELINE_SERVER_URL` 미설정 시 자막이 조용히 로컬로만 발행되던 것(경고 로그 추가). 실행 중 별도로 발견한 두 문제(Issue #101, #103)는 범위를 분리해 후속 Issue로 뺐다.
+- 검증 결과: `pytest` 327건 통과(신규 14건, 버그 1 회귀 테스트 포함). 배포 환경에서 브라우저만으로 회의 입장·자막 발행·회의 종료까지 확인. 보고된 15~50초 배정 지연은 재현되지 않았다.
+- 관련 Issue / PR / Discussion: Issue #102, PR #104
+
+### 2026-08-18 - 말이 끝나도 자막이 임시로 남던 문제 수정
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: Deepgram의 `speech_final`이 끝내 오지 않아 마지막 발화가 영영 미확정("조각") 상태로 남던 문제 해결
+- 입력 맥락: PR #104 실행 중 배포 환경에서 발견(Issue #103), 기존 `TranslationSession`의 침묵 처리 없음, Issue #99의 번역 재사용 경로
+- AI 제안 또는 산출물: 새 인식 결과 없이 `TRANSLATION_FINALIZE_AFTER_MS`가 지나면 스스로 닫는 경로, 참가자 퇴장으로 세션이 끝날 때 열린 발화를 닫는 경로, 모델을 다시 부르지 않고 `isFinal`/`revision`만 갱신해 재발행
+- 팀원 검토·수정 내용: PR #105가 이미 병합된 브랜치를 base로 잡아 `dev`에 도달하지 못한 것을 Issue #103이 안 닫힌 것으로 발견해, 같은 커밋을 `dev` 기준으로 옮겨 PR #106으로 다시 올렸다.
+- 검증 결과: `pytest` 342건 통과(신규 15건, 이미 확정된 발화 재발행 방지·침묵 반복에도 한 번만 닫힘 포함). 실제 회의로 확정 전환 여부를 확인하는 수동 검증은 아직 하지 않음(제한사항으로 기록).
+- 관련 Issue / PR / Discussion: Issue #103, PR #106
+
+### 2026-08-18 - 짧거나 끊긴 중간 결과가 없는 내용을 지어내던 문제 수정
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 중간 결과 번역 시 짧은 조각이나 그 자체로 뜻이 통하는 마지막 단어를 모델이 완결된 문장(요청·지시)으로 지어내던 문제 해결
+- 입력 맥락: Issue #101(PR #100 실행 중 발견), 배포 환경 실측 로그의 중간 결과 전체를 길이순으로 정리한 표
+- AI 제안 또는 산출물: "끊긴 자리는 끊긴 채로 옮기고 뒷말을 지어내 완결된 문장으로 만들지 마라"로 바꾼 프롬프트 규칙, `TRANSLATION_MIN_INTERIM_CHARS`(기본 4자) 최소 길이 필터, 확정된 조각은 짧아도 그대로 번역하는 예외
+- 팀원 검토·수정 내용: Issue가 전제한 "최소 길이만으로 충분하다"는 것이 실측 로그 대조 결과 틀렸음을 확인 — 16자짜리도 지어낸 사례가 있어 프롬프트 규칙을 함께 고치기로 정했다.
+- 검증 결과: `pytest` 348건 통과(신규 6건, 최소 길이 필터·확정 조각 예외 포함). 프롬프트 변경 자체의 효과는 실제 회의에서 재현해야 확인되므로 미검증으로 남김.
+- 관련 Issue / PR / Discussion: Issue #101, PR #107
+
+### 2026-08-18 - 발화의 첫 번역 호출에 이중 요청 적용
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 브라우저에 처음 뜨는 자막(rev1)의 지연 편차를 줄임
+- 입력 맥락: 클라우드 배포(India 리전) 실측에서 rev1만 따로 뽑은 값(평균 1701ms, 최소 843ms, 최대 3229ms), 맥락 턴 수와 호출 간격은 이미 원인이 아님을 확인한 결과, `Translator` 인터페이스(ADR 0001)
+- AI 제안 또는 산출물: `hedge_after_ms` 안에 응답 없으면 같은 요청을 하나 더 보내 먼저 오는 걸 쓰는 `HedgedTranslator`, 발화당 첫 호출(`revision == 1`)에만 적용하는 범위 제한, `TRANSLATION_HEDGE_AFTER_MS` 환경변수
+- 팀원 검토·수정 내용: 사용자가 맥락 턴 수를 원인으로 재차 의심할 때마다 실측 데이터로 반박해 결론을 유지했다. "특정 시간 안에 안 오면 그냥 패스하는 것과 뭐가 다르냐"는 질문에, `max_staleness`는 응답을 받은 뒤 폐기하는 사후 처리이고 이중 요청은 기다리는 도중에 미리 하나 더 보내는 사전 처리로 서로 다르다는 것을 정리했다. 로컬 워커로 빠르게 테스트하려던 것을, 클라우드 실측과 비교가 안 된다는 이유로 배포 브라우저 재현으로 바꿨다. 배포 파일(Dockerfile 등)과는 별도 커밋으로 분리했다.
+- 검증 결과: `pytest` 359건 통과(신규 11건). 배포 브라우저에서 이중 요청 켜기 전/후 각 10건씩 실측 — 평균 1701ms→1398ms(18% 감소), 최대 3229ms→2228ms(31% 감소), 10건 중 6건 발동. 두 세션 모두 같은 방향으로 개선.
+- 관련 Issue / PR / Discussion: Issue #118, PR #119
+
+### 2026-08-18 - LiveKit Cloud에 통역 워커 배포
+
+- 사용한 Agent / Skill: Claude Code / Commit Convention Skill
+- 사용 목적: 노트북을 항상 켜두지 않아도 통역 워커가 동작하도록 LiveKit Cloud에 배포
+- 입력 맥락: PR #104의 워커 전환 결과물, `lk` CLI(`lk cloud auth`, `lk agent create`, `lk agent deploy`), 사용자가 팀원에게서 받은 LiveKit Cloud 계정 접근 권한
+- AI 제안 또는 산출물: 수동 작성한 `Dockerfile`(자동 생성기가 이 저장소 구조에서 멈춰 대체), `.dockerignore`, `lk agent create`가 만든 `livekit.toml`
+- 팀원 검토·수정 내용: `lk agent create --secrets-file .env`가 빈 값의 환경변수에서 실패하는 CLI 버그를 발견해 `.env`의 빈 `ANTHROPIC_API_KEY=` 줄을 제거했다. 컨테이너 stdout이 TTY가 아니라 기본 블록 버퍼링되어 `lk agent logs`에 로그가 안 보이던 것을 `PYTHONUNBUFFERED=1`로 해결했다.
+- 검증 결과: `lk agent deploy`로 배포 후 `lk agent logs`로 실시간 로그 확인. 배포된 워커로 실제 회의방 접속해 자동 배정과 자막 동작 확인. 로컬 노트북을 끈 상태에서도 통역이 계속 동작하는 것 확인.
+- 관련 Issue / PR / Discussion: Issue #120, PR #121
