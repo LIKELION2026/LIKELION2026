@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { TodoStatus } from "@likelion2026/shared";
 
 import type { OfficeTodoController } from "../model/use-office-todos";
+import { RequestSpinner, useRequestFeedback } from "../../../app/request-feedback";
 
 interface OfficeTodoPanelProps {
   controller: OfficeTodoController;
@@ -24,6 +25,7 @@ export function OfficeTodoPanel({
   isOpen,
   onClose
 }: OfficeTodoPanelProps): React.JSX.Element | null {
+  const { showError, showSuccess } = useRequestFeedback();
   const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [title, setTitle] = useState("");
@@ -46,8 +48,10 @@ export function OfficeTodoPanel({
       await controller.createTodo({ isPublic, title: nextTitle });
       setTitle("");
       setIsPublic(true);
+      showSuccess("TODO를 저장했습니다.");
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : "TODO를 저장하지 못했습니다.");
+      setWriteError("TODO를 저장하지 못했습니다. 다시 시도해 주세요.");
+      showError(error, "TODO를 저장하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -61,8 +65,10 @@ export function OfficeTodoPanel({
     setWriteError(null);
     try {
       await controller.updateTodo(todoId, input);
+      showSuccess("TODO를 업데이트했습니다.");
     } catch (error) {
-      setWriteError(error instanceof Error ? error.message : "TODO를 수정하지 못했습니다.");
+      setWriteError("TODO를 수정하지 못했습니다. 다시 시도해 주세요.");
+      showError(error, "TODO를 수정하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,15 +107,27 @@ export function OfficeTodoPanel({
           팀에 공개하기
         </label>
         <button className="attendance-button" disabled={isSubmitting} type="submit">
-          {isSubmitting ? "저장 중" : "TODO 추가"}
+          {isSubmitting ? <><RequestSpinner />저장 중</> : "TODO 추가"}
         </button>
       </form>
       {writeError || controller.error ? (
-        <p className="office-panel-error">{writeError ?? controller.error}</p>
+        <div className="office-request-error">
+          <p className="office-panel-error">{writeError ?? controller.error}</p>
+          {controller.error ? (
+            <button
+              className="office-secondary-button"
+              disabled={controller.isLoading || isSubmitting}
+              onClick={() => void controller.refresh()}
+              type="button"
+            >
+              {controller.isLoading ? <><RequestSpinner />다시 불러오는 중</> : "다시 시도"}
+            </button>
+          ) : null}
+        </div>
       ) : null}
       <section aria-label="내 TODO 목록" className="office-todo-list">
         <p className="office-member-todos-title">내 업무</p>
-        {controller.isLoading ? <p className="office-panel-message">TODO 정보를 불러오는 중입니다.</p> : null}
+        {controller.isLoading ? <p className="office-panel-message"><RequestSpinner />TODO 정보를 불러오는 중입니다.</p> : null}
         {!controller.isLoading && controller.ownTodos.length === 0 ? (
           <p className="office-panel-message">아직 작성한 TODO가 없습니다.</p>
         ) : null}
