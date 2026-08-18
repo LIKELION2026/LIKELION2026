@@ -25,3 +25,8 @@ export interface OfficeTodosUpdatedPayload {
   occurredAt: string;
   teamId: string;
 }
+
+export interface OfficeCalendarUpdatedPayload {
+  occurredAt: string;
+  teamId: string;
+}
