@@ -12,6 +12,12 @@ deepgram-sdk>=7.7.0
 sounddevice>=0.5.5
 numpy>=2.2.6
 
+# 회의방 오디오를 받는 에이전트. livekit은 실시간(rtc), livekit-api는 토큰 발급.
+livekit>=1.1.14
+livekit-api>=1.2.0
+# 워커 등록과 방 배정. 프레임워크의 STT 플러그인은 쓰지 않는다.
+livekit-agents>=1.6.10
+
 # .env에서 API 키를 읽는다
 python-dotenv>=1.2.2
 

@@ -8,7 +8,7 @@
 import queue
 import threading
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Iterator, Protocol, runtime_checkable
 
 from .errors import TranslationPipelineError
 from .languages import ensure_supported
@@ -49,6 +49,24 @@ class Utterance:
     text: str
     language: str
     ends_utterance: bool = True
+
+
+@runtime_checkable
+class AudioSource(Protocol):
+    """인식에 넣을 오디오 조각을 순서대로 내주는 것.
+
+    마이크인지 회의방 참가자인지 인식 쪽은 알 필요가 없다. 형식만 맞으면
+    된다. 16kHz 모노 PCM(`SAMPLE_RATE`, `CHANNELS`, `ENCODING`)이다.
+
+    컨텍스트 매니저인 이유는 열고 닫는 시점이 분명해야 하기 때문이다.
+    ``chunks()``는 소스가 끝나면 반환한다.
+    """
+
+    def __enter__(self) -> "AudioSource": ...
+
+    def __exit__(self, *exc_info) -> None: ...
+
+    def chunks(self) -> Iterator[bytes]: ...
 
 
 class MicrophoneStream:
@@ -107,9 +125,12 @@ class MicrophoneStream:
 class RealtimeTranscriber:
     """Deepgram 실시간 인식 세션.
 
-    ``on_utterance``는 발화가 끝났다고 판단될 때 호출된다. 중간 결과
-    (``is_final``이 아닌 것)는 ``on_interim``으로 따로 넘겨 화면에 미리
-    보여줄 수 있게 한다.
+    ``on_utterance``는 확정된 조각마다 호출된다. 중간 결과(``is_final``이
+    아닌 것)는 ``on_interim``으로 따로 넘긴다.
+
+    오디오가 어디서 오는지는 ``audio_source``로 정한다. 넣지 않으면 로컬
+    마이크를 연다. 회의방 참가자 오디오를 넣으면 같은 인식 경로를 그대로
+    쓴다.
     """
 
     def __init__(
@@ -119,6 +140,7 @@ class RealtimeTranscriber:
         model: str = DEFAULT_MODEL,
         endpointing_ms: int = DEFAULT_ENDPOINTING_MS,
         device: int | None = None,
+        audio_source: AudioSource | None = None,
     ) -> None:
         ensure_supported(language)
         self._language = language
@@ -126,19 +148,35 @@ class RealtimeTranscriber:
         self._endpointing_ms = endpointing_ms
         self._device = device
         self._api_key = api_key
+        self._audio_source = audio_source
         self._stop = threading.Event()
 
     def stop(self) -> None:
         self._stop.set()
+
+    def _resolve_audio_source(self) -> AudioSource:
+        """넣어준 소스를 쓰고, 없으면 마이크를 연다."""
+        if self._audio_source is not None:
+            return self._audio_source
+        return MicrophoneStream(device=self._device)
+
+    def _send_audio(self, socket, source: AudioSource) -> None:
+        """오디오 조각을 인식 소켓으로 흘려보낸다."""
+        with source as opened:
+            for chunk in opened.chunks():
+                if self._stop.is_set():
+                    break
+                socket.send_media(chunk)
 
     def run(
         self,
         on_utterance: Callable[[Utterance], None],
         on_interim: Callable[[str], None] | None = None,
     ) -> None:
-        """마이크를 열고 발화가 끝날 때마다 콜백을 호출한다.
+        """오디오 소스를 열고 발화가 끝날 때마다 콜백을 호출한다.
 
-        ``stop()``이 호출되거나 마이크 스트림이 끝날 때까지 블로킹된다.
+        소스를 넣지 않았으면 마이크를 연다. ``stop()``이 호출되거나 소스가
+        끝날 때까지 블로킹된다.
         """
         import os
 
@@ -175,11 +213,7 @@ class RealtimeTranscriber:
             )
             reader.start()
 
-            with MicrophoneStream(device=self._device) as microphone:
-                for chunk in microphone.chunks():
-                    if self._stop.is_set():
-                        break
-                    socket.send_media(chunk)
+            self._send_audio(socket, self._resolve_audio_source())
 
             socket.send_close_stream()
             reader.join(timeout=5)

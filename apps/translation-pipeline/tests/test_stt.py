@@ -12,6 +12,8 @@ from translation_pipeline.stt import (
     DEFAULT_MODEL,
     ENCODING,
     SAMPLE_RATE,
+    AudioSource,
+    MicrophoneStream,
     RealtimeTranscriber,
     SpeechRecognitionError,
     Utterance,
@@ -164,3 +166,98 @@ def test_stop_is_recorded():
     transcriber.stop()
 
     assert transcriber._stop.is_set()
+
+
+# --- 오디오 소스 주입 ---
+#
+# 인식 경로는 오디오가 마이크에서 오는지 회의방 참가자에게서 오는지 알 필요가
+# 없다. 형식만 맞으면 된다.
+
+
+class FakeAudioSource:
+    """정해둔 조각을 순서대로 내주는 소스. 열고 닫힌 것을 기록한다."""
+
+    def __init__(self, chunks):
+        self._chunks = list(chunks)
+        self.entered = False
+        self.exited = False
+
+    def __enter__(self):
+        self.entered = True
+        return self
+
+    def __exit__(self, *exc_info):
+        self.exited = True
+
+    def chunks(self):
+        yield from self._chunks
+
+
+class FakeSocket:
+    def __init__(self):
+        self.sent = []
+
+    def send_media(self, chunk):
+        self.sent.append(chunk)
+
+
+def test_the_microphone_is_used_when_no_source_is_given():
+    transcriber = RealtimeTranscriber(language="ko")
+
+    # 기본 동작이 바뀌면 안 된다. 마이크는 여기서 열리지 않는다.
+    assert isinstance(transcriber._resolve_audio_source(), MicrophoneStream)
+
+
+def test_an_injected_source_is_used():
+    source = FakeAudioSource([b"a"])
+    transcriber = RealtimeTranscriber(language="ko", audio_source=source)
+
+    assert transcriber._resolve_audio_source() is source
+
+
+def test_audio_chunks_reach_the_recognition_socket():
+    source = FakeAudioSource([b"one", b"two", b"three"])
+    socket = FakeSocket()
+
+    RealtimeTranscriber(language="ko")._send_audio(socket, source)
+
+    assert socket.sent == [b"one", b"two", b"three"]
+
+
+def test_the_source_is_opened_and_closed():
+    source = FakeAudioSource([b"a"])
+
+    RealtimeTranscriber(language="ko")._send_audio(FakeSocket(), source)
+
+    # 닫지 않으면 참가자가 나가도 태스크와 큐가 남는다.
+    assert (source.entered, source.exited) == (True, True)
+
+
+def test_the_source_is_closed_even_when_stopped_early():
+    source = FakeAudioSource([b"a", b"b", b"c"])
+    transcriber = RealtimeTranscriber(language="ko")
+    transcriber.stop()
+
+    transcriber._send_audio(FakeSocket(), source)
+
+    assert source.exited is True
+
+
+def test_stopping_ends_the_send_loop():
+    source = FakeAudioSource([b"a", b"b", b"c"])
+    socket = FakeSocket()
+    transcriber = RealtimeTranscriber(language="ko")
+    transcriber.stop()
+
+    transcriber._send_audio(socket, source)
+
+    assert socket.sent == []
+
+
+def test_the_microphone_satisfies_the_audio_source_contract():
+    # 마이크와 회의방 오디오가 같은 계약을 만족해야 인식 경로를 공유한다.
+    assert isinstance(MicrophoneStream(), AudioSource)
+
+
+def test_a_fake_source_satisfies_the_audio_source_contract():
+    assert isinstance(FakeAudioSource([]), AudioSource)

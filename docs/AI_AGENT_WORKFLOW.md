@@ -54,6 +54,39 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-17 - 오피스 위치와 공개 TODO 실시간 동기화
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Systematic Debugging, Test-driven Development
+- 사용 목적: 아바타가 정지 후 최초 위치로 복귀하는 현상과 다른 브라우저의 공개 TODO 지연 갱신을 분리해 해결
+- 입력 맥락: 두 브라우저 실시간 테스트, `use-office-socket.ts`, `PresenceService`, TODO REST API
+- AI 제안 또는 산출물: local avatar store 갱신, avatar 없는 heartbeat, workspace 단위 `office.todos.updated` Socket 계약과 Server broadcast
+- 팀원 검토·수정 내용: 실제 브라우저 RS-01~RS-05 검증 후 최종 반영 여부를 결정한다.
+- 검증 결과: gateway/controller 단위 테스트와 shared/client/server typecheck 통과. Nest 모듈 초기화 통과, 포트 4000은 기존 실행 프로세스가 사용 중이었다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/96
+
+### 2026-08-17 - TODO 입력 중 오피스 이동 차단
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Systematic Debugging, Test-driven Development
+- 사용 목적: TODO 제목 입력 중 Phaser의 WASD·방향키 이동이 텍스트 입력과 충돌하는 문제 해결
+- 입력 맥락: `OfficeScene.updateLocalMovement()`, TODO 입력 패널, Phaser Keyboard capture 정책
+- AI 제안 또는 산출물: 입력 요소 포커스 판별 helper, 포커스 중 velocity 0 처리, Phaser 전역 key capture 해제
+- 팀원 검토·수정 내용: 실제 브라우저에서 TODO 제목에 `wasd`와 방향키를 입력해 재현·회귀 확인한다.
+- 검증 결과: keyboard focus helper 단위 테스트 통과, client typecheck/build 대기
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/97
+
+### 2026-08-17 - 팀원 찾아가기와 호출 요청
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Brainstorming, Writing Plans, Executing Plans, Test-driven Development
+- 사용 목적: 피플 목록에서 실제 아바타 위치 이동과 상대 동의 기반 호출 흐름 추가
+- 입력 맥락: ZEP 피플 목록 UX, `PresenceGateway`의 workspace Socket room과 최신 avatar connection 상태
+- AI 제안 또는 산출물: 호출 Socket 계약, 30초 in-memory 요청 수명주기, 수락 모달, 기존 `presence.move`를 통한 최종 위치 전파
+- 팀원 검토·수정 내용: 호출은 대상이 수락했을 때만 이동하도록 확정했다.
+- 검증 결과: gateway 수락 위치 테스트, shared/client/server typecheck, production build 확인 예정
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/98
+
 ### 2026-08-15 - NestJS 백엔드 모노레포 초기 세팅
 
 - 담당자: 사용자 검토 예정
@@ -536,6 +569,16 @@
 - 팀원 검토·수정 내용: 설정 파일 문법 자체가 아니라 Vercel이 Root Directory 바깥의 루트 설정 파일을 읽지 않는 배포 경계 문제로 확인했다. 최종 Production 재배포와 새로고침 결과는 사람의 브라우저로 기록한다.
 - 검증 결과: Client build와 JSON 형식 확인 예정. main 병합 뒤 Production `/office`, `/meeting-lab` 직접 접속·새로고침은 Issue #67에 실제 결과를 남긴다.
 - 관련 Issue / PR / Discussion: Issue #67
+
+### 2026-08-17 - 원격 아바타 이동 끊김 원인 조사와 해결 계획
+
+- 사용한 Agent / Skill: Codex / Systematic Debugging Skill
+- 사용 목적: 두 브라우저에서 원격 아바타가 끊기거나 과거 위치로 되돌아 보이는 현상의 원인을 수정 전에 추적
+- 입력 맥락: 일반 창·시크릿 창 동시 테스트 영상, Client 60ms 이동 전송, Server의 1초 Supabase 위치 영속화, Phaser 120ms 원격 보간
+- AI 제안 또는 산출물: DB 저장 응답이 과거 좌표를 늦게 중계할 수 있는 비동기 경계 분석, sequence 기반 과거 패킷 폐기와 중계·영속화 분리 계획, 자동·수동 검증 시나리오
+- 팀원 검토·수정 내용: 아바타 에셋이나 보간 계수를 먼저 조정하지 않고, Socket과 DB 사이의 패킷 순서 문제를 우선 해결 대상으로 정의했다. 실제 DB 지연 시간과 수정 뒤 체감 결과는 후속 구현 PR에서 사람이 두 브라우저로 확인한다.
+- 검증 결과: 코드 경로와 영상 재현 조건을 문서화했다. 기능 수정과 지연 저장 재현 테스트는 Issue #87의 후속 구현 범위다.
+- 관련 Issue / PR / Discussion: Issue #87
 ### 2026-08-16 - 관용구를 고정 사전에서 프롬프트 지침으로 이관
 
 - 사용한 Agent / Skill: Claude Code / Commit Convention Skill
@@ -575,3 +618,30 @@
 - 팀원 검토·수정 내용: 사용자가 "말을 하자마자 바로 자막이 보였으면 좋겠다"는 요구를 제시했고, 첫 자막 1초는 LLM 번역으로 불가능하며 전용 기계번역 엔진이 필요하다는 것을 확인한 뒤 무료로 가능한 범위(중간 결과 번역)를 먼저 하기로 정했다. "이미 하고 있는 방식 아니냐"는 질문에 중간 결과를 번역하지 않고 출력만 하고 있었다는 것이 드러났다. 앞 번역에 이어붙이는 대신 매번 원문 전체를 다시 번역하는 이유는 한국어와 베트남어의 어순 차이로, 실측 결과를 근거로 확인했다. 1차 실측에서 같은 문장을 두 번 번역하는 낭비와 문장이 4조각으로 갈라지는 문제를 사용자가 함께 확인해, 번역 재사용을 추가하고 `--endpointing`을 700으로 올려 재측정했다.
 - 검증 결과: `pytest` 236건 통과. 마이크 실측에서 첫 자막까지 평균 1194ms(인식 결과 도착 기준, 최소 1155 / 최대 1234), 모델 호출 분당 7.1회, 번역·폐기·발행 실패 0건. PR #73 시점 실측은 2422~5344ms였다. `429`는 발생하지 않았다. 이 측정값은 입을 뗀 순간이 아니라 인식 결과가 도착한 시점부터 잰 것이라는 한계를 PR에 남겼다.
 - 관련 Issue / PR / Discussion: Issue #76, PR #77
+## 2026-08-17 - 재접속 Presence 표시 상태 조사와 검증
+
+- **문제:** Socket 연결은 성공했지만 원격 아바타가 `연결 해제` 라벨과 ghost 투명도로 표시됐다.
+- **관찰:** Supabase 상태를 비밀 값 없이 집계해 `connected/ghost` 2건과 `disconnected/ghost` 1건을 확인했다.
+- **원인:** `disconnectRealtimeMember()`가 ghost를 저장한 뒤, `connectRealtimeMember()`가 connection status만 connected로 복구했다.
+- **결정:** 오피스 재진입은 자동 출근으로 정의해 `working/active/connected`를 하나의 상태 전이로 저장한다. 퇴근 버튼의 `checked_out/sleeping`과 실제 연결 해제의 `disconnected/ghost`는 유지한다.
+- **검증:** 단위 테스트와 로컬 Nest + 실제 Supabase + Socket.IO 통합 검증으로 snapshot 및 DB 상태가 `working/active/connected`가 되는 것을 확인했다. 검증용 guest는 삭제했다.
+
+### 2026-08-17 - 피플 목록과 공개 TODO 협업 맥락 연결
+
+- 사용한 Agent / Skill: Codex / Brainstorming, Writing Plans, Test-Driven Development
+- 사용 목적: 원격 팀원이 동료의 화면이나 활동량을 감시하지 않고도, 자발적으로 공개한 현재 상태와 오늘의 업무를 확인하도록 한다.
+- 입력 맥락: Socket `OfficeMemberPresence` snapshot, 공개 TODO API, 기존 HUD와 Phaser 카메라 follow 구조, Issue #94
+- AI 제안 또는 산출물: 멤버·공개 TODO를 결합하는 순수 표시 모델, 피플 목록과 읽기 전용 프로필 패널, 아바타 좌표만 보는 `찾아가기` 카메라 포커스 경계, 설계·구현 계획 문서
+- 팀원 검토·수정 내용: 목록 클릭은 프로필만 열고, 카메라 이동은 명시적인 `찾아가기` 행동으로 분리했다. 카메라 포커스는 로컬 아바타나 Socket 위치를 바꾸지 않으며, 사용자가 다시 이동할 때만 본인 아바타 follow를 복구한다.
+- 검증 결과: 표시 모델 테스트 2건, Client typecheck, Client production build를 통과했다. 로컬 API로 한국·베트남 테스트 멤버 2명과 공개 TODO 1건의 생성·조회까지 확인했다. 브라우저 시각 확인은 별도 수동 확인이 필요하다.
+- 관련 Issue / PR / Discussion: Issue #94
+
+### 2026-08-17 - red-panda 기본 아바타와 내 TODO 작성 패널
+
+- 사용한 Agent / Skill: Codex / Test-Driven Development, Project Workflow Skill
+- 사용 목적: 비표준 gray-cat 아틀라스의 세션 배정을 중단하고, 사용자가 자발적으로 오늘의 업무를 작성·공개하도록 한다.
+- 입력 맥락: `office-avatar.ts` 신규 게스트 선택 함수, 기존 TODO 생성·수정 API와 `useOfficeTodos` controller, Issue #95
+- AI 제안 또는 산출물: red-panda 기본 선택 상수와 회귀 테스트, TODO 생성·상태 변경·공개 전환 패널, gray-cat 보류 정책 문서
+- 팀원 검토·수정 내용: gray-cat 원본을 크롭 좌표로 임시 매핑하는 방식은 사용하지 않는다. 표준 `1536 x 1024 / 6 x 4 / 256px` 시트를 받은 뒤 다시 적용한다.
+- 검증 결과: avatar 단위 테스트, Client·Server typecheck, Client production build 통과. 브라우저 UI 수동 확인은 별도 진행한다.
+- 관련 Issue / PR / Discussion: Issue #95

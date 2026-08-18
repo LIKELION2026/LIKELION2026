@@ -3,11 +3,14 @@ import type { JSX } from "react";
 
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
 import { OfficePage } from "../pages/office/OfficePage";
+import { RequestFeedbackProvider } from "./request-feedback";
 
 export function App(): JSX.Element {
   return (
     <BrowserRouter>
-      <AppContent />
+      <RequestFeedbackProvider>
+        <AppContent />
+      </RequestFeedbackProvider>
     </BrowserRouter>
   );
 }

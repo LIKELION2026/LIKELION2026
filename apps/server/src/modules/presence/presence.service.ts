@@ -15,10 +15,19 @@ const POSITION_PERSIST_INTERVAL_MS = 1_000;
 
 interface ConnectionRecord {
   guestToken: string;
-  lastPersistedAt: number;
+  lastPersistStartedAt: number;
   member: OfficeMemberPresence;
+  persistencePromise?: Promise<void>;
+  persistenceScheduled: boolean;
+  persistenceTimer?: NodeJS.Timeout;
   teamId: string;
   workspaceId: string;
+}
+
+export interface ConnectedOfficeMember {
+  member: OfficeMemberPresence;
+  socketId: string;
+  teamId: string;
 }
 
 @Injectable()
@@ -37,8 +46,9 @@ export class PresenceService {
     );
     this.connections.set(socketId, {
       guestToken: payload.guestToken,
-      lastPersistedAt: Date.now(),
+      lastPersistStartedAt: Date.now(),
       member: self,
+      persistenceScheduled: false,
       teamId: payload.teamId,
       workspaceId: payload.workspaceId
     });
@@ -56,6 +66,10 @@ export class PresenceService {
     }
 
     this.connections.delete(socketId);
+    if (connection.persistenceTimer) {
+      clearTimeout(connection.persistenceTimer);
+    }
+    await connection.persistencePromise;
     return this.officeService.disconnectRealtimeMember(
       connection.member.memberId,
       connection.guestToken,
@@ -63,10 +77,10 @@ export class PresenceService {
     );
   }
 
-  async move(
+  move(
     socketId: string,
     payload: PresenceMovePayload
-  ): Promise<OfficeMemberPresence | null> {
+  ): OfficeMemberPresence | null {
     const connection = this.connections.get(socketId);
     if (!connection) {
       return null;
@@ -74,16 +88,8 @@ export class PresenceService {
 
     const member = withAvatar(connection.member, payload);
     connection.member = member;
-    const now = Date.now();
-    if (now - connection.lastPersistedAt >= POSITION_PERSIST_INTERVAL_MS) {
-      const persistedMember = await this.officeService.updateRealtimeMemberPosition(
-        member.memberId,
-        connection.guestToken,
-        member.avatar
-      );
-      connection.member = withAvatar(persistedMember, member.avatar);
-      connection.lastPersistedAt = now;
-    }
+    connection.persistenceScheduled = true;
+    this.schedulePositionPersistence(socketId, Date.now());
 
     return connection.member;
   }
@@ -106,7 +112,7 @@ export class PresenceService {
       member.avatar
     );
     connection.member = withAvatar(persistedMember, member.avatar);
-    connection.lastPersistedAt = Date.now();
+    connection.lastPersistStartedAt = Date.now();
     return connection.member;
   }
 
@@ -149,6 +155,68 @@ export class PresenceService {
 
   getTeamId(socketId: string): string | null {
     return this.connections.get(socketId)?.teamId ?? null;
+  }
+
+  getConnection(socketId: string): ConnectedOfficeMember | null {
+    const connection = this.connections.get(socketId);
+    return connection
+      ? { member: connection.member, socketId, teamId: connection.teamId }
+      : null;
+  }
+
+  findConnectedMember(memberId: string, teamId: string): ConnectedOfficeMember | null {
+    for (const [socketId, connection] of this.connections) {
+      if (connection.member.memberId === memberId && connection.teamId === teamId) {
+        return { member: connection.member, socketId, teamId: connection.teamId };
+      }
+    }
+
+    return null;
+  }
+
+  private schedulePositionPersistence(socketId: string, now: number): void {
+    const connection = this.connections.get(socketId);
+    if (!connection || connection.persistencePromise || connection.persistenceTimer) {
+      return;
+    }
+
+    const delay = Math.max(
+      0,
+      POSITION_PERSIST_INTERVAL_MS - (now - connection.lastPersistStartedAt)
+    );
+    connection.persistenceTimer = setTimeout(() => {
+      const activeConnection = this.connections.get(socketId);
+      if (activeConnection) {
+        activeConnection.persistenceTimer = undefined;
+      }
+      this.persistLatestPosition(socketId);
+    }, delay);
+  }
+
+  private persistLatestPosition(socketId: string): void {
+    const connection = this.connections.get(socketId);
+    if (!connection || !connection.persistenceScheduled || connection.persistencePromise) {
+      return;
+    }
+
+    connection.persistenceScheduled = false;
+    connection.lastPersistStartedAt = Date.now();
+    const member = connection.member;
+    connection.persistencePromise = this.officeService
+      .updateRealtimeMemberPosition(member.memberId, connection.guestToken, member.avatar)
+      .then(() => undefined)
+      .catch(() => undefined)
+      .finally(() => {
+        const activeConnection = this.connections.get(socketId);
+        if (!activeConnection) {
+          return;
+        }
+
+        activeConnection.persistencePromise = undefined;
+        if (activeConnection.persistenceScheduled) {
+          this.schedulePositionPersistence(socketId, Date.now());
+        }
+      });
   }
 
   static isMemberStatus(value: unknown): value is MemberStatus {

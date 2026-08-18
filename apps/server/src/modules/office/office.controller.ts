@@ -30,11 +30,15 @@ import { UpdateOfficeAttendanceDto } from "./dto/update-office-attendance.dto";
 import { UpdateOfficePresenceDto } from "./dto/update-office-presence.dto";
 import { UpdateOfficeTodoDto } from "./dto/update-office-todo.dto";
 import { UpdateOfficeCalendarEventDto } from "./dto/update-office-calendar-event.dto";
+import { PresenceGateway } from "../presence/presence.gateway";
 import { OfficeService } from "./office.service";
 
 @Controller("office")
 export class OfficeController {
-  constructor(private readonly officeService: OfficeService) {}
+  constructor(
+    private readonly officeService: OfficeService,
+    private readonly presenceGateway: PresenceGateway
+  ) {}
 
   @Post("session")
   createOrRestoreSession(
@@ -64,7 +68,15 @@ export class OfficeController {
     @Param("memberId") memberId: string,
     @Body() request: CreateOfficeTodoDto
   ): Promise<OfficeTodoListResponse> {
-    return { todos: [await this.officeService.createTodo(memberId, request)] };
+    const todo = await this.officeService.createTodo(memberId, request);
+    const teamId = await this.officeService.getMemberWorkspaceId(memberId, request.guestToken);
+    this.presenceGateway.publishTodosUpdated({
+      memberId,
+      occurredAt: new Date().toISOString(),
+      teamId
+    });
+
+    return { todos: [todo] };
   }
 
   @Get("members/:memberId/todos")
@@ -87,7 +99,15 @@ export class OfficeController {
     @Param("todoId") todoId: string,
     @Body() request: UpdateOfficeTodoDto
   ): Promise<OfficeTodoListResponse> {
-    return { todos: [await this.officeService.updateTodo(todoId, request)] };
+    const todo = await this.officeService.updateTodo(todoId, request);
+    const teamId = await this.officeService.getTodoWorkspaceId(todoId, request.guestToken);
+    this.presenceGateway.publishTodosUpdated({
+      memberId: todo.memberId,
+      occurredAt: new Date().toISOString(),
+      teamId
+    });
+
+    return { todos: [todo] };
   }
 
   @Post("members/:memberId/calendar-events")

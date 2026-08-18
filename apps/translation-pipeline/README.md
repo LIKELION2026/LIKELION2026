@@ -1,14 +1,17 @@
 # Translation Pipeline
 
-> 상태: 마이크 실시간 통역과 자막 발행 동작
+> 상태: 회의방 에이전트가 참가자 전원을 통역
 >
-> 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3)
+> 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3), [#99](https://github.com/LIKELION2026/LIKELION2026/issues/99)
 
-화상회의의 한국어-베트남어 실시간 통역 파이프라인이다. LiveKit 연동 전에
-STT, 관용구 매칭, 번역 로직을 오디오 파일과 마이크 입력만으로 단독 검증한다.
+화상회의의 한국어-베트남어 실시간 통역 파이프라인이다.
 
-LiveKit 통합과 참가자 언어 선택 UI는 이 파이프라인의 범위가 아니다. 여기서는
-선택 결과인 `participant_id -> language` 매핑을 외부에서 주입받는다고 가정한다.
+**회의방에 들어가 참가자 전원을 통역하는 에이전트**(`scripts/run_agent.py`)가 주
+실행 경로다. 참가자는 브라우저만 열면 되고 설치도 터미널도 필요 없다. 참가자
+언어는 LiveKit 참가자 정보에서 읽으므로 따로 지정하지 않는다.
+
+마이크 하나만으로 돌리는 경로(`scripts/live_translate.py`)도 남아 있다. LiveKit
+없이 인식·번역을 확인할 때 쓴다.
 
 ## 전제
 
@@ -29,15 +32,21 @@ apps/translation-pipeline/
 │       ├── glossary.py         # Glossary, 매칭 결과 GlossaryMatch
 │       ├── context.py          # ConversationContext (최근 대화 버퍼)
 │       ├── translator.py       # Translator 계약, 시스템 프롬프트, FakeTranslator
-│       ├── stt.py              # Deepgram 실시간 인식, 마이크 입력
+│       ├── stt.py              # Deepgram 실시간 인식, AudioSource 계약, 마이크
+│       ├── livekit_audio.py    # LiveKit 참가자 오디오를 AudioSource로
+│       ├── agent.py            # 참가자별 통역 세션 관리
+│       ├── session.py          # 번역 워커 스레드, 중간 결과 합치기
 │       ├── pipeline.py         # 발화 -> 자막 조립, 늦은 번역 폐기
+│       ├── rooms.py            # 회의방 이름 생성과 판별
 │       ├── subtitle.py         # 자막 페이로드 (shared 계약)
 │       ├── publisher.py        # Server로 자막 발행
 │       ├── providers/
 │       │   └── gemini.py       # GeminiTranslator
 │       └── participants.py     # ParticipantRegistry
 ├── scripts/
-│   └── live_translate.py       # 마이크 실시간 통역 실행
+│   ├── run_agent.py            # 회의방 참가자 전원 통역 (주 실행 경로)
+│   ├── live_translate.py       # 마이크 하나로 통역
+│   └── observe_stt_events.py   # Deepgram 인식 이벤트 타이밍 관측
 └── tests/
     ├── test_languages.py
     ├── test_glossary.py
@@ -45,13 +54,18 @@ apps/translation-pipeline/
     ├── test_translator.py
     ├── test_gemini_translator.py
     ├── test_stt.py
+    ├── test_livekit_audio.py
+    ├── test_agent.py
+    ├── test_session.py
     ├── test_pipeline.py
+    ├── test_rooms.py
     ├── test_subtitle.py
     └── test_participants.py
 ```
 
-`apps/server`의 NestJS 코드와는 별도 실행 단위다. 검증이 끝난 로직은 이후
-`apps/server/src/integrations/speech`와 `integrations/llm`으로 옮긴다.
+`apps/server`의 NestJS 코드와는 별도 실행 단위다. Server로 옮기려면 번역 로직
+전체를 TypeScript로 다시 써야 해서 당분간 Python으로 남는다. 근거는
+`docs/ADR/0003-livekit-translation-agent.md`에 있다.
 
 ## 준비
 
@@ -183,6 +197,66 @@ context.add("user_abc123", text, translated)
 provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`에 추가하고
 조립 지점에서 바꿔 끼우면 된다. 테스트에는 `FakeTranslator`를 쓴다.
 
+### 회의방 통역 에이전트
+
+회의방이 열리면 자동으로 들어가 **참가자 전원을 한 프로세스에서** 통역한다.
+참가자는 브라우저만 열면 된다. 설치도 터미널도 API 키도 필요 없다.
+
+```powershell
+cd C:\LIKELION2026\apps\translation-pipeline
+.venv\Scripts\python.exe -u scripts\run_agent.py start
+```
+
+**한 번 켜두면 된다.** 워커는 LiveKit에 등록만 해두고 방에는 들어가지 않는다.
+회의방이 생기면 배정을 받아 그때 참가한다. 방 이름을 알 필요가 없고, 대기 중에는
+방 참가자로 잡히지 않는다.
+
+`.env`에 `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`이 필요하다.
+**`apps/server/.env`와 같은 값이어야** 같은 회의방에 들어간다. 다르면 아무 소리도
+들리지 않는데 에러는 나지 않는다.
+
+```text
+참가자 브라우저 -> LiveKit -> 에이전트 -> Deepgram -> 번역 -> Server
+                                                                |
+                                                    모든 참가자 화면
+```
+
+통역에 필요한 정보는 LiveKit 참가자에서 읽는다. Client와 Server는 고치지 않는다.
+
+| 필요한 것 | 어디서 |
+| --- | --- |
+| 자막의 `participantIdentity` | `participant.identity` |
+| 표시 이름 | `participant.name` |
+| 번역 방향 | `participant.attributes["preferredLanguage"]` |
+
+`apps/server`가 토큰을 만들 때 넣어준 값이다. 언어를 읽을 수 없는 참가자는 통역
+대상에서 뺀다. 우리 토큰 API를 거치지 않고 들어온 참가자나 에이전트 자신이다.
+
+에이전트는 **구독만 하고 참가자 목록에 뜨지 않는다.** 회의 화면에 정체불명의
+참가자가 보이면 안 되고, 통역은 듣기만 하면 된다.
+
+참가자마다 번역기와 파이프라인을 따로 둔다. 하나를 공유하면 번역 호출에 락이 걸려
+두 사람이 동시에 말할 때 서로를 기다린다.
+
+**회의방이 아닌 배정은 거부한다.** 워커는 방이 열리는 대로 배정받으므로, 가상
+오피스처럼 회의가 아닌 방까지 따라 들어가면 쓸데없이 호출을 태운다.
+
+설정은 `.env`로 준다. 프레임워크가 명령줄을 쓰기 때문에 인자로 받을 수 없다.
+
+| 환경변수 | 용도 |
+| --- | --- |
+| `PIPELINE_SERVER_URL` | 자막을 보낼 Server 주소. 비우면 `http://localhost:4000` |
+| `TRANSLATION_MODEL` | 번역 모델 |
+| `TRANSLATION_ENDPOINTING_MS` | 발화 종료로 볼 무음 길이. 기본 700 |
+| `TRANSLATION_INTERIM_INTERVAL_MS` | 중간 결과 번역 간격 |
+| `TRANSLATION_FINALIZE_AFTER_MS` | 이만큼 조용하면 열린 발화를 확정한다. 기본 2500 |
+| `TRANSLATION_MIN_INTERIM_CHARS` | 이보다 짧은 중간 결과는 번역하지 않는다. 기본 4 |
+
+결정 배경은 `docs/ADR/0003-livekit-translation-agent.md`에 있다.
+
+**상시 호스팅은 아직이다.** 지금은 누군가의 노트북에서 켜둔다. 그 상태로도 참가자는
+브라우저만으로 자막을 본다. 대신 워커가 죽으면 전원의 자막이 멈춘다.
+
 ### 마이크 실시간 통역과 자막 발행
 
 말하면 번역이 화면에 뜨고, `--publish`를 주면 회의 화면에 자막으로 나간다.
@@ -282,6 +356,19 @@ Client가 바뀌면 자막이 안 뜬 뒤에 찾는 대신 `pytest`에서 깨진
 다 부르면 밀리기만 하고, 무료 한도가 분당 호출 수로 걸린다. `429`가 나오면
 간격을 늘린다.
 
+**너무 짧은 중간 결과는 번역하지 않는다.** 실측에서 `궁` 한 글자가
+`Xin mời anh/chị nói tiếp ạ.`("계속 말씀해 주세요")로 번역됐다. 원문에 없는
+뜻이다. 기본값은 4자이고 `TRANSLATION_MIN_INTERIM_CHARS`로 조절한다.
+
+버려도 잃는 것이 없다. 다음 갱신이나 확정 조각이 같은 내용을 포함한다. 첫 자막이
+조금 늦어질 뿐이다. **확정된 조각은 짧아도 번역한다.** `네`, `좋아요` 같은 짧은
+응답은 그 자체로 완결된 발화다.
+
+길이만으로는 부족하다. 16자짜리 `오늘 회의할 안건은 지금 말씀`도
+`xin mời anh/chị cứ nói ạ`로 완성돼 버렸다. 마지막 단어가 그 자체로 뜻이 통하면
+모델이 문장의 끝으로 단정한다. 그래서 시스템 프롬프트에도 끊긴 자리를 끊긴 채로
+두라는 규칙을 두었다.
+
 누적 원문이 직전과 같으면 모델을 부르지 않고 이전 번역을 재사용한다. 중간
 결과가 이미 조각 전체였던 경우인데, 실측에서 호출 11번 중 2번이 여기 해당했다.
 발행은 그대로 한다. `isFinal`이 바뀌어야 자막이 미확정으로 남지 않는다.
@@ -289,6 +376,31 @@ Client가 바뀌면 자막이 안 뜬 뒤에 찾는 대신 `pytest`에서 깨진
 `--endpointing`을 낮게 둘 이유가 없어졌다. 예전에는 자막을 빨리 띄우려고
 낮췄지만, 이제 중간 결과가 그 역할을 한다. 값을 올리면 문장이 잘게 쪼개지지
 않아 번역 품질이 좋아지고, 첫 자막은 늦어지지 않는다.
+
+### 발화 닫기
+
+자막이 확정(`isFinal: true`)되는 것은 Deepgram이 `speech_final`을 보낼 때다.
+그런데 그게 끝내 오지 않는 경우가 있다.
+
+```text
+말 끝냄 -> 무음 700ms -> speech_final -> 확정
+              ^ 참가자가 바로 나가면 여기서 연결이 끊긴다
+                배경 소음이 있으면 무음으로 치지 않는다
+```
+
+그러면 열린 발화를 아무도 닫지 않아 자막이 영영 "임시"로 남는다. 그래서 닫는
+경로를 두 개 더 뒀다.
+
+| 언제 | |
+| --- | --- |
+| 새 인식 결과 없이 `TRANSLATION_FINALIZE_AFTER_MS`가 지나면 | 스스로 닫는다 |
+| 참가자가 나가 세션이 끝날 때 | 열려 있으면 닫는다 |
+
+기본값은 2500ms다. 발화 종료 판정(700ms)보다 넉넉히 잡는다. 정상적으로
+`speech_final`이 올 상황에서 먼저 끼어들면 안 된다.
+
+**모델을 다시 부르지 않는다.** 원문이 그대로라 직전 번역이 재사용되고
+`isFinal`과 `revision`만 바뀐다. 이미 확정된 발화는 다시 발행하지 않는다.
 
 ### 번역 스레드 분리
 

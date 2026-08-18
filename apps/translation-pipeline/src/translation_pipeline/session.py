@@ -26,6 +26,26 @@ from .publisher import SubtitlePublisher, SubtitlePublishError
 # 분당 호출 수에도 걸린다.
 DEFAULT_INTERIM_INTERVAL_MS = 2_000
 
+# 새 인식 결과가 이만큼 없으면 열린 발화를 확정으로 닫는다.
+# Deepgram의 speech_final이 끝내 오지 않는 경우가 있다. 참가자가 말을 마치고
+# 바로 나가면 무음 판정 전에 연결이 끊기고, 배경 소음이 있으면 무음으로 치지
+# 않는다. 그러면 자막이 영영 미확정으로 남는다.
+#
+# 발화 종료 판정(기본 700ms)보다 넉넉히 잡는다. 정상적으로 speech_final이
+# 올 상황에서 먼저 끼어들면 안 된다.
+DEFAULT_FINALIZE_AFTER_MS = 2_500
+
+# 중간 결과가 이 글자 수보다 짧으면 번역하지 않는다.
+# 실측 로그에서 1~3글자짜리는 대부분 쓸모가 없었다. "궁" 한 글자가
+# "계속 말씀해 주세요"로 번역되기도 했다. 원문에 없는 뜻이다.
+#
+# 버려도 잃는 것이 없다. 다음 갱신이나 확정 조각이 같은 내용을 포함한다.
+# 첫 자막이 조금 늦어질 뿐이다.
+#
+# 글자 수라 언어마다 기준이 다르게 작용한다. 한국어가 한 글자에 담는 정보가
+# 더 많아 베트남어 쪽이 느슨하게 걸린다. 방향별로 나눌지는 더 재보고 정한다.
+DEFAULT_MIN_INTERIM_CHARS = 4
+
 
 @dataclass(frozen=True)
 class SessionEvent:
@@ -46,6 +66,8 @@ class _Job:
     confirmed: bool
     ends_utterance: bool
     spoken_at: float
+    # 새 내용 없이 열린 발화를 닫기만 하는 일감.
+    finalize: bool = False
 
 
 @dataclass
@@ -72,12 +94,16 @@ class TranslationSession:
         speaker_id: str,
         publisher: SubtitlePublisher | None = None,
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
+        finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
+        min_interim_chars: int = DEFAULT_MIN_INTERIM_CHARS,
         on_event=None,
     ) -> None:
         self._pipeline = pipeline
         self._speaker_id = speaker_id
         self._publisher = publisher
         self._interim_interval = interim_interval_ms / 1000
+        self._finalize_after = finalize_after_ms / 1000 if finalize_after_ms > 0 else None
+        self._min_interim_chars = min_interim_chars
         self._on_event = on_event
 
         self._pending = _Pending()
@@ -85,6 +111,9 @@ class TranslationSession:
         self._stop = False
         self._worker: threading.Thread | None = None
         self._last_interim_at = 0.0
+        self._last_input_at = 0.0
+        # 종료할 때 열린 발화를 한 번 닫고 끝낸다.
+        self._closing_finalize = False
 
     def start(self) -> None:
         if self._worker is not None:
@@ -100,6 +129,9 @@ class TranslationSession:
         with self._condition:
             self._stop = True
             self._pending.interim = None
+            # 말을 마치고 바로 나가면 speech_final이 오지 않는다. 그대로 두면
+            # 마지막 자막이 영영 미확정으로 남는다.
+            self._closing_finalize = self._finalize_after is not None
             self._condition.notify_all()
         if self._worker is not None:
             self._worker.join(timeout=timeout)
@@ -113,14 +145,21 @@ class TranslationSession:
         self.stop()
 
     def submit_interim(self, text: str) -> None:
-        """확정되지 않은 인식 결과를 넘긴다. 간격 제한에 걸리면 버린다."""
-        if not text.strip():
+        """확정되지 않은 인식 결과를 넘긴다.
+
+        간격 제한이나 최소 길이에 걸리면 버린다. 버려도 잃는 것이 없다. 다음
+        갱신이나 확정 조각이 같은 내용을 포함한다.
+        """
+        stripped = text.strip()
+        if len(stripped) < self._min_interim_chars:
+            # 너무 짧으면 모델이 없는 뜻을 지어낸다.
             return
         now = time.monotonic()
         with self._condition:
             if self._stop or now - self._last_interim_at < self._interim_interval:
                 return
             self._last_interim_at = now
+            self._last_input_at = now
             self._pending.interim = _Job(
                 text=text, confirmed=False, ends_utterance=False, spoken_at=now
             )
@@ -133,6 +172,7 @@ class TranslationSession:
         with self._condition:
             if self._stop:
                 return
+            self._last_input_at = time.monotonic()
             self._pending.confirmed.append(
                 _Job(
                     text=text,
@@ -145,15 +185,41 @@ class TranslationSession:
             self._pending.interim = None
             self._condition.notify()
 
+    def _finalize_job(self) -> _Job:
+        return _Job(
+            text="",
+            confirmed=True,
+            ends_utterance=True,
+            spoken_at=time.monotonic(),
+            finalize=True,
+        )
+
+    def _silence_passed(self) -> bool:
+        """새 인식 결과 없이 확정 대기 시간이 지났는가."""
+        if self._finalize_after is None or self._last_input_at == 0.0:
+            return False
+        return time.monotonic() - self._last_input_at >= self._finalize_after
+
     def _next_job(self) -> _Job | None:
         with self._condition:
             while not self._stop and self._pending.is_empty():
-                self._condition.wait()
+                if self._finalize_after is None:
+                    self._condition.wait()
+                    continue
+                self._condition.wait(timeout=self._finalize_after)
+                if self._pending.is_empty() and self._silence_passed():
+                    # 다시 조용해질 때까지 반복해서 닫으려 들지 않도록 기준을 지운다.
+                    self._last_input_at = 0.0
+                    return self._finalize_job()
             # 멈추는 중이어도 확정 조각은 마저 처리한다.
             if self._pending.confirmed:
                 return self._pending.confirmed.pop(0)
             if self._stop:
-                return None
+                if not self._closing_finalize:
+                    return None
+                # 한 번만 닫는다.
+                self._closing_finalize = False
+                return self._finalize_job()
             job = self._pending.interim
             self._pending.interim = None
             return job
@@ -167,7 +233,12 @@ class TranslationSession:
 
     def _translate(self, job: _Job) -> None:
         try:
-            if job.confirmed:
+            if job.finalize:
+                result = self._pipeline.finalize(self._speaker_id)
+                if result is None:
+                    # 닫을 발화가 없었다. 알릴 것도 없다.
+                    return
+            elif job.confirmed:
                 result = self._pipeline.handle_utterance(
                     self._speaker_id,
                     job.text,

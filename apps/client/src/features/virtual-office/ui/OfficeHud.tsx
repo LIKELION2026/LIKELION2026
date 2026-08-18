@@ -10,6 +10,8 @@ interface OfficeHudProps {
   connectionState: OfficeConnectionState;
   memberCount: number;
   onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
+  onOpenPeople: () => void;
+  onOpenTodo: () => void;
   onStatusChange: (status: MemberStatus) => void;
   selfAttendanceStatus: AttendanceStatus | undefined;
   selfStatus: MemberStatus | undefined;
@@ -19,6 +21,8 @@ export function OfficeHud({
   connectionState,
   memberCount,
   onAttendanceChange,
+  onOpenPeople,
+  onOpenTodo,
   onStatusChange,
   selfAttendanceStatus,
   selfStatus
@@ -55,6 +59,12 @@ export function OfficeHud({
             </option>
           ))}
         </select>
+        <button className="office-secondary-button" onClick={onOpenPeople} type="button">
+          피플 목록
+        </button>
+        <button className="office-secondary-button" onClick={onOpenTodo} type="button">
+          내 TODO
+        </button>
       </section>
     </div>
   );

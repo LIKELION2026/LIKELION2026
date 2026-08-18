@@ -4,6 +4,12 @@ LiveKit 연동 전에 STT, 관용구 매칭, 번역 로직을 단독으로 검�
 패키지다.
 """
 
+from .agent import (
+    ParticipantInfo,
+    ParticipantWorker,
+    TranslationAgent,
+    read_participant,
+)
 from .context import DEFAULT_MAX_TURNS, ConversationContext, ConversationTurn
 from .errors import (
     GlossaryError,
@@ -27,6 +33,7 @@ from .languages import (
     is_supported,
     language_name,
 )
+from .livekit_room import ParticipantAudioRunner
 from .participants import ParticipantRegistry
 from .pipeline import (
     DEFAULT_MAX_STALENESS_MS,
@@ -36,15 +43,19 @@ from .pipeline import (
 from .publisher import SubtitlePublisher, SubtitlePublishError
 from .rooms import (
     DEFAULT_SECTION,
+    is_lab_meeting_room,
     SECTION_SLUGS,
     UnknownMeetingSectionError,
     build_lab_room_name,
 )
 from .session import (
+    DEFAULT_FINALIZE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
+    DEFAULT_MIN_INTERIM_CHARS,
     SessionEvent,
     TranslationSession,
 )
+from .stt import AudioSource, MicrophoneStream, RealtimeTranscriber, Utterance
 from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
 from .translator import (
     FakeTranslator,
@@ -58,6 +69,7 @@ __all__ = [
     "DEFAULT_MAX_TURNS",
     "LANGUAGE_NAMES",
     "SUPPORTED_LANGUAGES",
+    "AudioSource",
     "ConversationContext",
     "ConversationTurn",
     "FakeTranslator",
@@ -65,26 +77,37 @@ __all__ = [
     "GlossaryEntry",
     "GlossaryError",
     "GlossaryMatch",
+    "DEFAULT_FINALIZE_AFTER_MS",
     "DEFAULT_INTERIM_INTERVAL_MS",
+    "DEFAULT_MIN_INTERIM_CHARS",
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",
+    "MicrophoneStream",
+    "ParticipantAudioRunner",
+    "ParticipantInfo",
     "ParticipantRegistry",
+    "ParticipantWorker",
+    "RealtimeTranscriber",
     "SubtitleError",
     "SubtitlePayload",
     "SubtitlePublishError",
     "SECTION_SLUGS",
     "SessionEvent",
     "SubtitlePublisher",
+    "TranslationAgent",
     "TranslationError",
     "TranslationPipeline",
     "TranslationSession",
     "UtteranceResult",
     "build_lab_room_name",
+    "is_lab_meeting_room",
+    "read_participant",
     "build_subtitle",
     "utc_now_iso",
     "TranslationPipelineError",
     "TranslationRequest",
     "Translator",
+    "Utterance",
     "UnknownMeetingSectionError",
     "UnknownParticipantError",
     "UnsupportedLanguageError",
