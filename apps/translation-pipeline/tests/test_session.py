@@ -120,7 +120,7 @@ def test_an_interim_result_is_translated(participants, empty_glossary):
     session, events, arrived = make_session(participants, empty_glossary)
 
     with session:
-        session.submit_interim("안녕하")
+        session.submit_interim("안녕하세요")
         wait_for(arrived, 1)
 
     # 말이 멈추기를 기다리지 않고 번역했다는 뜻이다.
@@ -188,7 +188,7 @@ def test_revisions_do_not_go_backwards(participants, empty_glossary):
     )
 
     with session:
-        session.submit_interim("안녕하")
+        session.submit_interim("안녕하세요")
         wait_for(arrived, 1)
         session.submit_utterance("안녕하세요")
         wait_for(arrived, 1)
@@ -362,3 +362,81 @@ def test_finalizing_does_not_call_the_model_again(participants, empty_glossary):
     # 원문이 그대로라 직전 번역을 재사용한다.
     assert len(translator.requests) == 1
     assert events[-1].result.reused_translation is True
+
+
+# --- 짧은 중간 결과 ---
+#
+# 실측에서 "궁" 한 글자가 "계속 말씀해 주세요"로 번역됐다. 원문에 없는 뜻이다.
+# 너무 짧으면 모델이 지어낸다.
+
+
+def test_a_short_interim_is_not_translated(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0
+    )
+
+    with session:
+        session.submit_interim("궁")
+
+    assert events == []
+
+
+def test_a_long_enough_interim_is_translated(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0
+    )
+
+    with session:
+        session.submit_interim("오늘 회의할")
+        wait_for(arrived, 1)
+
+    assert events[0].source_text == "오늘 회의할"
+
+
+def test_the_minimum_length_counts_characters_not_bytes(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0
+    )
+
+    with session:
+        # 한글 네 글자는 UTF-8로 12바이트다. 바이트로 세면 안 된다.
+        session.submit_interim("안녕하세요")
+        wait_for(arrived, 1)
+
+    assert events[0].source_text == "안녕하세요"
+
+
+def test_the_minimum_length_ignores_surrounding_space(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0
+    )
+
+    with session:
+        session.submit_interim("  궁  ")
+
+    assert events == []
+
+
+def test_the_minimum_length_can_be_turned_off(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0, min_interim_chars=0
+    )
+
+    with session:
+        session.submit_interim("궁")
+        wait_for(arrived, 1)
+
+    assert events[0].source_text == "궁"
+
+
+def test_a_short_confirmed_segment_is_still_translated(participants, empty_glossary):
+    session, events, arrived = make_session(
+        participants, empty_glossary, finalize_after_ms=0
+    )
+
+    with session:
+        session.submit_utterance("네")
+        wait_for(arrived, 1)
+
+    # 확정된 조각은 짧아도 그 자체로 완결된 발화다.
+    assert events[0].source_text == "네"

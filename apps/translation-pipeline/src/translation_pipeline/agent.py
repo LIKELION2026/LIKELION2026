@@ -28,6 +28,7 @@ from .publisher import SubtitlePublisher
 from .session import (
     DEFAULT_FINALIZE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
+    DEFAULT_MIN_INTERIM_CHARS,
     TranslationSession,
 )
 from .stt import DEFAULT_ENDPOINTING_MS, RealtimeTranscriber, Utterance
@@ -90,6 +91,7 @@ class ParticipantWorker:
         endpointing_ms: int = DEFAULT_ENDPOINTING_MS,
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
         finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
+        min_interim_chars: int = DEFAULT_MIN_INTERIM_CHARS,
         on_event=None,
     ) -> None:
         self.info = info
@@ -110,6 +112,7 @@ class ParticipantWorker:
             publisher=publisher,
             interim_interval_ms=interim_interval_ms,
             finalize_after_ms=finalize_after_ms,
+            min_interim_chars=min_interim_chars,
             on_event=on_event,
         )
         self.transcriber = RealtimeTranscriber(
@@ -161,6 +164,7 @@ class TranslationAgent:
         endpointing_ms: int = DEFAULT_ENDPOINTING_MS,
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
         finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
+        min_interim_chars: int = DEFAULT_MIN_INTERIM_CHARS,
         on_event=None,
         worker_factory: Callable[..., ParticipantWorker] | None = None,
     ) -> None:
@@ -170,6 +174,7 @@ class TranslationAgent:
         self._endpointing_ms = endpointing_ms
         self._interim_interval_ms = interim_interval_ms
         self._finalize_after_ms = finalize_after_ms
+        self._min_interim_chars = min_interim_chars
         self._on_event = on_event
         self._worker_factory = worker_factory or ParticipantWorker
         self._workers: dict[str, ParticipantWorker] = {}
@@ -197,6 +202,7 @@ class TranslationAgent:
             endpointing_ms=self._endpointing_ms,
             interim_interval_ms=self._interim_interval_ms,
             finalize_after_ms=self._finalize_after_ms,
+            min_interim_chars=self._min_interim_chars,
             on_event=self._on_event,
         )
         self._workers[info.identity] = worker

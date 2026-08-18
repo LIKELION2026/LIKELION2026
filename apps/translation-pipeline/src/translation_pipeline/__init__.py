@@ -51,6 +51,7 @@ from .rooms import (
 from .session import (
     DEFAULT_FINALIZE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
+    DEFAULT_MIN_INTERIM_CHARS,
     SessionEvent,
     TranslationSession,
 )
@@ -78,6 +79,7 @@ __all__ = [
     "GlossaryMatch",
     "DEFAULT_FINALIZE_AFTER_MS",
     "DEFAULT_INTERIM_INTERVAL_MS",
+    "DEFAULT_MIN_INTERIM_CHARS",
     "DEFAULT_SECTION",
     "DEFAULT_MAX_STALENESS_MS",
     "MicrophoneStream",
