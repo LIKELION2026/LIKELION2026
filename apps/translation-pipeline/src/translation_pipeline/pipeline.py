@@ -139,6 +139,35 @@ class TranslationPipeline:
             speaker_id, text, spoken_at, ends_utterance=False, confirmed=False
         )
 
+    def finalize(self, speaker_id: str) -> UtteranceResult | None:
+        """열린 발화를 확정으로 닫는다. 닫을 것이 없으면 ``None``.
+
+        Deepgram의 ``speech_final``이 끝내 오지 않는 경우가 있다. 참가자가 말을
+        마치고 바로 나가면 무음 판정 전에 연결이 끊기고, 배경 소음이 있으면
+        무음으로 치지 않는다. 그러면 자막이 영영 미확정으로 남는다.
+
+        원문은 건드리지 않으므로 직전 번역이 그대로 재사용된다. 모델을 다시
+        부르지 않고 ``isFinal``만 바꿔 발행한다.
+        """
+        open_utterance = self._open.get(speaker_id)
+        if open_utterance is None:
+            return None
+        if not open_utterance.text.strip():
+            self._open.pop(speaker_id, None)
+            return None
+
+        return self._handle(
+            speaker_id,
+            "",
+            None,
+            ends_utterance=True,
+            confirmed=True,
+            keep_text=True,
+        )
+
+    def has_open_utterance(self, speaker_id: str) -> bool:
+        return speaker_id in self._open
+
     def _handle(
         self,
         speaker_id: str,
@@ -146,6 +175,7 @@ class TranslationPipeline:
         spoken_at: float | None,
         ends_utterance: bool,
         confirmed: bool,
+        keep_text: bool = False,
     ) -> UtteranceResult:
         started = spoken_at if spoken_at is not None else time.monotonic()
 
@@ -161,7 +191,10 @@ class TranslationPipeline:
             )
             self._open[speaker_id] = open_utterance
 
-        if confirmed:
+        if keep_text:
+            # 발화를 닫기만 한다. 내용은 그대로 두어야 직전 번역이 재사용된다.
+            pass
+        elif confirmed:
             # 확정된 내용은 잠정 꼬리를 대체한다. 같은 말이 두 번 들어가면 안 된다.
             open_utterance.segments.append(text.strip())
             open_utterance.provisional = ""
