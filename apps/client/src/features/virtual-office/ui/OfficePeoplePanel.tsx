@@ -1,7 +1,11 @@
-import { MEMBER_STATUS_LABELS, type TodoStatus } from "@likelion2026/shared";
+import { type TodoStatus } from "@likelion2026/shared";
 import { useState } from "react";
 
 import type { PeopleContextMember } from "../model/people-context";
+import {
+  getCalendarPresenceLabel,
+  getCalendarPresenceTone
+} from "../model/calendar-presence";
 
 interface OfficePeoplePanelProps {
   isOpen: boolean;
@@ -101,7 +105,6 @@ function MemberProfile({
   todoIsLoading
 }: MemberProfileProps): React.JSX.Element {
   const { member, publicTodos } = context;
-  const displayMode = member.officePresence?.displayMode;
   const connectionLabel = getConnectionLabel(member);
 
   return (
@@ -111,7 +114,7 @@ function MemberProfile({
           <h3>{member.displayName}{context.isSelf ? " (나)" : ""}</h3>
           <p>{COUNTRY_LABELS[member.language === "vi" ? "VN" : "KR"]} · {connectionLabel}</p>
         </div>
-        <span className={`office-member-status ${displayMode ?? "active"}`} aria-label={connectionLabel} />
+        <span className={`office-member-status ${getCalendarPresenceTone(member)}`} aria-label={connectionLabel} />
       </div>
       <div className="office-member-actions">
         <button className="office-secondary-button" onClick={() => onFocusMember(context)} type="button">
@@ -146,12 +149,5 @@ function MemberProfile({
 }
 
 function getConnectionLabel(member: PeopleContextMember["member"]): string {
-  const displayMode = member.officePresence?.displayMode;
-  if (displayMode === "ghost") {
-    return "연결 해제";
-  }
-  if (displayMode === "sleeping") {
-    return "퇴근";
-  }
-  return MEMBER_STATUS_LABELS[member.status];
+  return getCalendarPresenceLabel(member);
 }

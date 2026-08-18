@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import {
-  MEMBER_STATUS_LABELS,
   type LocalMovementCommand,
   type OfficeMemberPresence,
   type PresenceMovePayload,
@@ -14,6 +13,10 @@ import {
   shouldFlipAvatarSprite,
   type AvatarSpriteDefinition,
 } from "./avatar-sprite-definition";
+import {
+  getCalendarPresenceLabel,
+  shouldDimCalendarPresence,
+} from "../model/calendar-presence";
 import { isTextEntryFocused } from "../model/keyboard-focus";
 
 export const OFFICE_SCENE_KEY = "office-scene";
@@ -694,17 +697,9 @@ function getAvatarAnimationKey(
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {
-  const displayMode = member.officePresence?.displayMode;
-  const detail =
-    displayMode === "ghost"
-      ? "연결 해제"
-      : displayMode === "sleeping"
-        ? "퇴근"
-        : MEMBER_STATUS_LABELS[member.status];
-  return `${member.displayName}\n${detail}`;
+  return `${member.displayName}\n${getCalendarPresenceLabel(member)}`;
 }
 
 function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {
-  const displayMode = member.officePresence?.displayMode;
-  return displayMode === "ghost" || displayMode === "sleeping" ? 0.45 : 1;
+  return shouldDimCalendarPresence(member) ? 0.45 : 1;
 }

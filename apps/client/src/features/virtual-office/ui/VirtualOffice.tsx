@@ -19,6 +19,7 @@ import { useOfficeSocket } from "../model/use-office-socket";
 import { useOfficeCalendar } from "../model/use-office-calendar";
 import { useOfficeTodos } from "../model/use-office-todos";
 import { createPeopleContext } from "../model/people-context";
+import { applyCalendarPresence } from "../model/calendar-presence";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
@@ -54,6 +55,14 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const self = useOfficeStore((state) => state.self);
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
+  const effectiveMembers = useMemo(
+    () => members.map((member) => applyCalendarPresence(member, calendarController.memberStatuses)),
+    [calendarController.memberStatuses, members]
+  );
+  const effectiveSelf = useMemo(
+    () => (self ? applyCalendarPresence(self, calendarController.memberStatuses) : null),
+    [calendarController.memberStatuses, self]
+  );
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
   }, []);
@@ -89,9 +98,9 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     socketCallbacks
   );
   const peopleContext = createPeopleContext(
-    members,
+    effectiveMembers,
     todoController.publicTodos,
-    self?.memberId
+    effectiveSelf?.memberId
   );
 
   const prepareSession = useCallback(async (profile: GuestProfile) => {
@@ -169,8 +178,8 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       return;
     }
 
-    scene.syncRemoteMembers(members, self?.memberId);
-  }, [isSceneReady, members, self?.memberId]);
+    scene.syncRemoteMembers(effectiveMembers, self?.memberId);
+  }, [effectiveMembers, isSceneReady, self?.memberId]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -195,14 +204,14 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud
         connectionState={connectionState}
-        memberCount={members.length}
+        memberCount={effectiveMembers.length}
         onAttendanceChange={updateAttendance}
         onOpenCalendar={() => setIsCalendarOpen(true)}
         onOpenPeople={() => setIsPeoplePanelOpen(true)}
         onOpenTodo={() => setIsTodoPanelOpen(true)}
         onStatusChange={updateStatus}
-        selfAttendanceStatus={self?.officePresence?.attendanceStatus}
-        selfStatus={self?.status}
+        selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
+        selfStatus={effectiveSelf?.status}
       />
       <OfficeTodoPanel
         controller={todoController}
@@ -212,10 +221,10 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       <OfficeCalendarModal
         controller={calendarController}
         isOpen={isCalendarOpen}
-        members={members}
+        members={effectiveMembers}
         onClose={() => setIsCalendarOpen(false)}
         ownTodos={todoController.ownTodos}
-        self={self}
+        self={effectiveSelf}
       />
       <OfficePeoplePanel
         isOpen={isPeoplePanelOpen}
