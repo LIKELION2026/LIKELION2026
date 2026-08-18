@@ -12,6 +12,7 @@ slug 표는 위 파일을 옮겨 적은 것이라 양쪽이 어긋날 수 있다
 방 이름 규칙이 없어 지금은 공유할 방법이 없다.
 """
 
+import re
 from datetime import date
 
 from .errors import TranslationPipelineError
@@ -32,6 +33,21 @@ DEFAULT_SECTION = "meeting-room"
 
 class UnknownMeetingSectionError(TranslationPipelineError):
     """Client에 없는 구역 이름을 받았을 때 발생한다."""
+
+
+_LAB_ROOM_PATTERN = re.compile(
+    rf"^lab-{re.escape(LAB_TEAM_SLUG)}-\d{{8}}-(?P<slug>[a-z][a-z0-9_-]*)$"
+)
+
+
+def is_lab_meeting_room(room_name: str) -> bool:
+    """통역이 들어가야 할 회의방인지 판단한다.
+
+    에이전트는 방이 열리는 대로 배정받으므로, 회의가 아닌 방까지 따라 들어가면
+    쓸데없이 인식·번역 호출을 태운다. 우리 팀 회의방만 받는다.
+    """
+    match = _LAB_ROOM_PATTERN.match(room_name or "")
+    return bool(match) and match.group("slug") in set(SECTION_SLUGS.values())
 
 
 def build_lab_room_name(

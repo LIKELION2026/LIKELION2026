@@ -1,14 +1,17 @@
 # Translation Pipeline
 
-> 상태: 마이크 실시간 통역과 자막 발행 동작
+> 상태: 회의방 에이전트가 참가자 전원을 통역
 >
-> 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3)
+> 관련 Issue: [#3](https://github.com/LIKELION2026/LIKELION2026/issues/3), [#99](https://github.com/LIKELION2026/LIKELION2026/issues/99)
 
-화상회의의 한국어-베트남어 실시간 통역 파이프라인이다. LiveKit 연동 전에
-STT, 관용구 매칭, 번역 로직을 오디오 파일과 마이크 입력만으로 단독 검증한다.
+화상회의의 한국어-베트남어 실시간 통역 파이프라인이다.
 
-LiveKit 통합과 참가자 언어 선택 UI는 이 파이프라인의 범위가 아니다. 여기서는
-선택 결과인 `participant_id -> language` 매핑을 외부에서 주입받는다고 가정한다.
+**회의방에 들어가 참가자 전원을 통역하는 에이전트**(`scripts/run_agent.py`)가 주
+실행 경로다. 참가자는 브라우저만 열면 되고 설치도 터미널도 필요 없다. 참가자
+언어는 LiveKit 참가자 정보에서 읽으므로 따로 지정하지 않는다.
+
+마이크 하나만으로 돌리는 경로(`scripts/live_translate.py`)도 남아 있다. LiveKit
+없이 인식·번역을 확인할 때 쓴다.
 
 ## 전제
 
@@ -29,15 +32,21 @@ apps/translation-pipeline/
 │       ├── glossary.py         # Glossary, 매칭 결과 GlossaryMatch
 │       ├── context.py          # ConversationContext (최근 대화 버퍼)
 │       ├── translator.py       # Translator 계약, 시스템 프롬프트, FakeTranslator
-│       ├── stt.py              # Deepgram 실시간 인식, 마이크 입력
+│       ├── stt.py              # Deepgram 실시간 인식, AudioSource 계약, 마이크
+│       ├── livekit_audio.py    # LiveKit 참가자 오디오를 AudioSource로
+│       ├── agent.py            # 참가자별 통역 세션 관리
+│       ├── session.py          # 번역 워커 스레드, 중간 결과 합치기
 │       ├── pipeline.py         # 발화 -> 자막 조립, 늦은 번역 폐기
+│       ├── rooms.py            # 회의방 이름 생성과 판별
 │       ├── subtitle.py         # 자막 페이로드 (shared 계약)
 │       ├── publisher.py        # Server로 자막 발행
 │       ├── providers/
 │       │   └── gemini.py       # GeminiTranslator
 │       └── participants.py     # ParticipantRegistry
 ├── scripts/
-│   └── live_translate.py       # 마이크 실시간 통역 실행
+│   ├── run_agent.py            # 회의방 참가자 전원 통역 (주 실행 경로)
+│   ├── live_translate.py       # 마이크 하나로 통역
+│   └── observe_stt_events.py   # Deepgram 인식 이벤트 타이밍 관측
 └── tests/
     ├── test_languages.py
     ├── test_glossary.py
@@ -45,13 +54,18 @@ apps/translation-pipeline/
     ├── test_translator.py
     ├── test_gemini_translator.py
     ├── test_stt.py
+    ├── test_livekit_audio.py
+    ├── test_agent.py
+    ├── test_session.py
     ├── test_pipeline.py
+    ├── test_rooms.py
     ├── test_subtitle.py
     └── test_participants.py
 ```
 
-`apps/server`의 NestJS 코드와는 별도 실행 단위다. 검증이 끝난 로직은 이후
-`apps/server/src/integrations/speech`와 `integrations/llm`으로 옮긴다.
+`apps/server`의 NestJS 코드와는 별도 실행 단위다. Server로 옮기려면 번역 로직
+전체를 TypeScript로 다시 써야 해서 당분간 Python으로 남는다. 근거는
+`docs/ADR/0003-livekit-translation-agent.md`에 있다.
 
 ## 준비
 
@@ -182,6 +196,58 @@ context.add("user_abc123", text, translated)
 
 provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`에 추가하고
 조립 지점에서 바꿔 끼우면 된다. 테스트에는 `FakeTranslator`를 쓴다.
+
+### 회의방 통역 에이전트
+
+회의방에 들어가 **참가자 전원을 한 프로세스에서** 통역한다. 참가자는 브라우저만
+열면 된다. 설치도 터미널도 API 키도 필요 없다.
+
+```powershell
+cd C:\LIKELION2026\apps\translation-pipeline
+.venv\Scripts\python.exe -u scripts\run_agent.py
+.venv\Scripts\python.exe -u scripts\run_agent.py --server https://<배포 서버>
+```
+
+`.env`에 `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`이 필요하다.
+**`apps/server/.env`와 같은 값이어야** 같은 회의방에 들어간다. 다르면 아무 소리도
+들리지 않는데 에러는 나지 않는다.
+
+```text
+참가자 브라우저 -> LiveKit -> 에이전트 -> Deepgram -> 번역 -> Server
+                                                                |
+                                                    모든 참가자 화면
+```
+
+통역에 필요한 정보는 LiveKit 참가자에서 읽는다. Client와 Server는 고치지 않는다.
+
+| 필요한 것 | 어디서 |
+| --- | --- |
+| 자막의 `participantIdentity` | `participant.identity` |
+| 표시 이름 | `participant.name` |
+| 번역 방향 | `participant.attributes["preferredLanguage"]` |
+
+`apps/server`가 토큰을 만들 때 넣어준 값이다. 언어를 읽을 수 없는 참가자는 통역
+대상에서 뺀다. 우리 토큰 API를 거치지 않고 들어온 참가자나 에이전트 자신이다.
+
+에이전트는 **구독만 하고 참가자 목록에 뜨지 않는다.** 회의 화면에 정체불명의
+참가자가 보이면 안 되고, 통역은 듣기만 하면 된다.
+
+참가자마다 번역기와 파이프라인을 따로 둔다. 하나를 공유하면 번역 호출에 락이 걸려
+두 사람이 동시에 말할 때 서로를 기다린다.
+
+| 옵션 | 용도 |
+| --- | --- |
+| `--room` | 회의방 이름을 직접 지정한다. 생략하면 오늘 날짜로 만든다 |
+| `--section korea-team-zone` | 회의 구역을 고른다 |
+| `--server` | 자막을 보낼 Server 주소 |
+| `--no-publish` | 자막을 보내지 않고 콘솔에만 찍는다 |
+| `--endpointing` | 발화 종료로 볼 무음 길이(ms). 기본 700 |
+| `--interim-interval` | 중간 결과를 번역에 올리는 최소 간격(ms) |
+
+결정 배경은 `docs/ADR/0003-livekit-translation-agent.md`에 있다.
+
+**상시 호스팅은 아직이다.** 지금은 누군가의 노트북에서 켜둔다. 그 상태로도 참가자는
+브라우저만으로 자막을 본다. 대신 에이전트가 죽으면 전원의 자막이 멈춘다.
 
 ### 마이크 실시간 통역과 자막 발행
 
