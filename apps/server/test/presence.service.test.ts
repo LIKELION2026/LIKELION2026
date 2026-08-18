@@ -86,6 +86,18 @@ test("leave persists the last position and switches the member to disconnected",
   ]);
 });
 
+test("leaving a stale socket keeps a member connected through the newer socket", async () => {
+  const officeService = createOfficeService();
+  const service = new PresenceService(officeService as never);
+  await service.join("socket-previous", createJoinPayload());
+  await service.join("socket-current", createJoinPayload());
+
+  const member = await service.leave("socket-previous");
+
+  assert.equal(member, null);
+  assert.deepEqual(officeService.disconnectCalls, []);
+});
+
 function createJoinPayload() {
   return {
     displayName: "Korea PM",
