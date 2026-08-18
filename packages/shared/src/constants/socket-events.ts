@@ -11,6 +11,7 @@ export const SOCKET_EVENT_NAMES = {
   MEMBER_STATUS_UPDATED: "member.status.updated",
   OFFICE_ATTENDANCE_UPDATE: "office.attendance.update",
   OFFICE_ATTENDANCE_UPDATED: "office.attendance.updated",
+  OFFICE_CALENDAR_UPDATED: "office.calendar.updated",
   OFFICE_HEARTBEAT: "office.heartbeat",
   OFFICE_JOIN: "office.join",
   OFFICE_LIFECYCLE_UPDATED: "office.lifecycle.updated",

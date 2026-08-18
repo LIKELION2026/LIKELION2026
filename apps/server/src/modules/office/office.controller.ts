@@ -115,7 +115,12 @@ export class OfficeController {
     @Param("memberId") memberId: string,
     @Body() request: CreateOfficeCalendarEventDto
   ): Promise<CalendarEventListResponse> {
-    return { events: [await this.officeService.createCalendarEvent(memberId, request)] };
+    const event = await this.officeService.createCalendarEvent(memberId, request);
+    this.presenceGateway.publishCalendarUpdated({
+      occurredAt: new Date().toISOString(),
+      teamId: event.workspaceId
+    });
+    return { events: [event] };
   }
 
   @Get("workspaces/:workspaceId/calendar-events")
@@ -144,7 +149,12 @@ export class OfficeController {
     @Param("eventId") eventId: string,
     @Body() request: UpdateOfficeCalendarEventDto
   ): Promise<CalendarEventListResponse> {
-    return { events: [await this.officeService.updateCalendarEvent(eventId, request)] };
+    const event = await this.officeService.updateCalendarEvent(eventId, request);
+    this.presenceGateway.publishCalendarUpdated({
+      occurredAt: new Date().toISOString(),
+      teamId: event.workspaceId
+    });
+    return { events: [event] };
   }
 
   @Delete("calendar-events/:eventId")
@@ -153,6 +163,10 @@ export class OfficeController {
     @Param("eventId") eventId: string,
     @Query() query: DeleteOfficeCalendarEventQueryDto
   ): Promise<void> {
-    await this.officeService.deleteCalendarEvent(eventId, query.guestToken);
+    const teamId = await this.officeService.deleteCalendarEvent(eventId, query.guestToken);
+    this.presenceGateway.publishCalendarUpdated({
+      occurredAt: new Date().toISOString(),
+      teamId
+    });
   }
 }

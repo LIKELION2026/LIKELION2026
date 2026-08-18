@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import {
-  MEMBER_STATUS_LABELS,
   type LocalMovementCommand,
   type OfficeMemberPresence,
   type PresenceMovePayload,
@@ -14,6 +13,11 @@ import {
   shouldFlipAvatarSprite,
   type AvatarSpriteDefinition,
 } from "./avatar-sprite-definition";
+import {
+  getCalendarPresenceLabel,
+  shouldDimCalendarPresence,
+} from "../model/calendar-presence";
+import type { OfficeSceneBootstrap } from "../model/office-scene-bootstrap";
 import { isTextEntryFocused } from "../model/keyboard-focus";
 
 export const OFFICE_SCENE_KEY = "office-scene";
@@ -44,6 +48,7 @@ const NEARBY_AVATAR_OFFSET = 72;
 const AVATAR_POSITION_MARGIN = 48;
 
 interface OfficeSceneCallbacks {
+  initialAvatar: OfficeSceneBootstrap;
   onLocalMovement: (payload: LocalMovementCommand) => void;
   onMeetingRoomState: (isInside: boolean) => void;
   onReady: () => void;
@@ -236,10 +241,12 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private createLocalAvatar(): void {
+    const initialAvatar = this.callbacks.initialAvatar;
+    this.direction = initialAvatar.direction;
     this.player = this.physics.add.sprite(
-      160,
-      264,
-      getAvatarIdleFrame(this.localAvatarId, "down"),
+      initialAvatar.x,
+      initialAvatar.y,
+      getAvatarIdleFrame(this.localAvatarId, initialAvatar.direction),
     );
     this.player
       .setScale(getAvatarSpriteDefinition(this.localAvatarId).scale)
@@ -249,7 +256,7 @@ export class OfficeScene extends Phaser.Scene {
     this.playerBody.setCollideWorldBounds(true);
     this.playerBody.setSize(96, 64);
     this.playerBody.setOffset(80, 164);
-    this.playAvatarAnimation(this.player, this.localAvatarId, "down", "idle");
+    this.playAvatarAnimation(this.player, this.localAvatarId, initialAvatar.direction, "idle");
     this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
   }
 
@@ -694,17 +701,9 @@ function getAvatarAnimationKey(
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {
-  const displayMode = member.officePresence?.displayMode;
-  const detail =
-    displayMode === "ghost"
-      ? "연결 해제"
-      : displayMode === "sleeping"
-        ? "퇴근"
-        : MEMBER_STATUS_LABELS[member.status];
-  return `${member.displayName}\n${detail}`;
+  return `${member.displayName}\n${getCalendarPresenceLabel(member)}`;
 }
 
 function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {
-  const displayMode = member.officePresence?.displayMode;
-  return displayMode === "ghost" || displayMode === "sleeping" ? 0.45 : 1;
+  return shouldDimCalendarPresence(member) ? 0.45 : 1;
 }

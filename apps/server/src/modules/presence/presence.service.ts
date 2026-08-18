@@ -70,6 +70,11 @@ export class PresenceService {
       clearTimeout(connection.persistenceTimer);
     }
     await connection.persistencePromise;
+
+    if (this.hasActiveConnectionForMember(connection.member.memberId)) {
+      return null;
+    }
+
     return this.officeService.disconnectRealtimeMember(
       connection.member.memberId,
       connection.guestToken,
@@ -172,6 +177,16 @@ export class PresenceService {
     }
 
     return null;
+  }
+
+  private hasActiveConnectionForMember(memberId: string): boolean {
+    for (const connection of this.connections.values()) {
+      if (connection.member.memberId === memberId) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private schedulePositionPersistence(socketId: string, now: number): void {

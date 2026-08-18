@@ -41,6 +41,43 @@ test("updateTodo publishes a workspace TODO update after saving", async () => {
   ]);
 });
 
+test("createCalendarEvent publishes a workspace calendar update after saving", async () => {
+  const calendarEvents: Array<{ teamId: string }> = [];
+  const controller = new OfficeController(
+    {
+      async createCalendarEvent() {
+        return {
+          endsAt: "2026-08-19T00:00:00.000Z",
+          eventType: "vacation" as const,
+          id: "calendar-1",
+          isAllDay: true,
+          participantMemberIds: ["member-1"],
+          startsAt: "2026-08-18T00:00:00.000Z",
+          title: "휴가",
+          workspaceId: "workspace-1"
+        };
+      }
+    } as never,
+    {
+      publishCalendarUpdated(payload: { teamId: string }) {
+        calendarEvents.push({ teamId: payload.teamId });
+      }
+    } as never
+  );
+
+  const response = await controller.createCalendarEvent("member-1", {
+    endsAt: "2026-08-19T00:00:00.000Z",
+    eventType: "vacation",
+    guestToken: "guest_token",
+    isAllDay: true,
+    startsAt: "2026-08-18T00:00:00.000Z",
+    title: "휴가"
+  });
+
+  assert.equal(response.events[0]?.id, "calendar-1");
+  assert.deepEqual(calendarEvents, [{ teamId: "workspace-1" }]);
+});
+
 function createOfficeService(): {
   createTodo(): Promise<{ id: string; memberId: string; status: "planned"; title: string }>;
   getMemberWorkspaceId(): Promise<string>;

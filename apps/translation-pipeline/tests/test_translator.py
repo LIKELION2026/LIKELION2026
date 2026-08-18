@@ -1,12 +1,15 @@
 """번역 요청 검증과 시스템 프롬프트 생성 테스트."""
 
+import time
+
 import pytest
 
 from translation_pipeline.context import ConversationTurn
-from translation_pipeline.errors import UnsupportedLanguageError
+from translation_pipeline.errors import TranslationError, UnsupportedLanguageError
 from translation_pipeline.glossary import GlossaryEntry
 from translation_pipeline.translator import (
     FakeTranslator,
+    HedgedTranslator,
     TranslationRequest,
     Translator,
     build_system_prompt,
@@ -142,3 +145,97 @@ def test_fake_translator_records_requests():
     translator.translate(request)
 
     assert translator.requests == [request]
+
+
+# --- 이중 요청(HedgedTranslator) ---
+#
+# 완전히 고정된 지연에는 효과가 없고, 무작위로 널뛰는 지연에서 최악의 경우를
+# 줄이는 용도다. 실패에는 관여하지 않는다 — 늦을 때만 하나 더 쏜다.
+
+
+class ControllableTranslator:
+    """호출마다 얼마나 걸릴지, 성공할지 실패할지 순서대로 미리 정해두는 대역."""
+
+    def __init__(self, plan):
+        self._plan = list(plan)
+        self.calls = 0
+        self.call_times = []
+
+    def translate(self, request: TranslationRequest) -> str:
+        self.call_times.append(time.monotonic())
+        self.calls += 1
+        delay, outcome = self._plan.pop(0)
+        time.sleep(delay)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+def test_a_fast_response_is_used_without_hedging():
+    inner = ControllableTranslator([(0.0, "빠른 번역")])
+    hedged = HedgedTranslator(inner, hedge_after_ms=200)
+
+    result = hedged.translate(make_request())
+
+    assert result == "빠른 번역"
+    # 시간 안에 왔으니 두 번째 요청은 나가지 않아야 한다.
+    assert inner.calls == 1
+
+
+def test_a_slow_first_call_triggers_a_second_attempt():
+    # 첫 번째는 느리고, 두 번째(이중 요청)는 빠르다.
+    inner = ControllableTranslator([(0.3, "늦은 번역"), (0.0, "빠른 번역")])
+    hedged = HedgedTranslator(inner, hedge_after_ms=50)
+
+    result = hedged.translate(make_request())
+
+    assert result == "빠른 번역"
+    assert inner.calls == 2
+
+
+def test_the_second_attempt_only_fires_after_the_hedge_delay():
+    inner = ControllableTranslator([(0.3, "늦은 번역"), (0.0, "빠른 번역")])
+    hedged = HedgedTranslator(inner, hedge_after_ms=100)
+
+    hedged.translate(make_request())
+
+    gap = inner.call_times[1] - inner.call_times[0]
+    # 100ms 전에 쐈으면 이중 요청이 아니라 그냥 동시 호출이다.
+    assert gap >= 0.09
+
+
+def test_a_fast_failure_does_not_trigger_a_second_attempt():
+    # 빨리 실패하면 그대로 올린다. 늦게 온 번역은 의미가 없다는 것과 같은
+    # 이유로, 실패를 재시도하는 로직은 두지 않는다.
+    inner = ControllableTranslator([(0.0, TranslationError("바로 실패"))])
+    hedged = HedgedTranslator(inner, hedge_after_ms=200)
+
+    with pytest.raises(TranslationError):
+        hedged.translate(make_request())
+
+    assert inner.calls == 1
+
+
+def test_when_both_attempts_fail_the_error_propagates():
+    inner = ControllableTranslator(
+        [(0.3, TranslationError("첫 시도 실패")), (0.0, TranslationError("두 번째도 실패"))]
+    )
+    hedged = HedgedTranslator(inner, hedge_after_ms=50)
+
+    with pytest.raises(TranslationError):
+        hedged.translate(make_request())
+
+    assert inner.calls == 2
+
+
+def test_when_the_slow_first_attempt_eventually_succeeds_it_is_used():
+    # 이중 요청이 먼저 끝났는데 실패였다. 원래 요청이 늦게라도 성공하면 그걸 쓴다.
+    inner = ControllableTranslator(
+        [(0.2, "느리지만 성공"), (0.0, TranslationError("이중 요청 실패"))]
+    )
+    hedged = HedgedTranslator(inner, hedge_after_ms=50)
+
+    result = hedged.translate(make_request())
+
+    assert result == "느리지만 성공"
+    assert inner.calls == 2

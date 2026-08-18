@@ -32,7 +32,7 @@ from .session import (
     TranslationSession,
 )
 from .stt import DEFAULT_ENDPOINTING_MS, RealtimeTranscriber, Utterance
-from .translator import Translator
+from .translator import DEFAULT_HEDGE_AFTER_MS, Translator
 
 # LiveKit 참가자 attributes의 키. apps/server의 meeting.service.ts가 넣는다.
 LANGUAGE_ATTRIBUTE = "preferredLanguage"
@@ -92,6 +92,7 @@ class ParticipantWorker:
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
         finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
         min_interim_chars: int = DEFAULT_MIN_INTERIM_CHARS,
+        hedge_after_ms: int | None = DEFAULT_HEDGE_AFTER_MS,
         on_event=None,
     ) -> None:
         self.info = info
@@ -105,6 +106,7 @@ class ParticipantWorker:
             room_name=room_name,
             participants=participants,
             translator=translator,
+            hedge_after_ms=hedge_after_ms,
         )
         self.session = TranslationSession(
             pipeline=pipeline,
@@ -165,6 +167,7 @@ class TranslationAgent:
         interim_interval_ms: int = DEFAULT_INTERIM_INTERVAL_MS,
         finalize_after_ms: int = DEFAULT_FINALIZE_AFTER_MS,
         min_interim_chars: int = DEFAULT_MIN_INTERIM_CHARS,
+        hedge_after_ms: int | None = DEFAULT_HEDGE_AFTER_MS,
         on_event=None,
         worker_factory: Callable[..., ParticipantWorker] | None = None,
     ) -> None:
@@ -175,6 +178,7 @@ class TranslationAgent:
         self._interim_interval_ms = interim_interval_ms
         self._finalize_after_ms = finalize_after_ms
         self._min_interim_chars = min_interim_chars
+        self._hedge_after_ms = hedge_after_ms
         self._on_event = on_event
         self._worker_factory = worker_factory or ParticipantWorker
         self._workers: dict[str, ParticipantWorker] = {}
@@ -203,6 +207,7 @@ class TranslationAgent:
             interim_interval_ms=self._interim_interval_ms,
             finalize_after_ms=self._finalize_after_ms,
             min_interim_chars=self._min_interim_chars,
+            hedge_after_ms=self._hedge_after_ms,
             on_event=self._on_event,
         )
         self._workers[info.identity] = worker

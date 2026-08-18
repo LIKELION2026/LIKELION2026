@@ -605,3 +605,108 @@ def test_an_open_utterance_is_reported(participants, glossary):
     assert pipeline.has_open_utterance("user_ko") is True
     pipeline.finalize("user_ko")
     assert pipeline.has_open_utterance("user_ko") is False
+
+
+# --- 첫 호출 이중 요청 ---
+#
+# 발화의 첫 호출에만 이중 요청을 건다. 이후 조각·확정 호출까지 이중화하면
+# 호출량이 너무 늘어난다.
+
+
+class DelayedTranslator:
+    """호출마다 지정한 만큼 느려지는 대역. 몇 번 불렸는지 기록한다."""
+
+    def __init__(self, delay_seconds, translation="번역문"):
+        self._delay = delay_seconds
+        self._translation = translation
+        self.calls = 0
+
+    def translate(self, request):
+        import time
+
+        self.calls += 1
+        time.sleep(self._delay)
+        return self._translation
+
+
+def test_the_first_call_is_hedged_by_default_when_slow(participants, glossary):
+    translator = DelayedTranslator(delay_seconds=0.3)
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+        hedge_after_ms=50,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+
+    # 발화의 첫 호출이라 느리면 하나 더 쐈어야 한다.
+    assert translator.calls == 2
+
+
+def test_later_calls_in_the_same_utterance_are_not_hedged(participants, glossary):
+    translator = DelayedTranslator(delay_seconds=0.3)
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+        hedge_after_ms=50,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은", ends_utterance=False)
+    calls_after_first = translator.calls
+    pipeline.handle_utterance("user_ko", "이번 분기 계획입니다.")
+
+    # 두 번째 호출(rev2)은 느려도 이중화하지 않는다. +1이어야 한다(+2가 아니라).
+    assert translator.calls == calls_after_first + 1
+
+
+def test_a_new_utterance_gets_hedged_again(participants, glossary):
+    translator = DelayedTranslator(delay_seconds=0.3)
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+        hedge_after_ms=50,
+    )
+
+    pipeline.handle_utterance("user_ko", "첫 번째 발화")
+    calls_after_first = translator.calls
+    pipeline.handle_utterance("user_ko", "두 번째 발화")
+
+    # 새 발화의 첫 호출이니 다시 이중화 대상이다.
+    assert translator.calls == calls_after_first + 2
+
+
+def test_a_fast_first_call_is_not_hedged(participants, glossary):
+    translator = DelayedTranslator(delay_seconds=0.0)
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+        hedge_after_ms=200,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은")
+
+    assert translator.calls == 1
+
+
+def test_hedging_can_be_turned_off(participants, glossary):
+    translator = DelayedTranslator(delay_seconds=0.1)
+    pipeline = TranslationPipeline(
+        room_name=ROOM,
+        participants=participants,
+        translator=translator,
+        glossary=glossary,
+        hedge_after_ms=None,
+    )
+
+    pipeline.handle_utterance("user_ko", "안건은")
+
+    # 느려도 hedge_after_ms를 안 줬으니 이중화하지 않는다.
+    assert translator.calls == 1

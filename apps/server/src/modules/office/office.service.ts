@@ -411,10 +411,11 @@ export class OfficeService {
     return (await this.withCalendarParticipants([data as CalendarEventRow]))[0];
   }
 
-  async deleteCalendarEvent(eventId: string, guestToken: string): Promise<void> {
-    await this.requireCalendarEventOwnership(eventId, guestToken);
+  async deleteCalendarEvent(eventId: string, guestToken: string): Promise<string> {
+    const event = await this.requireCalendarEventOwnership(eventId, guestToken);
     const { error } = await this.supabase.from("calendar_events").delete().eq("id", eventId);
     this.throwIfError(error, "delete calendar event");
+    return event.workspace_id;
   }
 
   async connectRealtimeMember(

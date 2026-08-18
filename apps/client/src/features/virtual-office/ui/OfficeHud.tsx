@@ -10,6 +10,7 @@ interface OfficeHudProps {
   connectionState: OfficeConnectionState;
   memberCount: number;
   onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
+  onOpenCalendar: () => void;
   onOpenPeople: () => void;
   onOpenTodo: () => void;
   onStatusChange: (status: MemberStatus) => void;
@@ -21,6 +22,7 @@ export function OfficeHud({
   connectionState,
   memberCount,
   onAttendanceChange,
+  onOpenCalendar,
   onOpenPeople,
   onOpenTodo,
   onStatusChange,
@@ -64,6 +66,9 @@ export function OfficeHud({
         </button>
         <button className="office-secondary-button" onClick={onOpenTodo} type="button">
           내 TODO
+        </button>
+        <button className="office-secondary-button" onClick={onOpenCalendar} type="button">
+          협업 보드
         </button>
       </section>
     </div>

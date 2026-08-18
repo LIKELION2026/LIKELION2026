@@ -19,6 +19,7 @@ import {
   type LiveKitMeetingSessionStatus
 } from "../../features/realtime-meeting/model/use-livekit-meeting-session";
 import { useMeetingSubtitles } from "../../features/realtime-meeting/model/use-meeting-subtitles";
+import { useMeetingOfficePresence } from "../../features/virtual-office/model/use-meeting-office-presence";
 import { MeetingMediaTrackElement } from "../../features/realtime-meeting/ui/MeetingMediaTrackElement";
 import { MeetingSubtitlePanel } from "../../features/realtime-meeting/ui/MeetingSubtitlePanel";
 import {
@@ -72,6 +73,7 @@ export function MeetingLabPage(): JSX.Element {
     setCameraEnabled,
     setMicrophoneEnabled
   } = useLiveKitMeetingSession();
+  useMeetingOfficePresence(session.status);
   const isCheckingDevices = devicePreflight.status === "checking";
   const isDeviceReady = devicePreflight.status === "ready";
   const isSessionBusy =
