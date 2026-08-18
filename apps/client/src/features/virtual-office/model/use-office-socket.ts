@@ -4,6 +4,7 @@ import {
   type GuestOfficeSessionResponse,
   type MemberStatus,
   type MemberStatusUpdatedPayload,
+  type OfficeCalendarUpdatedPayload,
   type OfficeMemberJoinedPayload,
   type OfficeMemberLeftPayload,
   type OfficeLifecycleUpdatedPayload,
@@ -25,6 +26,7 @@ const MOVEMENT_INTERVAL_MS = 60;
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
 interface OfficeSocketCallbacks {
+  onCalendarUpdated?: () => void;
   onSummonRequested?: (payload: OfficeSummonRequestedPayload) => void;
   onSummonResolved?: (payload: OfficeSummonResolvedPayload) => void;
   onTodosUpdated?: () => void;
@@ -116,6 +118,11 @@ export function useOfficeSocket(
         callbacksRef.current.onTodosUpdated?.();
       }
     };
+    const handleCalendarUpdated = (payload: OfficeCalendarUpdatedPayload) => {
+      if (payload.teamId === session.member.workspaceId) {
+        callbacksRef.current.onCalendarUpdated?.();
+      }
+    };
     const handleSummonRequested = (payload: OfficeSummonRequestedPayload) => {
       if (payload.teamId === session.member.workspaceId) {
         callbacksRef.current.onSummonRequested?.(payload);
@@ -137,6 +144,7 @@ export function useOfficeSocket(
     socket.on(SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATED, handleStatusUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, handleLifecycleUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED, handleTodosUpdated);
+    socket.on(SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED, handleCalendarUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUESTED, handleSummonRequested);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESOLVED, handleSummonResolved);
     heartbeatTimer = window.setInterval(() => {

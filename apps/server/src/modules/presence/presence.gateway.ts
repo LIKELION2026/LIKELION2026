@@ -11,6 +11,7 @@ import {
   isLanguageCode,
   type MemberStatusUpdatePayload,
   type OfficeAttendanceUpdatePayload,
+  type OfficeCalendarUpdatedPayload,
   type OfficeHeartbeatPayload,
   type OfficeJoinPayload,
   type OfficeSummonDecision,
@@ -133,6 +134,12 @@ export class PresenceGateway implements OnGatewayDisconnect {
     this.server
       .to(getTeamRoom(payload.teamId))
       .emit(SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED, payload);
+  }
+
+  publishCalendarUpdated(payload: OfficeCalendarUpdatedPayload): void {
+    this.server
+      .to(getTeamRoom(payload.teamId))
+      .emit(SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED, payload);
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
