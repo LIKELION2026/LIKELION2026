@@ -23,6 +23,7 @@ Ctrl+C로 종료한다. `dev` 명령도 있지만 deprecated 경고를 낸다.
     TRANSLATION_MODEL                 번역 모델
     TRANSLATION_ENDPOINTING_MS        발화 종료로 볼 무음 길이
     TRANSLATION_INTERIM_INTERVAL_MS   중간 결과 번역 간격
+    TRANSLATION_FINALIZE_AFTER_MS     이만큼 조용하면 열린 발화를 확정한다
     TRANSLATION_LOAD_THRESHOLD        이 CPU 부하를 넘으면 배정을 받지 않는다
 """
 
@@ -48,6 +49,7 @@ from livekit.agents import (  # noqa: E402
 )
 
 from translation_pipeline import (  # noqa: E402
+    DEFAULT_FINALIZE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
     ParticipantAudioRunner,
     SessionEvent,
@@ -194,6 +196,9 @@ async def translate_room(ctx: JobContext) -> None:
     interim_interval_ms = env_int(
         "TRANSLATION_INTERIM_INTERVAL_MS", DEFAULT_INTERIM_INTERVAL_MS
     )
+    finalize_after_ms = env_int(
+        "TRANSLATION_FINALIZE_AFTER_MS", DEFAULT_FINALIZE_AFTER_MS
+    )
 
     reporter = ConsoleReporter()
     publisher = SubtitlePublisher(server_url=server_url)
@@ -210,6 +215,7 @@ async def translate_room(ctx: JobContext) -> None:
         publisher=publisher,
         endpointing_ms=endpointing_ms,
         interim_interval_ms=interim_interval_ms,
+        finalize_after_ms=finalize_after_ms,
         on_event=reporter.on_event,
     )
     runner = ParticipantAudioRunner(agent=agent, room=ctx.room)
@@ -248,6 +254,7 @@ async def translate_room(ctx: JobContext) -> None:
     print(f"  번역 모델: {model}")
     print(f"  발화 종료 판정: 무음 {endpointing_ms}ms")
     print(f"  중간 결과 번역: {interim_interval_ms}ms 간격")
+    print(f"  발화 확정: 조용해진 뒤 {finalize_after_ms}ms")
     print(f"  자막 발행: {publisher.url}")
 
     attach_existing_participants(
