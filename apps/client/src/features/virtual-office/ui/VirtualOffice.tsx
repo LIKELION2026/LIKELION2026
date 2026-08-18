@@ -22,7 +22,7 @@ import { createPeopleContext } from "../model/people-context";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
-import { OfficeCalendarPanelSlot } from "./OfficeCalendarPanelSlot";
+import { OfficeCalendarModal } from "./OfficeCalendarModal";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
 import { useRequestFeedback } from "../../../app/request-feedback";
@@ -42,6 +42,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const [isPreparingSession, setIsPreparingSession] = useState(false);
   const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
   const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [storedProfile, setStoredProfile] = useState<GuestProfile | null>(() =>
@@ -52,6 +53,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const todoController = useOfficeTodos(session);
+  const calendarController = useOfficeCalendar(session);
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
   }, []);
@@ -77,15 +79,15 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     () => ({
       onSummonRequested: handleSummonRequested,
       onSummonResolved: handleSummonResolved,
+      onCalendarUpdated: calendarController.refresh,
       onTodosUpdated: todoController.refresh
     }),
-    [handleSummonRequested, handleSummonResolved, todoController.refresh]
+    [calendarController.refresh, handleSummonRequested, handleSummonResolved, todoController.refresh]
   );
   const { respondToSummon, sendMove, sendSummonRequest, updateAttendance, updateStatus } = useOfficeSocket(
     session,
     socketCallbacks
   );
-  const calendarController = useOfficeCalendar(session);
   const peopleContext = createPeopleContext(
     members,
     todoController.publicTodos,
@@ -195,6 +197,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         connectionState={connectionState}
         memberCount={members.length}
         onAttendanceChange={updateAttendance}
+        onOpenCalendar={() => setIsCalendarOpen(true)}
         onOpenPeople={() => setIsPeoplePanelOpen(true)}
         onOpenTodo={() => setIsTodoPanelOpen(true)}
         onStatusChange={updateStatus}
@@ -206,7 +209,14 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         isOpen={isTodoPanelOpen}
         onClose={() => setIsTodoPanelOpen(false)}
       />
-      <OfficeCalendarPanelSlot controller={calendarController} />
+      <OfficeCalendarModal
+        controller={calendarController}
+        isOpen={isCalendarOpen}
+        members={members}
+        onClose={() => setIsCalendarOpen(false)}
+        ownTodos={todoController.ownTodos}
+        self={self}
+      />
       <OfficePeoplePanel
         isOpen={isPeoplePanelOpen}
         members={peopleContext}
