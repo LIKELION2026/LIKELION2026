@@ -425,6 +425,49 @@ button {
   color: #a33030;
 }
 
+.office-request-error {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.request-spinner {
+  animation: request-spinner-rotate 0.72s linear infinite;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  width: 12px;
+}
+
+.request-feedback-stack {
+  bottom: 18px;
+  display: grid;
+  gap: 8px;
+  position: fixed;
+  right: 18px;
+  width: min(360px, calc(100vw - 36px));
+  z-index: 30;
+}
+
+.request-feedback {
+  border: 1px solid;
+  border-radius: 6px;
+  box-shadow: 0 8px 22px rgb(19 35 55 / 18%);
+  font-size: 14px;
+  margin: 0;
+  padding: 12px 14px;
+}
+
+.request-feedback.error { background: #fff1f1; border-color: #d66a6a; color: #812e2e; }
+.request-feedback.success { background: #eef9f2; border-color: #59a779; color: #225e39; }
+
+@keyframes request-spinner-rotate { to { transform: rotate(360deg); } }
+
 .office-summon-backdrop {
   align-items: center;
   background: rgb(18 29 45 / 34%);
