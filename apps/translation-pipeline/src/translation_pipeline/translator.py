@@ -5,10 +5,13 @@
 `Translator` 구현체 안에만 둔다.
 """
 
+import queue
+import threading
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from .context import ConversationTurn
+from .errors import TranslationError
 from .glossary import GlossaryEntry
 from .guidelines import load_guidelines
 from .languages import ensure_supported, language_name
@@ -43,6 +46,72 @@ class Translator(Protocol):
     def translate(self, request: TranslationRequest) -> str:
         """번역문만 반환한다. 앞뒤 공백은 제거된 상태여야 한다."""
         ...
+
+
+# 대기 시간 실측(rev1만, 클라우드 배포 기준)으로 정한 시작값이다. 평균
+# 1701ms, 최소 843ms, 최대 3229ms였다. 정식으로 튜닝한 값은 아니다.
+DEFAULT_HEDGE_AFTER_MS = 1200
+
+
+class HedgedTranslator:
+    """느리게 응답하는 호출을 다른 시도로 만회하는 감싸개.
+
+    안쪽 번역기를 부르고, ``hedge_after_ms`` 안에 응답이 없으면 같은 요청을
+    한 번 더 보낸다. 둘 중 먼저 오는 것을 쓰고 나머지는 버린다.
+
+    실패에는 관여하지 않는다. 빨리 실패하면 그대로 올린다 — 늦게 온 번역은
+    보여줄 의미가 없다는 판단으로 재시도 로직 자체를 두지 않기로 했던 결정과
+    같은 이유다. 여기서 두 번째 요청을 보내는 건 오직 "너무 느릴 때"뿐이고,
+    "실패했을 때"가 아니다.
+
+    완전히 고정된 지연(예: 물리적으로 먼 리전)에는 효과가 없다. 무작위로
+    널뛰는 지연에서 최악의 경우를 줄이는 용도다.
+    """
+
+    def __init__(
+        self, inner: Translator, hedge_after_ms: int = DEFAULT_HEDGE_AFTER_MS
+    ) -> None:
+        self._inner = inner
+        self._hedge_after = hedge_after_ms / 1000
+
+    def translate(self, request: TranslationRequest) -> str:
+        results: queue.Queue = queue.Queue()
+
+        def attempt() -> None:
+            try:
+                results.put(("ok", self._inner.translate(request)))
+            except TranslationError as error:
+                results.put(("err", error))
+
+        threading.Thread(target=attempt, daemon=True).start()
+        pending = 1
+        hedged = False
+        last_error: TranslationError | None = None
+
+        while pending > 0:
+            timeout = None if hedged else self._hedge_after
+            try:
+                kind, value = results.get(timeout=timeout)
+            except queue.Empty:
+                # 정해진 시간 안에 아무 응답도 없었다. 한 번만 더 쏜다.
+                # 실제로 발동한 빈도를 운영 로그에서 볼 수 있어야 튜닝이
+                # 가능하다. 실측(Issue #118)에서 발화 10건 중 6건이 발동했다.
+                print(
+                    f"  [이중 요청] {self._hedge_after * 1000:.0f}ms 안에 "
+                    "응답이 없어 하나 더 보냅니다."
+                )
+                threading.Thread(target=attempt, daemon=True).start()
+                pending += 1
+                hedged = True
+                continue
+
+            pending -= 1
+            if kind == "ok":
+                return value
+            last_error = value
+
+        assert last_error is not None
+        raise last_error
 
 
 def build_system_prompt(request: TranslationRequest) -> str:
