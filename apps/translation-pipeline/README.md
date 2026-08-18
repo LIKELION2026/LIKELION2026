@@ -199,14 +199,17 @@ provider를 바꾸려면 `Translator`를 만족하는 클래스를 `providers/`�
 
 ### 회의방 통역 에이전트
 
-회의방에 들어가 **참가자 전원을 한 프로세스에서** 통역한다. 참가자는 브라우저만
-열면 된다. 설치도 터미널도 API 키도 필요 없다.
+회의방이 열리면 자동으로 들어가 **참가자 전원을 한 프로세스에서** 통역한다.
+참가자는 브라우저만 열면 된다. 설치도 터미널도 API 키도 필요 없다.
 
 ```powershell
 cd C:\LIKELION2026\apps\translation-pipeline
-.venv\Scripts\python.exe -u scripts\run_agent.py
-.venv\Scripts\python.exe -u scripts\run_agent.py --server https://<배포 서버>
+.venv\Scripts\python.exe -u scripts\run_agent.py start
 ```
+
+**한 번 켜두면 된다.** 워커는 LiveKit에 등록만 해두고 방에는 들어가지 않는다.
+회의방이 생기면 배정을 받아 그때 참가한다. 방 이름을 알 필요가 없고, 대기 중에는
+방 참가자로 잡히지 않는다.
 
 `.env`에 `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`이 필요하다.
 **`apps/server/.env`와 같은 값이어야** 같은 회의방에 들어간다. 다르면 아무 소리도
@@ -235,19 +238,22 @@ cd C:\LIKELION2026\apps\translation-pipeline
 참가자마다 번역기와 파이프라인을 따로 둔다. 하나를 공유하면 번역 호출에 락이 걸려
 두 사람이 동시에 말할 때 서로를 기다린다.
 
-| 옵션 | 용도 |
+**회의방이 아닌 배정은 거부한다.** 워커는 방이 열리는 대로 배정받으므로, 가상
+오피스처럼 회의가 아닌 방까지 따라 들어가면 쓸데없이 호출을 태운다.
+
+설정은 `.env`로 준다. 프레임워크가 명령줄을 쓰기 때문에 인자로 받을 수 없다.
+
+| 환경변수 | 용도 |
 | --- | --- |
-| `--room` | 회의방 이름을 직접 지정한다. 생략하면 오늘 날짜로 만든다 |
-| `--section korea-team-zone` | 회의 구역을 고른다 |
-| `--server` | 자막을 보낼 Server 주소 |
-| `--no-publish` | 자막을 보내지 않고 콘솔에만 찍는다 |
-| `--endpointing` | 발화 종료로 볼 무음 길이(ms). 기본 700 |
-| `--interim-interval` | 중간 결과를 번역에 올리는 최소 간격(ms) |
+| `PIPELINE_SERVER_URL` | 자막을 보낼 Server 주소. 비우면 `http://localhost:4000` |
+| `TRANSLATION_MODEL` | 번역 모델 |
+| `TRANSLATION_ENDPOINTING_MS` | 발화 종료로 볼 무음 길이. 기본 700 |
+| `TRANSLATION_INTERIM_INTERVAL_MS` | 중간 결과 번역 간격 |
 
 결정 배경은 `docs/ADR/0003-livekit-translation-agent.md`에 있다.
 
 **상시 호스팅은 아직이다.** 지금은 누군가의 노트북에서 켜둔다. 그 상태로도 참가자는
-브라우저만으로 자막을 본다. 대신 에이전트가 죽으면 전원의 자막이 멈춘다.
+브라우저만으로 자막을 본다. 대신 워커가 죽으면 전원의 자막이 멈춘다.
 
 ### 마이크 실시간 통역과 자막 발행
 
