@@ -25,12 +25,14 @@ import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarPanelSlot } from "./OfficeCalendarPanelSlot";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
+import { useRequestFeedback } from "../../../app/request-feedback";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
 }
 
 export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Element {
+  const { showError } = useRequestFeedback();
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
@@ -100,13 +102,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       setStoredProfile(profile);
     } catch (error) {
       setSession(null);
-      setSessionError(
-        error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다."
-      );
+      const message = error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다.";
+      setSessionError(message);
+      showError(error, "오피스 세션을 준비하지 못했습니다. 다시 시도해 주세요.");
     } finally {
       setIsPreparingSession(false);
     }
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     if (storedProfile && !didRestoreStoredProfile.current) {
