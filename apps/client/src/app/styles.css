@@ -305,18 +305,66 @@ button {
   transform: translateY(3px);
 }
 
-.office-people-panel {
-  background: rgb(255 255 255 / 97%);
-  border-left: 1px solid #cbd5df;
-  box-shadow: -8px 0 22px rgb(28 39 53 / 12%);
-  max-width: 360px;
-  overflow-y: auto;
-  padding: 18px;
+.people-panel {
+  background-color: #fce9d5;
+  background-image: radial-gradient(rgb(107 74 53 / 12%) 1px, transparent 1px);
+  background-size: 6px 6px;
+  border: 4px solid #6b4a35;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px #c99f6c,
+    0 6px 18px rgb(28 39 53 / 25%);
+  box-sizing: border-box;
+  color: #4a2f1e;
+  font-family: Galmuri11, "Press Start 2P", Inter, Pretendard, sans-serif;
+  max-height: calc(100% - 32px);
   position: absolute;
-  right: 0;
-  top: 0;
+  right: 16px;
+  top: 16px;
   width: min(100%, 360px);
   z-index: 2;
+}
+
+.people-close-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  position: absolute;
+  right: -12px;
+  top: -12px;
+  z-index: 1;
+}
+
+.people-close-button img {
+  display: block;
+  height: 32px;
+  width: 32px;
+}
+
+.people-close-button:active {
+  transform: translateY(1px);
+}
+
+.people-panel-content {
+  box-sizing: border-box;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
+  padding: 20px 20px 20px 28px;
+  scrollbar-width: none;
+}
+
+.people-panel-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
+.people-panel-header {
+  margin-bottom: 12px;
+}
+
+.people-panel-header h2 {
+  font-size: 15px;
+  margin: 0;
 }
 
 .std-panel {
@@ -629,28 +677,14 @@ button {
   justify-content: space-between;
 }
 
-.office-people-panel-header,
-.office-member-summary,
-.office-member-actions,
-.office-member-todos li {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.office-people-panel h2,
-.office-member-card h3 {
-  color: #172235;
+.people-panel-header h2,
+.people-detail-card h3 {
+  color: #4a2f1e;
   margin: 0;
 }
 
-.office-people-panel h2 {
-  font-size: 18px;
-}
-
-.office-panel-eyebrow,
-.office-member-todos-title {
-  color: #58687c;
+.office-panel-eyebrow {
+  color: #8a6a4b;
   font-size: 11px;
   font-weight: 800;
   margin: 0 0 4px;
@@ -666,71 +700,185 @@ button {
   width: 32px;
 }
 
-.office-member-list,
-.office-member-todos ul {
+.people-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.office-member-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.office-member-list-button {
+.people-row {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #d8e0e9;
-  color: #172235;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  box-sizing: border-box;
+  cursor: pointer;
   display: flex;
-  font-size: 12px;
-  justify-content: space-between;
-  padding: 10px;
+  gap: 10px;
+  height: 54px;
+  line-height: 1;
+  padding: 0 20px;
+  position: relative;
   text-align: left;
   width: 100%;
 }
 
-.office-member-list-button[aria-pressed="true"] {
-  background: #edf4ff;
-  border-color: #6b98d8;
+.people-row-bg {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: -1;
 }
 
-.office-member-list-button span:last-child {
-  color: #58687c;
-  font-size: 11px;
+.people-row[aria-pressed="true"] {
+  filter: brightness(1.03);
 }
 
-.office-member-card {
-  border: 1px solid #d8e0e9;
-  padding: 12px;
+.people-row[aria-pressed="true"]::after {
+  border: 3px solid #f0895c;
+  border-radius: 10px;
+  content: "";
+  inset: 5px 8px;
+  pointer-events: none;
+  position: absolute;
 }
 
-.office-member-card h3 {
-  font-size: 14px;
+.people-row-flag {
+  flex-shrink: 0;
+  font-size: 15px;
 }
 
-.office-member-card p {
-  color: #58687c;
+.people-row-name {
+  color: #4a2f1e;
+  flex: 1;
   font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-status-badge-img {
+  display: block;
+  flex-shrink: 0;
+  height: 30px;
+  width: auto;
+}
+
+.people-status-badge {
+  align-items: center;
+  background: #fbead2;
+  border: 2px solid #6b4a35;
+  border-radius: 999px;
+  color: #4a2f1e;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 10px;
+  gap: 5px;
+  line-height: 1;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.people-status-dot {
+  background: #1a9c63;
+  border-radius: 50%;
+  flex-shrink: 0;
+  height: 8px;
+  width: 8px;
+}
+
+.people-status-badge.tone-ghost .people-status-dot,
+.people-status-badge.tone-sleeping .people-status-dot {
+  background: #9aa7b6;
+}
+
+.people-status-badge.tone-vacation .people-status-dot,
+.people-status-badge.tone-absent .people-status-dot,
+.people-status-badge.tone-away .people-status-dot {
+  background: #b45c5c;
+}
+
+.people-status-badge.tone-remote_work .people-status-dot {
+  background: #2a8a61;
+}
+
+.people-status-badge.tone-meeting .people-status-dot,
+.people-status-badge.tone-in_meeting .people-status-dot {
+  background: #8253aa;
+}
+
+.people-status-badge.tone-focus .people-status-dot,
+.people-status-badge.tone-focused .people-status-dot {
+  background: #d28a24;
+}
+
+.people-detail-card {
+  border-top: 2px dashed rgb(107 74 53 / 35%);
+  margin-top: 14px;
+  padding-top: 14px;
+}
+
+.people-detail-card h3 {
+  font-size: 13px;
+}
+
+.people-detail-card p {
+  color: #8a6a4b;
+  font-size: 11px;
   margin: 4px 0 0;
 }
 
-.office-member-actions .office-secondary-button {
+.people-detail-summary {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  line-height: 1.3;
+}
+
+.people-detail-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.people-detail-actions .office-secondary-button {
   margin-top: 10px;
 }
 
-.office-member-todos {
-  border-top: 1px solid #e2e8ef;
+.people-panel .office-secondary-button {
+  background: #e7c79c;
+  border: 2px solid #6b4a35;
+  border-radius: 8px;
+  box-shadow: 0 3px 0 #8a5f3d;
+  color: #4a2f1e;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 8px;
+}
+
+.people-panel .office-secondary-button:active {
+  box-shadow: 0 0 0 transparent;
+  transform: translateY(3px);
+}
+
+.people-detail-todos {
+  border-top: 1px solid rgb(107 74 53 / 20%);
   margin-top: 12px;
   padding-top: 10px;
 }
 
-.office-member-todos li {
-  color: #293a4f;
+.people-detail-todos li {
+  align-items: center;
+  color: #4a2f1e;
+  display: flex;
   font-size: 12px;
   gap: 10px;
+  justify-content: space-between;
   padding: 5px 0;
 }
 
@@ -750,35 +898,6 @@ button {
 
 .office-todo-status.done {
   color: #1a7a50;
-}
-
-.office-member-status {
-  background: #1a9c63;
-  border-radius: 50%;
-  height: 9px;
-  width: 9px;
-}
-
-.office-member-status.ghost,
-.office-member-status.sleeping {
-  background: #9aa7b6;
-}
-
-.office-member-status.vacation,
-.office-member-status.absent {
-  background: #b45c5c;
-}
-
-.office-member-status.remote_work {
-  background: #2a8a61;
-}
-
-.office-member-status.meeting {
-  background: #8253aa;
-}
-
-.office-member-status.focus {
-  background: #d28a24;
 }
 
 .office-panel-message,
