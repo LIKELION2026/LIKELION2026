@@ -14,7 +14,7 @@ export const AVATAR_DIRECTIONS = ["up", "down", "left", "right"] as const;
 
 export type AvatarDirection = (typeof AVATAR_DIRECTIONS)[number];
 
-export const AVATAR_ANIMATIONS = ["idle", "walk"] as const;
+export const AVATAR_ANIMATIONS = ["idle", "walk", "sit"] as const;
 
 export type AvatarAnimation = (typeof AVATAR_ANIMATIONS)[number];
 
