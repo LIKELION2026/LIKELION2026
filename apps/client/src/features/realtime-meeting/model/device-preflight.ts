@@ -3,7 +3,8 @@ export type MeetingDevicePreflightStatus =
   | "checking"
   | "ready"
   | "permission-denied"
-  | "device-unavailable";
+  | "device-unavailable"
+  | "security-unavailable";
 
 export interface MeetingDevicePreflightState {
   audioInputCount: number;
@@ -21,6 +22,15 @@ export const INITIAL_MEETING_DEVICE_PREFLIGHT_STATE: MeetingDevicePreflightState
   };
 
 export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePreflightState> {
+  if (!window.isSecureContext) {
+    return {
+      audioInputCount: 0,
+      message: "보안 연결이 아니어서 카메라와 마이크 권한을 요청할 수 없습니다.",
+      status: "security-unavailable",
+      videoInputCount: 0
+    };
+  }
+
   if (!navigator.mediaDevices?.getUserMedia || !navigator.mediaDevices.enumerateDevices) {
     return {
       audioInputCount: 0,
@@ -58,6 +68,15 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
       videoInputCount
     };
   } catch (error) {
+    if (isSecurityContextError(error)) {
+      return {
+        audioInputCount: 0,
+        message: "보안 연결이 아니어서 카메라와 마이크 권한을 요청할 수 없습니다.",
+        status: "security-unavailable",
+        videoInputCount: 0
+      };
+    }
+
     if (isPermissionDeniedError(error)) {
       return {
         audioInputCount: 0,
@@ -89,7 +108,13 @@ function isPermissionDeniedError(error: unknown): boolean {
   return (
     error instanceof DOMException &&
     (error.name === "NotAllowedError" ||
-      error.name === "PermissionDeniedError" ||
-      error.name === "SecurityError")
+      error.name === "PermissionDeniedError")
+  );
+}
+
+function isSecurityContextError(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === "SecurityError" || error.name === "NotSupportedError")
   );
 }
