@@ -91,6 +91,7 @@ interface CalendarEventRow {
   event_type: OfficeCalendarEvent["eventType"];
   id: string;
   is_all_day: boolean;
+  location: string | null;
   starts_at: string;
   title: string;
   workspace_id: string;
@@ -330,11 +331,12 @@ export class OfficeService {
         ends_at: request.endsAt,
         event_type: request.eventType,
         is_all_day: request.isAllDay ?? false,
+        location: request.location?.trim() || null,
         starts_at: request.startsAt,
         title: request.title.trim(),
         workspace_id: member.workspace_id
       })
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .single();
     this.throwIfError(error, "create calendar event");
 
@@ -353,7 +355,7 @@ export class OfficeService {
     assertCalendarRange(query.startsAt, query.endsAt);
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .eq("workspace_id", workspaceId)
       .lt("starts_at", query.endsAt)
       .gt("ends_at", query.startsAt)
@@ -392,10 +394,11 @@ export class OfficeService {
     const startsAt = request.startsAt ?? existing.starts_at;
     const endsAt = request.endsAt ?? existing.ends_at;
     assertCalendarRange(startsAt, endsAt);
-    const updates: Record<string, boolean | string> = {};
+    const updates: Record<string, boolean | string | null> = {};
     if (request.endsAt !== undefined) updates.ends_at = request.endsAt;
     if (request.eventType !== undefined) updates.event_type = request.eventType;
     if (request.isAllDay !== undefined) updates.is_all_day = request.isAllDay;
+    if (request.location !== undefined) updates.location = request.location.trim() || null;
     if (request.startsAt !== undefined) updates.starts_at = request.startsAt;
     if (request.title !== undefined) updates.title = request.title.trim();
     if (Object.keys(updates).length === 0) {
@@ -405,7 +408,7 @@ export class OfficeService {
       .from("calendar_events")
       .update(updates)
       .eq("id", eventId)
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .single();
     this.throwIfError(error, "update calendar event");
     return (await this.withCalendarParticipants([data as CalendarEventRow]))[0];
@@ -589,7 +592,7 @@ export class OfficeService {
   ): Promise<CalendarEventRow> {
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .eq("id", eventId)
       .maybeSingle();
     this.throwIfError(error, "find calendar event");
@@ -931,6 +934,7 @@ function toCalendarEvent(row: CalendarEventRow): Omit<OfficeCalendarEvent, "part
     eventType: row.event_type,
     id: row.id,
     isAllDay: row.is_all_day,
+    ...(row.location ? { location: row.location } : {}),
     startsAt: row.starts_at,
     title: row.title,
     workspaceId: row.workspace_id
