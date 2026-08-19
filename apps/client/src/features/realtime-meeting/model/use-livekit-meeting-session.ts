@@ -136,7 +136,7 @@ export function useLiveKitMeetingSession(): {
       await disconnect();
 
       const room = new Room({
-        adaptiveStream: true,
+        adaptiveStream: false,
         dynacast: true
       });
       roomRef.current = room;
