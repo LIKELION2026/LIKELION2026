@@ -6,6 +6,7 @@ import type { GuestProfile } from "../../../shared/lib/development-identity";
 import { RequestSpinner } from "../../../app/request-feedback";
 import { getGuestAvatarAvailability } from "../api/get-guest-avatar-availability";
 import { getAvatarSpriteDefinitions } from "../core/avatar-sprite-definition";
+import { AvatarFace } from "./AvatarFace";
 
 interface GuestOnboardingProps {
   error: string | null;
@@ -153,11 +154,7 @@ export function GuestOnboarding({
                     }}
                     type="button"
                   >
-                    <span
-                      aria-hidden="true"
-                      className="guest-avatar-preview"
-                      style={{ backgroundImage: `url(${avatar.assetPath})` }}
-                    />
+                    <AvatarFace avatarId={avatar.id} size={48} />
                     <span>{avatar.label}</span>
                     {!isAvailable ? <small>사용 중</small> : null}
                   </button>
