@@ -5,21 +5,26 @@ import {
 } from "@nestjs/common";
 import {
   LAB_MEETING_ROOM_NAME_PATTERN,
+  MEETING_PARTICIPANT_ATTRIBUTE_KEYS,
   MEETING_PARTICIPANT_COUNTRIES,
   MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY,
   PARTICIPANT_IDENTITY_PATTERN,
   SOCKET_EVENT_NAMES,
   SUBTITLE_UPDATE_STRATEGY,
+  getOppositeMeetingTranslationLanguage,
   type CreateMeetingTokenRequest,
   type CreateMeetingTokenResponse,
   type CreateMockSubtitleRequest,
   type CreateMockSubtitleResponse,
+  isMeetingTranslationLanguageCode,
   isLanguageCode,
   type LanguageCode,
   type ListMockSubtitlesResponse,
   type MeetingParticipantCountry,
   type MeetingRoomStateResponse,
   type MeetingRoomStatus,
+  type MeetingTranslationLanguageCode,
+  type MeetingTranslationPreference,
   type SubtitleCreatedPayload
 } from "@likelion2026/shared";
 import { randomUUID } from "node:crypto";
@@ -77,6 +82,10 @@ export class MeetingService {
     );
     const preferredLanguage =
       MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY[participantCountry];
+    const translationPreference = resolveMeetingTranslationPreference(
+      request.translationPreference,
+      preferredLanguage
+    );
     const participantIdentity = resolveParticipantIdentity(
       request.participantIdentity,
       participantCountry
@@ -92,9 +101,15 @@ export class MeetingService {
 
     const tokenResult = await this.liveKitTokenService.createRoomJoinToken({
       attributes: {
-        participantCountry,
-        preferredLanguage,
-        roomName
+        [MEETING_PARTICIPANT_ATTRIBUTE_KEYS.PARTICIPANT_COUNTRY]:
+          participantCountry,
+        [MEETING_PARTICIPANT_ATTRIBUTE_KEYS.PREFERRED_LANGUAGE]:
+          translationPreference.sourceLanguage,
+        [MEETING_PARTICIPANT_ATTRIBUTE_KEYS.ROOM_NAME]: roomName,
+        [MEETING_PARTICIPANT_ATTRIBUTE_KEYS.TRANSLATION_RECEIVING_ENABLED]:
+          translationPreference.enabled ? "true" : "false",
+        [MEETING_PARTICIPANT_ATTRIBUTE_KEYS.TRANSLATION_TARGET_LANGUAGE]:
+          translationPreference.targetLanguage
       },
       participantIdentity,
       participantName,
@@ -106,10 +121,11 @@ export class MeetingService {
       participantIdentity,
       participantName,
       participantCountry,
-      preferredLanguage,
+      preferredLanguage: translationPreference.sourceLanguage,
       roomName,
       serverUrl: this.liveKitTokenService.serverUrl,
-      token: tokenResult.token
+      token: tokenResult.token,
+      translationPreference
     };
   }
 
@@ -477,6 +493,87 @@ function assertLanguageCode(value: string, fieldName: string): LanguageCode {
   }
 
   return normalizedValue;
+}
+
+function resolveMeetingTranslationPreference(
+  preference: MeetingTranslationPreference | undefined,
+  preferredLanguage: LanguageCode
+): MeetingTranslationPreference {
+  const defaultSourceLanguage = assertMeetingTranslationLanguageCode(
+    preferredLanguage,
+    "preferredLanguage"
+  );
+
+  if (!preference) {
+    return {
+      activatedAt: new Date().toISOString(),
+      enabled: true,
+      sourceLanguage: defaultSourceLanguage,
+      targetLanguage: getOppositeMeetingTranslationLanguage(
+        defaultSourceLanguage
+      )
+    };
+  }
+
+  const sourceLanguage = assertMeetingTranslationLanguageCode(
+    preference.sourceLanguage,
+    "translationPreference.sourceLanguage"
+  );
+  const targetLanguage = assertMeetingTranslationLanguageCode(
+    preference.targetLanguage,
+    "translationPreference.targetLanguage"
+  );
+
+  if (sourceLanguage === targetLanguage) {
+    throw new BadRequestException(
+      "translationPreference sourceLanguage and targetLanguage must be different"
+    );
+  }
+
+  const enabled = preference.enabled === true;
+  const activatedAt = enabled
+    ? resolveTranslationActivatedAt(preference.activatedAt)
+    : undefined;
+
+  return {
+    ...(activatedAt ? { activatedAt } : {}),
+    enabled,
+    sourceLanguage,
+    targetLanguage
+  };
+}
+
+function assertMeetingTranslationLanguageCode(
+  value: string,
+  fieldName: string
+): MeetingTranslationLanguageCode {
+  const normalizedValue = typeof value === "string" ? value.trim() : "";
+
+  if (!isMeetingTranslationLanguageCode(normalizedValue)) {
+    throw new BadRequestException(
+      `${fieldName} must be ko or vi for meeting translation`
+    );
+  }
+
+  return normalizedValue;
+}
+
+function resolveTranslationActivatedAt(
+  activatedAt: string | undefined
+): string {
+  if (!activatedAt) {
+    return new Date().toISOString();
+  }
+
+  const timestamp = Date.parse(activatedAt);
+
+  if (Number.isNaN(timestamp)) {
+    throw new BadRequestException(
+      "translationPreference.activatedAt must be an ISO timestamp"
+    );
+  }
+
+  return new Date(timestamp).toISOString();
 }
 
 function resolveRequiredText(value: string, fieldName: string): string {

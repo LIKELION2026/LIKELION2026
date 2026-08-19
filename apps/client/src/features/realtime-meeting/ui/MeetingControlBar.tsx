@@ -27,7 +27,9 @@ interface MeetingControlBarProps {
   isLeaving: boolean;
   isMicrophoneEnabled: boolean;
   isMicrophoneUpdating: boolean;
+  isTranslationDisabled?: boolean;
   isTranslationEnabled: boolean;
+  isTranslationUpdating?: boolean;
   onCameraToggle: () => void;
   onExpandedViewToggle: () => void;
   onMicrophoneToggle: () => void;
@@ -43,7 +45,9 @@ export function MeetingControlBar({
   isLeaving,
   isMicrophoneEnabled,
   isMicrophoneUpdating,
+  isTranslationDisabled = false,
   isTranslationEnabled,
+  isTranslationUpdating = false,
   onCameraToggle,
   onExpandedViewToggle,
   onMicrophoneToggle,
@@ -62,7 +66,11 @@ export function MeetingControlBar({
     isUpdating: isCameraUpdating
   });
   const expandedView = createExpandViewControlState(isExpandedView);
-  const translation = createTranslationControlState(isTranslationEnabled);
+  const translation = createTranslationControlState(
+    isTranslationEnabled,
+    isTranslationUpdating,
+    isTranslationDisabled
+  );
   const MicrophoneIcon = microphone.pressed ? Mic : MicOff;
   const CameraIcon = camera.pressed ? Video : VideoOff;
   const ExpandedViewIcon = expandedView.pressed ? Minimize2 : Maximize2;
@@ -122,7 +130,7 @@ export function MeetingControlBar({
         })}
         disabled={translation.disabled}
         onClick={onTranslationToggle}
-        title="후속 번역 이슈에서 언어 설정 모달과 연결됩니다."
+        title={translation.statusText}
         type="button"
       >
         <ControlIcon icon={TranslationIcon} />

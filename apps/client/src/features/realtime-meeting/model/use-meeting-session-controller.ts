@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CreateMeetingTokenResponse } from "@likelion2026/shared";
+import {
+  MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY,
+  type CreateMeetingTokenResponse
+} from "@likelion2026/shared";
 import type { Room } from "livekit-client";
 
 import { createMeetingToken } from "../api/create-meeting-token";
@@ -18,6 +21,7 @@ import {
   shouldIgnoreMeetingSessionStart,
   type MeetingSessionJoinRequest
 } from "./meeting-session-join-request";
+import { createDefaultMeetingTranslationPreference } from "./meeting-translation-preference";
 import {
   useLiveKitMeetingSession,
   type LiveKitMeetingSessionState
@@ -166,9 +170,19 @@ export function useMeetingSessionController(): MeetingSessionController {
         }
 
         dispatchStatus("permission-ready");
-        const tokenResponse = await createMeetingToken(normalizedRequest, {
-          signal: tokenAbortController.signal
-        });
+        const tokenResponse = await createMeetingToken(
+          {
+            ...normalizedRequest,
+            translationPreference: createDefaultMeetingTranslationPreference(
+              MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY[
+                normalizedRequest.participantCountry
+              ]
+            )
+          },
+          {
+            signal: tokenAbortController.signal
+          }
+        );
         if (!isCurrentAttempt(attemptId)) {
           return null;
         }

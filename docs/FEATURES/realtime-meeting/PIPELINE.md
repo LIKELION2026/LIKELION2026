@@ -92,6 +92,7 @@ Client는 LiveKit API key나 secret을 직접 알지 않는다. 회의 입장 �
 - `roomName`
 - `participantName`
 - `participantCountry`
+- `translationPreference` (저장된 번역 언어 선택이 있으면 포함)
 
 Server에서 검증할 값:
 
@@ -100,8 +101,10 @@ Server에서 검증할 값:
 - P0에서는 로그인 없이 사용자 표시 이름만 받으므로 Client가 `participantIdentity`를 보내지 않는다.
 - Server는 `participantCountry`에 따라 `kr-guest-<uuid>` 또는 `vn-guest-<uuid>` LiveKit identity를 발급한다.
 - Server는 `participantCountry`에 따라 `preferredLanguage`를 `kr -> ko`, `vn -> vi`로 파생한다.
+- AI 번역은 기본 ON이므로 token attributes에는 `translationReceivingEnabled: "true"`를 넣는다.
+- `translationPreference`가 요청에 있으면 Server는 `ko`/`vi`만 허용하고, source와 target이 같은 요청은 거부한다.
 - `participantName`, `participantCountry`, `roomName`은 앞뒤 공백을 제거한 뒤 검증한다.
-- LiveKit grant는 room join, subscribe, camera/microphone publish, data publish만 허용한다.
+- LiveKit grant는 room join, subscribe, camera/microphone publish, data publish와 자신의 metadata 업데이트만 허용한다.
 
 응답에 포함할 값:
 
@@ -112,6 +115,7 @@ Server에서 검증할 값:
 - `participantName`
 - `participantCountry`
 - `preferredLanguage`
+- `translationPreference`
 - `expiresAt`
 
 보안 원칙:
@@ -121,7 +125,7 @@ Server에서 검증할 값:
 - token, API key, API secret은 로그에 남기지 않는다.
 - Client에는 LiveKit Cloud 접속 URL과 join token만 전달한다.
 - `LIVEKIT_URL`은 `wss://`로 시작하는 LiveKit Cloud URL만 허용한다.
-- LiveKit token attributes에는 `roomName`, `participantCountry`, `preferredLanguage`만 넣고 로그인 사용자 ID는 넣지 않는다.
+- LiveKit token attributes에는 `roomName`, `participantCountry`, `preferredLanguage`, `translationTargetLanguage`, `translationReceivingEnabled`만 넣고 로그인 사용자 ID는 넣지 않는다.
 
 ### 3. LiveKit room 연결
 
@@ -202,6 +206,8 @@ interface SubtitleCreatedPayload {
 ### 5. 후속 Agent 연결 지점
 
 후속 단계에서 Translation Agent를 붙이면 `Subtitle Mock Source`가 Agent로 교체된다. Agent는 LiveKit room에 programmatic participant로 참가해 참가자 audio track을 구독하고, STT와 번역 결과를 자막 이벤트로 발행한다.
+
+현재 Translation Agent는 LiveKit participant attributes를 읽어 참가자별 말하기 언어를 결정한다. 방 안에 `translationReceivingEnabled: "true"`인 참가자가 하나도 없으면 오디오 워커를 붙이지 않고, 누군가 번역을 켜면 기존 참가자를 다시 훑어 필요한 워커를 붙인다. 참가자가 `preferredLanguage`를 바꾸면 기존 STT 워커를 정리하고 새 언어로 다시 시작한다.
 
 후속 단계에서 추가할 책임:
 

@@ -8,7 +8,11 @@ import asyncio
 
 import pytest
 
-from translation_pipeline.agent import LANGUAGE_ATTRIBUTE, TranslationAgent
+from translation_pipeline.agent import (
+    LANGUAGE_ATTRIBUTE,
+    TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE,
+    TranslationAgent,
+)
 from translation_pipeline.livekit_room import (
     ParticipantAudioRunner,
     attach_existing_participants,
@@ -19,10 +23,14 @@ ROOM = "lab-likelion-20260818-meeting-room"
 
 
 class FakeParticipant:
-    def __init__(self, identity, language="ko", name="민수"):
+    def __init__(self, identity, language="ko", name="민수", receiving=True):
         self.identity = identity
         self.name = name
         self.attributes = {LANGUAGE_ATTRIBUTE: language} if language else {}
+        if receiving is not None:
+            self.attributes[TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE] = (
+                "true" if receiving else "false"
+            )
 
 
 class FakeWorker:
@@ -298,3 +306,56 @@ def test_existing_participants_are_attached():
     # 워커가 들어가기 전에 이미 있던 사람도 통역해야 한다.
     assert tracked == {"guest-kr-1", "guest-vn-1"}
     assert sorted(attached) == ["guest-kr-1", "guest-vn-1"]
+
+
+def test_existing_participants_wait_until_someone_enables_translation():
+    async def scenario():
+        minsu = FakeParticipant("guest-kr-1", receiving=False)
+        linh = FakeParticipant("guest-vn-1", language="vi", name="Linh", receiving=False)
+        runner, _ = make_runner()
+        room = FakeRoom(participants=[minsu, linh])
+        register_participant_events(room, runner)
+
+        attach_existing_participants(room, runner)
+        minsu.attributes[TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE] = "true"
+        room.emit("participant_attributes_changed", {"translationReceivingEnabled": "true"}, minsu)
+        await asyncio.sleep(0.05)
+        return runner.tracked()
+
+    assert asyncio.run(scenario()) == {"guest-kr-1", "guest-vn-1"}
+
+
+def test_turning_off_the_last_receiver_detaches_everyone():
+    async def scenario():
+        minsu = FakeParticipant("guest-kr-1")
+        linh = FakeParticipant("guest-vn-1", language="vi", name="Linh", receiving=False)
+        runner, _ = make_runner()
+        room = FakeRoom(participants=[minsu, linh])
+        register_participant_events(room, runner)
+
+        attach_existing_participants(room, runner)
+        minsu.attributes[TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE] = "false"
+        room.emit("participant_attributes_changed", {"translationReceivingEnabled": "false"}, minsu)
+        await asyncio.sleep(0.05)
+        return runner.tracked()
+
+    assert asyncio.run(scenario()) == set()
+
+
+def test_language_attribute_change_restarts_the_worker():
+    async def scenario():
+        participant = FakeParticipant("guest-kr-1")
+        runner, agent = make_runner()
+        room = FakeRoom(participants=[participant])
+        register_participant_events(room, runner)
+
+        attach_existing_participants(room, runner)
+        first_worker = agent.workers()["guest-kr-1"]
+        participant.attributes[LANGUAGE_ATTRIBUTE] = "vi"
+        room.emit("participant_attributes_changed", {LANGUAGE_ATTRIBUTE: "vi"}, participant)
+        await asyncio.sleep(0.05)
+        second_worker = agent.workers()["guest-kr-1"]
+
+        return first_worker.stopped, second_worker.info.language
+
+    assert asyncio.run(scenario()) == (True, "vi")

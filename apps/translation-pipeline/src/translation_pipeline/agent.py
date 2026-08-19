@@ -5,7 +5,9 @@
 
     identity          -> 자막의 participantIdentity
     name              -> 자막에 표시할 이름
-    preferredLanguage -> 번역 방향
+    preferredLanguage             -> 화자가 말하는 언어
+    translationTargetLanguage     -> 참가자가 받고 싶은 번역 언어
+    translationReceivingEnabled   -> 참가자별 AI 번역 ON/OFF
 
 `apps/server`가 토큰을 만들 때 넣어준 값이다. 그래서 Client도 Server도 고칠
 것이 없다.
@@ -37,6 +39,8 @@ from .translator import DEFAULT_HEDGE_AFTER_MS, Translator
 # LiveKit 참가자 attributes의 키. apps/server의 meeting.service.ts가 넣는다.
 LANGUAGE_ATTRIBUTE = "preferredLanguage"
 COUNTRY_ATTRIBUTE = "participantCountry"
+TARGET_LANGUAGE_ATTRIBUTE = "translationTargetLanguage"
+TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE = "translationReceivingEnabled"
 
 # packages/shared의 MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY와 같아야 한다.
 # preferredLanguage가 없는 참가자를 위한 대비책이다.
@@ -73,6 +77,22 @@ def read_participant(participant) -> ParticipantInfo | None:
     display_name = (getattr(participant, "name", "") or "").strip() or identity
     return ParticipantInfo(
         identity=identity, display_name=display_name, language=language
+    )
+
+
+def participant_receives_translation(participant) -> bool:
+    """참가자가 AI 번역 수신을 켰는지 읽는다.
+
+    새 Client는 토큰 생성 때 기본값으로 ``true``를 넣는다. 다만 우리 token
+    API를 거치지 않은 참가자는 attribute가 없을 수 있으므로 이 함수에서는
+    없는 값을 OFF로 해석한다.
+    """
+    attributes = getattr(participant, "attributes", None) or {}
+    return (
+        (attributes.get(TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE) or "")
+        .strip()
+        .lower()
+        == "true"
     )
 
 

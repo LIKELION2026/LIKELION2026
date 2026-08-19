@@ -9,6 +9,7 @@ import { io, type Socket } from "socket.io-client";
 
 import { SERVER_URL } from "../../../shared/config/environment";
 import { listMockSubtitles } from "../api/list-mock-subtitles";
+import { filterMeetingSubtitlesAfterActivation } from "./meeting-subtitle-activation";
 
 export type MeetingSubtitleStatus =
   | "idle"
@@ -24,20 +25,31 @@ export interface MeetingSubtitleState {
   subtitles: SubtitleCreatedPayload[];
 }
 
+export interface MeetingSubtitleOptions {
+  activatedAt?: string;
+  enabled?: boolean;
+  includeInitialPayloads?: boolean;
+}
+
 const INITIAL_MEETING_SUBTITLE_STATE: MeetingSubtitleState = {
   status: "idle",
   subtitles: []
 };
 
 export function useMeetingSubtitles(
-  roomName: string | undefined
+  roomName: string | undefined,
+  {
+    activatedAt,
+    enabled = Boolean(roomName),
+    includeInitialPayloads = true
+  }: MeetingSubtitleOptions = {}
 ): MeetingSubtitleState {
   const [state, setState] = useState<MeetingSubtitleState>(
     INITIAL_MEETING_SUBTITLE_STATE
   );
 
   useEffect(() => {
-    if (!roomName) {
+    if (!roomName || !enabled) {
       setState(INITIAL_MEETING_SUBTITLE_STATE);
       return;
     }
@@ -112,7 +124,10 @@ export function useMeetingSubtitles(
 
       setStateIfMounted((currentState) => ({
         ...currentState,
-        subtitles: upsertSubtitlePayloads(currentState.subtitles, [payload])
+        subtitles: upsertSubtitlePayloads(
+          currentState.subtitles,
+          filterMeetingSubtitlesAfterActivation([payload], activatedAt)
+        )
       }));
     };
 
@@ -121,7 +136,9 @@ export function useMeetingSubtitles(
       subtitles: []
     });
 
-    void loadInitialSubtitles(roomName, setStateIfMounted);
+    if (includeInitialPayloads) {
+      void loadInitialSubtitles(roomName, activatedAt, setStateIfMounted);
+    }
 
     socket.on("connect", handleConnect);
     socket.on("connect_error", handleConnectError);
@@ -148,13 +165,14 @@ export function useMeetingSubtitles(
       socket.off(SOCKET_EVENT_NAMES.SUBTITLE_CREATED, handleSubtitleCreated);
       socket.disconnect();
     };
-  }, [roomName]);
+  }, [activatedAt, enabled, includeInitialPayloads, roomName]);
 
   return state;
 }
 
 async function loadInitialSubtitles(
   roomName: string,
+  activatedAt: string | undefined,
   setStateIfMounted: (
     nextState:
       | MeetingSubtitleState
@@ -173,7 +191,7 @@ async function loadInitialSubtitles(
       errorMessage: undefined,
       subtitles: upsertSubtitlePayloads(
         currentState.subtitles,
-        response.payloads
+        filterMeetingSubtitlesAfterActivation(response.payloads, activatedAt)
       )
     }));
   } catch (error) {

@@ -2,11 +2,46 @@ import {
   CreateMeetingTokenRequest,
   LAB_MEETING_ROOM_NAME_PATTERN,
   MEETING_PARTICIPANT_COUNTRIES,
+  MEETING_TRANSLATION_LANGUAGE_CODES,
   PARTICIPANT_IDENTITY_PATTERN,
-  type MeetingParticipantCountry
+  type MeetingParticipantCountry,
+  type MeetingTranslationLanguageCode,
+  type MeetingTranslationPreference
 } from "@likelion2026/shared";
-import { Transform } from "class-transformer";
-import { IsIn, IsOptional, IsString, Length, Matches } from "class-validator";
+import { Transform, Type } from "class-transformer";
+import {
+  IsBoolean,
+  IsISO8601,
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  ValidateNested
+} from "class-validator";
+
+export class MeetingTranslationPreferenceDto
+  implements MeetingTranslationPreference
+{
+  @Transform(({ value }) => trimOptionalString(value))
+  @IsOptional()
+  @IsString()
+  @IsISO8601()
+  activatedAt?: string;
+
+  @IsBoolean()
+  enabled!: boolean;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsIn([...MEETING_TRANSLATION_LANGUAGE_CODES])
+  sourceLanguage!: MeetingTranslationLanguageCode;
+
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsIn([...MEETING_TRANSLATION_LANGUAGE_CODES])
+  targetLanguage!: MeetingTranslationLanguageCode;
+}
 
 export class CreateMeetingTokenDto implements CreateMeetingTokenRequest {
   @Transform(({ value }) => trimString(value))
@@ -27,6 +62,11 @@ export class CreateMeetingTokenDto implements CreateMeetingTokenRequest {
   @IsString()
   @Length(1, 64)
   participantName!: string;
+
+  @Type(() => MeetingTranslationPreferenceDto)
+  @IsOptional()
+  @ValidateNested()
+  translationPreference?: MeetingTranslationPreferenceDto;
 
   @Transform(({ value }) => trimString(value))
   @IsString()

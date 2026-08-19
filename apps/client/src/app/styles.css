@@ -2521,6 +2521,149 @@ button {
   border-style: dashed;
 }
 
+.meeting-live-translation-caption.status {
+  background: rgb(15 23 42 / 82%);
+  border-style: solid;
+  max-width: min(calc(100vw - 48px), 560px);
+}
+
+.meeting-live-translation-caption.status p {
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.meeting-live-translation-caption.status.connecting {
+  border-color: rgb(251 191 36 / 42%);
+}
+
+.meeting-live-translation-caption.status.ready {
+  border-color: rgb(110 231 183 / 34%);
+}
+
+.meeting-live-translation-caption.status.unavailable {
+  border-color: rgb(248 113 113 / 52%);
+}
+
+.meeting-live-translation-caption.status.unavailable span {
+  color: #fecaca;
+}
+
+.meeting-translation-modal-backdrop {
+  align-items: center;
+  background: rgb(15 23 42 / 42%);
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  inset: 0;
+  justify-content: center;
+  padding: 18px;
+  position: absolute;
+  z-index: 2;
+}
+
+.meeting-translation-modal {
+  background: #ffffff;
+  border: 1px solid rgb(203 213 225 / 92%);
+  border-radius: 22px;
+  box-shadow: 0 24px 72px rgb(7 13 24 / 38%);
+  color: #172235;
+  display: grid;
+  gap: 14px;
+  max-width: min(calc(100vw - 36px), 420px);
+  padding: 22px;
+  width: 100%;
+}
+
+.meeting-translation-modal header {
+  display: grid;
+  gap: 4px;
+}
+
+.meeting-translation-modal header p {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.meeting-translation-modal h2 {
+  font-size: 20px;
+  margin: 0;
+}
+
+.meeting-translation-modal-description,
+.meeting-translation-modal-error {
+  color: #58687c;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.meeting-translation-modal form {
+  display: grid;
+  gap: 12px;
+}
+
+.meeting-translation-modal label {
+  color: #334155;
+  display: grid;
+  font-size: 13px;
+  font-weight: 900;
+  gap: 6px;
+}
+
+.meeting-translation-modal select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #172235;
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.meeting-translation-modal select:disabled {
+  background: #e2e8f0;
+  cursor: not-allowed;
+}
+
+.meeting-translation-modal-error {
+  color: #a33030;
+}
+
+.meeting-translation-modal footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.meeting-translation-modal button {
+  border-radius: 999px;
+  font-weight: 900;
+  padding: 9px 14px;
+}
+
+.meeting-translation-modal button[type="button"] {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
+.meeting-translation-modal button[type="submit"] {
+  background: #16a34a;
+  border: 1px solid #15803d;
+  color: #ffffff;
+}
+
+.meeting-translation-modal button:disabled {
+  background: #94a3b8;
+  border-color: #94a3b8;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
 .meeting-control-bar {
   align-items: center;
   align-self: end;
