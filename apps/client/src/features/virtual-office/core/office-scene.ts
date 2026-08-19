@@ -14,14 +14,12 @@ import {
   shouldFlipAvatarSprite,
   type AvatarSpriteDefinition,
 } from "./avatar-sprite-definition";
+import { removeNearTransparentPixels } from "./avatar-pixel-normalizer";
 import {
   getCalendarPresenceLabel,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
-import {
-  OFFICE_MAP,
-  OFFICE_MAP_MEETING_ZONE,
-} from "../model/office-map";
+import { OFFICE_MAP, OFFICE_MAP_MEETING_ZONE } from "../model/office-map";
 import type { OfficeSceneBootstrap } from "../model/office-scene-bootstrap";
 import { isTextEntryFocused } from "../model/keyboard-focus";
 
@@ -35,10 +33,11 @@ const OFFICE_SIZE = {
 const REMOTE_INTERPOLATION_DELAY_MS = 120;
 const MAX_REMOTE_POSITION_SAMPLES = 4;
 const CAMERA_VISIBLE_WORLD_RATIO = 0.78;
-const CAMERA_DEFAULT_ZOOM = 0.85;
+const CAMERA_DEFAULT_ZOOM = 0.6;
 const CAMERA_MIN_ZOOM = 0.45;
 const CAMERA_MAX_ZOOM = 3.2;
 const CAMERA_WHEEL_ZOOM_SENSITIVITY = 0.0012;
+const AVATAR_MOVE_SPEED = 460;
 const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
 const NEARBY_AVATAR_OFFSET = 72;
 const AVATAR_POSITION_MARGIN = 48;
@@ -256,7 +255,12 @@ export class OfficeScene extends Phaser.Scene {
     this.playerBody.setCollideWorldBounds(true);
     this.playerBody.setSize(96, 64);
     this.playerBody.setOffset(80, 164);
-    this.playAvatarAnimation(this.player, this.localAvatarId, initialAvatar.direction, "idle");
+    this.playAvatarAnimation(
+      this.player,
+      this.localAvatarId,
+      initialAvatar.direction,
+      "idle",
+    );
     this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
   }
 
@@ -396,7 +400,7 @@ export class OfficeScene extends Phaser.Scene {
 
     const velocity = new Phaser.Math.Vector2(horizontal, vertical)
       .normalize()
-      .scale(190);
+      .scale(AVATAR_MOVE_SPEED);
     this.playerBody.setVelocity(velocity.x, velocity.y);
     this.playAvatarAnimation(
       this.player,
@@ -417,9 +421,11 @@ export class OfficeScene extends Phaser.Scene {
   private updateMeetingRoomState(): void {
     const isInside =
       this.player.x >= OFFICE_MAP_MEETING_ZONE.x &&
-      this.player.x <= OFFICE_MAP_MEETING_ZONE.x + OFFICE_MAP_MEETING_ZONE.width &&
+      this.player.x <=
+        OFFICE_MAP_MEETING_ZONE.x + OFFICE_MAP_MEETING_ZONE.width &&
       this.player.y >= OFFICE_MAP_MEETING_ZONE.y &&
-      this.player.y <= OFFICE_MAP_MEETING_ZONE.y + OFFICE_MAP_MEETING_ZONE.height;
+      this.player.y <=
+        OFFICE_MAP_MEETING_ZONE.y + OFFICE_MAP_MEETING_ZONE.height;
 
     if (isInside === this.inMeetingRoom) {
       return;
@@ -584,70 +590,53 @@ export class OfficeScene extends Phaser.Scene {
     requiredFrames: readonly number[],
   ): void {
     requiredFrames.forEach((frame) => {
-        const source = definition.frameSources[frame]!;
-        const frameKey = getAvatarFrameKey(definition, frame, textureKey);
-        if (this.textures.exists(frameKey)) {
-          return;
-        }
+      const source = definition.frameSources[frame]!;
+      const frameKey = getAvatarFrameKey(definition, frame, textureKey);
+      if (this.textures.exists(frameKey)) {
+        return;
+      }
 
-        const texture = this.textures.createCanvas(
-          frameKey,
-          source.width,
-          source.height,
-        );
-        if (!texture) {
-          throw new Error(`Unable to normalize avatar frame: ${frameKey}`);
-        }
+      const texture = this.textures.createCanvas(
+        frameKey,
+        source.width,
+        source.height,
+      );
+      if (!texture) {
+        throw new Error(`Unable to normalize avatar frame: ${frameKey}`);
+      }
 
-        texture.context.drawImage(
-          sourceImage,
-          source.x,
-          source.y,
-          source.width,
-          source.height,
-          0,
-          0,
-          source.width,
-          source.height,
-        );
+      texture.context.drawImage(
+        sourceImage,
+        source.x,
+        source.y,
+        source.width,
+        source.height,
+        0,
+        0,
+        source.width,
+        source.height,
+      );
 
-        const imageData = texture.context.getImageData(
-          0,
-          0,
-          source.width,
-          source.height,
-        );
-        const isolatedComponent =
-          textureKey === definition.sitTextureKey
-            ? getLargestOpaqueComponent(imageData)
-            : undefined;
-        const bounds = isolatedComponent?.bounds ?? getOpaquePixelBounds(imageData);
-        const xOffset = Math.round(
-          source.width / 2 - (bounds.left + bounds.width / 2),
-        );
-        const yOffset = definition.footBaseline - bounds.bottom;
+      const imageData = texture.context.getImageData(
+        0,
+        0,
+        source.width,
+        source.height,
+      );
+      const normalizedImageData = new ImageData(
+        removeNearTransparentPixels(imageData.data),
+        imageData.width,
+        imageData.height,
+      );
+      const bounds = getOpaquePixelBounds(normalizedImageData);
+      const xOffset = Math.round(
+        source.width / 2 - (bounds.left + bounds.width / 2),
+      );
+      const yOffset = definition.footBaseline - bounds.bottom;
 
-        texture.context.clearRect(0, 0, source.width, source.height);
-        if (isolatedComponent) {
-          texture.context.putImageData(
-            isolatedComponent.imageData,
-            xOffset,
-            yOffset,
-          );
-        } else {
-          texture.context.drawImage(
-            sourceImage,
-            source.x,
-            source.y,
-            source.width,
-            source.height,
-            xOffset,
-            yOffset,
-            source.width,
-            source.height,
-          );
-        }
-        texture.refresh();
+      texture.context.clearRect(0, 0, source.width, source.height);
+      texture.context.putImageData(normalizedImageData, xOffset, yOffset);
+      texture.refresh();
     });
   }
 
@@ -724,78 +713,6 @@ export class OfficeScene extends Phaser.Scene {
     this.wasd.right.reset();
     this.wasd.up.reset();
   }
-}
-
-function getLargestOpaqueComponent(imageData: ImageData): {
-  bounds: { bottom: number; left: number; width: number };
-  imageData: ImageData;
-} {
-  const { data, height, width } = imageData;
-  const pixelCount = width * height;
-  const visited = new Uint8Array(pixelCount);
-  let largestComponent: number[] = [];
-
-  for (let index = 0; index < pixelCount; index += 1) {
-    if (visited[index] || data[index * 4 + 3] === 0) {
-      continue;
-    }
-
-    const component: number[] = [];
-    const queue = [index];
-    visited[index] = 1;
-
-    for (let cursor = 0; cursor < queue.length; cursor += 1) {
-      const current = queue[cursor]!;
-      component.push(current);
-      const x = current % width;
-      const y = Math.floor(current / width);
-      const neighbors = [
-        x > 0 ? current - 1 : -1,
-        x < width - 1 ? current + 1 : -1,
-        y > 0 ? current - width : -1,
-        y < height - 1 ? current + width : -1,
-      ];
-
-      neighbors.forEach((neighbor) => {
-        if (neighbor < 0 || visited[neighbor] || data[neighbor * 4 + 3] === 0) {
-          return;
-        }
-        visited[neighbor] = 1;
-        queue.push(neighbor);
-      });
-    }
-
-    if (component.length > largestComponent.length) {
-      largestComponent = component;
-    }
-  }
-
-  if (largestComponent.length === 0) {
-    throw new Error("Avatar frame has no visible pixels.");
-  }
-
-  const filteredData = new Uint8ClampedArray(data.length);
-  let left = width;
-  let right = -1;
-  let bottom = -1;
-
-  largestComponent.forEach((index) => {
-    const x = index % width;
-    const y = Math.floor(index / width);
-    const offset = index * 4;
-    filteredData[offset] = data[offset]!;
-    filteredData[offset + 1] = data[offset + 1]!;
-    filteredData[offset + 2] = data[offset + 2]!;
-    filteredData[offset + 3] = data[offset + 3]!;
-    left = Math.min(left, x);
-    right = Math.max(right, x);
-    bottom = Math.max(bottom, y);
-  });
-
-  return {
-    bounds: { bottom, left, width: right - left + 1 },
-    imageData: new ImageData(filteredData, width, height),
-  };
 }
 
 function getOpaquePixelBounds(imageData: ImageData): {

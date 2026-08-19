@@ -2,7 +2,7 @@ import {
   OFFICE_AVATAR_IDS,
   type AvatarAnimation,
   type AvatarDirection,
-  type OfficeAvatarId
+  type OfficeAvatarId,
 } from "@likelion2026/shared";
 
 export const DEFAULT_AVATAR_ID: OfficeAvatarId = "red_panda";
@@ -32,7 +32,7 @@ export interface AvatarSpriteDefinition {
 const FRAME_SIZE = 256;
 const BORDER_TRIM = 2;
 const FRAME_CONTENT_SIZE = FRAME_SIZE - BORDER_TRIM * 2;
-const FURNISHED_OFFICE_AVATAR_SCALE = 0.24;
+const FURNISHED_OFFICE_AVATAR_SCALE = 0.55;
 
 const createFrameSources = (): AvatarFrameSource[] =>
   Array.from({ length: 24 }, (_, frame) => ({
@@ -54,10 +54,12 @@ const AVATAR_LABELS: Record<OfficeAvatarId, string> = {
   red_panda: "레드판다",
   sheep: "양",
   wolf: "늑대",
-  zebra: "얼룩말"
+  zebra: "얼룩말",
 };
 
-function createAvatarSpriteDefinition(id: OfficeAvatarId): AvatarSpriteDefinition {
+function createAvatarSpriteDefinition(
+  id: OfficeAvatarId,
+): AvatarSpriteDefinition {
   return {
     assetPath: `/assets/${id}.png`,
     footBaseline: 236,
@@ -71,7 +73,7 @@ function createAvatarSpriteDefinition(id: OfficeAvatarId): AvatarSpriteDefinitio
       down: [0, 1, 2, 3, 4, 5],
       left: [12, 13, 14, 15, 16, 17],
       right: [12, 13, 14, 15, 16, 17],
-      up: [6, 7, 8, 9, 10, 11]
+      up: [6, 7, 8, 9, 10, 11],
     },
     sitTextureKey: `office-avatar-${id}-sit`,
     textureKey: `office-avatar-${id}`,
@@ -79,19 +81,25 @@ function createAvatarSpriteDefinition(id: OfficeAvatarId): AvatarSpriteDefinitio
       down: [6, 7, 8, 9, 10, 11],
       left: [18, 19, 20, 21, 22, 23],
       right: [18, 19, 20, 21, 22, 23],
-      up: [12, 13, 14, 15, 16, 17]
-    }
+      up: [12, 13, 14, 15, 16, 17],
+    },
   };
 }
 
-const AVATAR_SPRITE_DEFINITIONS = OFFICE_AVATAR_IDS.map(createAvatarSpriteDefinition);
+const AVATAR_SPRITE_DEFINITIONS = OFFICE_AVATAR_IDS.map(
+  createAvatarSpriteDefinition,
+);
 const AVATAR_SPRITE_DEFINITION_BY_ID = new Map(
-  AVATAR_SPRITE_DEFINITIONS.map((definition) => [definition.id, definition])
+  AVATAR_SPRITE_DEFINITIONS.map((definition) => [definition.id, definition]),
 );
 
-export function getAvatarSpriteDefinition(avatarId: string | undefined): AvatarSpriteDefinition {
-  return AVATAR_SPRITE_DEFINITION_BY_ID.get(avatarId ?? DEFAULT_AVATAR_ID) ??
-    AVATAR_SPRITE_DEFINITION_BY_ID.get(DEFAULT_AVATAR_ID)!;
+export function getAvatarSpriteDefinition(
+  avatarId: string | undefined,
+): AvatarSpriteDefinition {
+  return (
+    AVATAR_SPRITE_DEFINITION_BY_ID.get(avatarId ?? DEFAULT_AVATAR_ID) ??
+    AVATAR_SPRITE_DEFINITION_BY_ID.get(DEFAULT_AVATAR_ID)!
+  );
 }
 
 export function getAvatarSpriteDefinitions(): AvatarSpriteDefinition[] {
