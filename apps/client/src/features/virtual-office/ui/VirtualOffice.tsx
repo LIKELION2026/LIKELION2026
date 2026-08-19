@@ -243,7 +243,6 @@ export function VirtualOffice(): JSX.Element {
         isOpen={isCalendarOpen}
         members={effectiveMembers}
         onClose={() => setIsCalendarOpen(false)}
-        ownTodos={todoController.ownTodos}
         self={effectiveSelf}
       />
       <OfficePeoplePanel
