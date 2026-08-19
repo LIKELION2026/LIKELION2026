@@ -747,3 +747,13 @@
 - 팀원 검토·수정 내용: 사용자가 “2차 작업” 진행을 지시했고, 상위 이슈의 의존성에 따라 #132를 담당 범위로 확정했다. 실제 채팅 송수신과 번역 언어 모달은 #133, #134 범위로 남겼다.
 - 검증 결과: `node --test --experimental-strip-types apps/client/test/keyboard-focus.test.ts apps/client/test/meeting-session-transition.test.ts apps/client/test/meeting-control-state.test.ts` 11건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존과 같은 비차단 경고다. 실제 1280×720/1920×1080 브라우저 화면 캡처와 다중 참가자 수동 검증은 아직 수행하지 않았다.
 - 관련 Issue / PR / Discussion: Issue #132, Issue #136
+
+### 2026-08-19 - 회의실 세션 채팅과 AI 번역 메시지 타임라인
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 인게임 회의 우측 패널에서 일반 채팅을 주고받고, AI 실시간 번역 자막도 같은 채팅 타임라인에 구분해서 표시한다.
+- 입력 맥락: Issue #133, 상위 Issue #136, 사용자 요청의 “AI 실시간 번역한 것도 채팅에 제공” 및 “1시간 회의 기준으로 최대 제한 확대”, `useLiveKitMeetingSession`, `MeetingRoomOverlay`, `useMeetingSubtitles`
+- AI 제안 또는 산출물: LiveKit Text Stream topic `meeting.chat` 기반 채팅 hook, 500자 입력 검증, optimistic 메시지 병합, local echo 중복 제거, 실패 메시지 재시도·삭제 상태, 우측 채팅 bubble UI, 자막 payload를 `translation` kind로 변환하는 모델, 최근 5,000개 메시지 보관 정책을 추가했다. 이후 우측 패널의 연결 상태 카드를 제거하고 채팅 전용 패널로 정리했으며, 화면 최우측에 붙어 보이지 않도록 오른쪽 여백 컬럼을 추가했다. 채팅 접기 시 바깥 패널 배경도 축소하고, 최신 AI 번역을 하단 컨트롤 위 caption으로도 표시한다. 오버레이 접힘·레이아웃 변화 중 원격 영상이 자동 pause되는 것을 막기 위해 LiveKit `adaptiveStream`은 비활성화하고 `dynacast`는 유지했다. 같은 오피스 세션 사용자가 포커스 복귀나 개발 모드 effect 재실행 때 새 게스트 참가자로 중복 표시되지 않도록 `session.member.id`를 LiveKit `participantIdentity`로 전달하고, 같은 join 요청의 중복 start를 실패 상태가 아닌 경우 무시하도록 분리했다.
+- 팀원 검토·수정 내용: 원래 Issue #133의 100개 제한은 AI 번역 메시지까지 채팅에 같이 담아야 한다는 사용자 지시에 따라 5,000개로 늘렸다. 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `AI 번역` 라벨과 원문을 함께 보여 주는 구조로 분리했다. 사용자가 회의 연결 확인 문구보다 채팅 자체에 집중되도록 요청해 연결 상태 UI는 오버레이에서 제거했다. 채팅 헤더의 `Session Chat` 보조 문구도 제거했다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-chat-message.test.ts apps/client/test/keyboard-focus.test.ts apps/client/test/meeting-session-transition.test.ts apps/client/test/meeting-control-state.test.ts` 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존과 같은 비차단 경고다. 실제 두 브라우저 LiveKit 채팅 송수신과 번역 ON/OFF 수동 확인은 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #133, Issue #136

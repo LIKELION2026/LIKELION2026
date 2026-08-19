@@ -4,11 +4,11 @@
 >
 > 작성일: 2026-08-15
 >
-> 마지막 업데이트: 2026-08-15
+> 마지막 업데이트: 2026-08-19
 >
 > 상태: 구현 전 계획
 >
-> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6
+> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6, https://github.com/LIKELION2026/LIKELION2026/issues/133
 
 ## 해결하려는 문제
 
@@ -67,6 +67,20 @@ sequenceDiagram
 - 첫 PoC에서는 `LiveKitRoom`을 사용할 수 있다. 메인 앱 상태와 연결 생명주기를 세밀하게 제어해야 하면 `RoomContext.Provider`와 `Room` 인스턴스를 직접 관리한다.
 - 자막 UI는 실제 음성 인식이 없어도 `subtitle.created` Mock 이벤트를 받아 원문·번역문·발화자·시각을 표시할 수 있어야 한다.
 - 권한 거부, 연결 중, 재연결, 연결 실패 상태를 별도 화면 상태로 처리한다.
+
+## 세션 채팅 정책
+
+- 인게임 회의 우측 패널의 일반 채팅은 LiveKit Text Stream을 사용한다.
+- 오피스 세션이 있는 사용자는 `session.member.id`를 LiveKit `participantIdentity`로 사용한다. 재연결, 포커스 복귀, 개발 모드 중복 effect에서도 같은 사용자가 새 게스트 참가자로 보이는 일을 줄이기 위한 정책이다.
+- Text Stream topic은 Client 상수 `meeting.chat`으로 고정한다.
+- 메시지 발신자 식별자는 사용자가 보낸 본문이 아니라 LiveKit handler의 `participantInfo.identity`를 기준으로 판단한다.
+- 사용자가 직접 입력한 메시지는 원문 그대로 전송하며, 공백 메시지와 500자 초과 메시지는 전송하지 않는다.
+- 로컬 메시지는 즉시 `sending` 상태로 표시하고, LiveKit stream id 또는 local echo가 도착하면 `sent` 상태로 병합한다.
+- 전송 실패 메시지는 사라지지 않고, 사용자가 재시도하거나 삭제할 수 있다.
+- 세션 채팅은 현재 회의 참가자에게만 전달되는 비영속 메시지다. DB 저장과 이전 회의 내역 복원은 후속 범위로 둔다.
+- UI 메모리 보호 상한은 최근 5,000개 메시지다. 1시간 회의에서 일반 채팅과 AI 번역 메시지가 함께 들어오는 상황을 고려해, 기존 100개 제한보다 크게 잡는다.
+- AI 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `translation` kind와 `AI 번역` 라벨로 구분한다. 회의 연결 중에는 자막 Socket 구독을 유지하되, 번역 ON일 때만 자막 payload를 채팅 타임라인에 병합하고 원문은 별도 `sourceText`로 보존한다.
+- 재연결 중에는 이번 MVP에서 입력을 비활성화한다. 로컬 대기열 전송은 후속 안정화 범위로 둔다.
 
 ## Server 구현 기준
 
