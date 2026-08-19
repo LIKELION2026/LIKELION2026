@@ -24,6 +24,7 @@ interface OfficeConnectionContextValue {
   prepareSession: (profile: GuestProfile) => Promise<void>;
   registerSocketCallbacks: (callbacks: OfficeSocketCallbacks) => () => void;
   respondToSummon: (requestId: string, decision: "accepted" | "declined") => void;
+  sendChatMessage: (text: string) => boolean;
   sendMove: (payload: LocalMovementCommand) => void;
   sendSummonRequest: (targetMemberId: string) => boolean;
   session: GuestOfficeSessionResponse | null;
@@ -47,6 +48,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   const socketCallbacks = useMemo<OfficeSocketCallbacks>(
     () => ({
       onCalendarUpdated: () => callbacksRef.current.onCalendarUpdated?.(),
+      onChatMessage: (payload) => callbacksRef.current.onChatMessage?.(payload),
       onSummonRequested: (payload) => callbacksRef.current.onSummonRequested?.(payload),
       onSummonResolved: (payload) => callbacksRef.current.onSummonResolved?.(payload),
       onTodosUpdated: () => callbacksRef.current.onTodosUpdated?.()
@@ -55,6 +57,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   );
   const {
     respondToSummon,
+    sendChatMessage,
     sendMove,
     sendSummonRequest,
     updateAttendance,
@@ -109,6 +112,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,
+      sendChatMessage,
       sendMove,
       sendSummonRequest,
       session,
@@ -122,6 +126,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,
+      sendChatMessage,
       sendMove,
       sendSummonRequest,
       session,
