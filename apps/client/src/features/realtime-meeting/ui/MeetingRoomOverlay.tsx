@@ -125,15 +125,9 @@ export function MeetingRoomOverlay({
           availability={translationAvailability}
         />
       ) : null}
+      <MeetingAudioSinks remoteAudioTracks={remoteAudioTracks} />
       <MeetingControlBar
         canControlMedia={canControlMedia}
-        extraControlSlot={
-          <MeetingAudioSinks
-            playbackButtonClassName="meeting-control-button compact"
-            playbackButtonLabel="오디오 재생"
-            remoteAudioTracks={remoteAudioTracks}
-          />
-        }
         isCameraEnabled={session.isCameraEnabled}
         isCameraUpdating={session.isCameraUpdating}
         isExpandedView={isExpandedView}
