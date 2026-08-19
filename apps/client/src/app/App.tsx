@@ -3,6 +3,7 @@ import type { JSX } from "react";
 
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
 import { OfficePage } from "../pages/office/OfficePage";
+import { CollisionEditorPage } from "../pages/collision-editor/CollisionEditorPage";
 import { OfficeConnectionProvider } from "../features/virtual-office/model/office-connection-context";
 import { RequestFeedbackProvider } from "./request-feedback";
 
@@ -10,21 +11,34 @@ export function App(): JSX.Element {
   return (
     <BrowserRouter>
       <RequestFeedbackProvider>
-        <OfficeConnectionProvider>
-          <AppContent />
-        </OfficeConnectionProvider>
+        <AppRouter />
       </RequestFeedbackProvider>
     </BrowserRouter>
+  );
+}
+
+function AppRouter(): JSX.Element {
+  const location = useLocation();
+
+  if (location.pathname === "/collision-editor") {
+    return <AppContent />;
+  }
+
+  return (
+    <OfficeConnectionProvider>
+      <AppContent />
+    </OfficeConnectionProvider>
   );
 }
 
 function AppContent(): JSX.Element {
   const location = useLocation();
   const isOfficeRoute = location.pathname === "/office";
+  const isCollisionEditorRoute = location.pathname === "/collision-editor";
 
   return (
     <div className={isOfficeRoute ? "app-shell app-shell-office" : "app-shell"}>
-      {isOfficeRoute ? null : (
+      {isOfficeRoute || isCollisionEditorRoute ? null : (
         <header className="app-header">
           <NavLink className="brand" to="/office">
             GLOBAL OFFICE
@@ -39,6 +53,7 @@ function AppContent(): JSX.Element {
         <Routes>
           <Route element={<OfficePage />} path="/office" />
           <Route element={<MeetingLabPage />} path="/meeting-lab" />
+          <Route element={<CollisionEditorPage />} path="/collision-editor" />
           <Route element={<Navigate replace to="/office" />} path="*" />
         </Routes>
       </main>
