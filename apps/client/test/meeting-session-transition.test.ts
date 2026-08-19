@@ -58,6 +58,7 @@ test("allows retry only after a failed attempt", () => {
 test("classifies in-flight and active session states", () => {
   assert.equal(isMeetingSessionStartInFlight("requesting-permission"), true);
   assert.equal(isMeetingSessionStartInFlight("connected"), false);
+  assert.equal(isMeetingSessionActive("requesting-permission"), true);
   assert.equal(isMeetingSessionActive("connecting"), true);
   assert.equal(isMeetingSessionActive("connected"), true);
   assert.equal(isMeetingSessionActive("failed"), false);

@@ -1,29 +1,46 @@
 import { useMemo, useState, type JSX } from "react";
 import { Track } from "livekit-client";
+import type { SubtitleCreatedPayload } from "@likelion2026/shared";
 
+import { useMeetingChat } from "../model/use-meeting-chat";
+import { useMeetingSubtitles } from "../model/use-meeting-subtitles";
 import type { MeetingSessionController } from "../model/use-meeting-session-controller";
 import { MeetingAudioSinks } from "./MeetingAudioSinks";
+import { MeetingChatPanel } from "./MeetingChatPanel";
 import { MeetingControlBar } from "./MeetingControlBar";
 import { MeetingParticipantGrid } from "./MeetingParticipantGrid";
 import { MeetingParticipantStrip } from "./MeetingParticipantStrip";
-import { MeetingRoomSessionPanel } from "./MeetingRoomSessionPanel";
 
 interface MeetingRoomOverlayProps {
   controller: MeetingSessionController;
-  isOfficeSessionReady: boolean;
-  roomLabel: string;
 }
 
 export function MeetingRoomOverlay({
-  controller,
-  isOfficeSessionReady,
-  roomLabel
+  controller
 }: MeetingRoomOverlayProps): JSX.Element {
   const { session } = controller;
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [isExpandedView, setIsExpandedView] = useState(false);
   const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
   const canControlMedia =
     session.status === "connected" || session.status === "reconnecting";
+  const activeRoomName = canControlMedia ? session.roomName : undefined;
+  const subtitleState = useMeetingSubtitles(activeRoomName);
+  const chatState = useMeetingChat({
+    localParticipantIdentity: session.participantIdentity,
+    participants: session.participants,
+    room: controller.room,
+    roomName: activeRoomName,
+    sessionStatus: session.status,
+    translationSubtitles: isTranslationEnabled ? subtitleState.subtitles : []
+  });
+  const latestTranslationSubtitle = useMemo(
+    () =>
+      isTranslationEnabled
+        ? subtitleState.subtitles[subtitleState.subtitles.length - 1]
+        : undefined,
+    [isTranslationEnabled, subtitleState.subtitles]
+  );
   const remoteAudioTracks = useMemo(
     () =>
       session.mediaTracks.filter(
@@ -54,20 +71,28 @@ export function MeetingRoomOverlay({
           sessionStatus={session.status}
         />
       ) : null}
-      <aside aria-label="회의 우측 패널" className="meeting-room-side-panel">
-        <MeetingRoomSessionPanel
-          controller={controller}
-          isOfficeSessionReady={isOfficeSessionReady}
-          roomLabel={roomLabel}
+      <aside
+        aria-label="회의 채팅 패널"
+        className={[
+          "meeting-room-side-panel",
+          isChatCollapsed ? "collapsed" : ""
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <MeetingChatPanel
+          errorMessage={chatState.errorMessage ?? subtitleState.errorMessage}
+          messages={chatState.messages}
+          onCollapsedChange={setIsChatCollapsed}
+          onDeleteMessage={chatState.deleteMessage}
+          onRetryMessage={chatState.retryMessage}
+          onSendMessage={chatState.sendMessage}
+          status={chatState.status}
         />
-        <section
-          aria-label="채팅과 번역 패널 슬롯"
-          className="meeting-room-panel-slot"
-        >
-          <p>채팅 · AI 번역 패널 슬롯</p>
-          <span>#133, #134에서 이 영역에 메시지와 언어 설정을 연결합니다.</span>
-        </section>
       </aside>
+      {latestTranslationSubtitle ? (
+        <MeetingLiveTranslationCaption subtitle={latestTranslationSubtitle} />
+      ) : null}
       <MeetingControlBar
         canControlMedia={canControlMedia}
         extraControlSlot={
@@ -98,5 +123,24 @@ export function MeetingRoomOverlay({
         }}
       />
     </div>
+  );
+}
+
+function MeetingLiveTranslationCaption({
+  subtitle
+}: {
+  subtitle: SubtitleCreatedPayload;
+}): JSX.Element {
+  return (
+    <section
+      aria-label="실시간 AI 번역"
+      aria-live="polite"
+      className={`meeting-live-translation-caption ${
+        subtitle.isFinal ? "final" : "partial"
+      }`}
+    >
+      <span>{subtitle.speaker.displayName}</span>
+      <p>{subtitle.translatedText || subtitle.sourceText}</p>
+    </section>
   );
 }

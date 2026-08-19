@@ -123,10 +123,16 @@ export function VirtualOffice(): JSX.Element {
       participantCountry: countryCodeToMeetingParticipantCountry(
         session.member.countryCode
       ),
+      participantIdentity: session.member.id,
       participantName: session.member.name,
       roomName: meetingRoomSection.roomName
     };
-  }, [meetingRoomSection.roomName, session]);
+  }, [
+    meetingRoomSection.roomName,
+    session?.member.countryCode,
+    session?.member.id,
+    session?.member.name
+  ]);
 
   useEffect(() => {
     if (!isInsideMeetingRoom || !meetingJoinRequest) {
@@ -274,11 +280,7 @@ export function VirtualOffice(): JSX.Element {
         request={pendingSummon}
       />
       {isInsideMeetingRoom ? (
-        <MeetingRoomOverlay
-          controller={meetingController}
-          isOfficeSessionReady={Boolean(session)}
-          roomLabel={meetingRoomSection.label}
-        />
+        <MeetingRoomOverlay controller={meetingController} />
       ) : null}
       {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
       {entryPhase === "onboarding" ? (

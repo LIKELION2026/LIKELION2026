@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  CreateMeetingTokenResponse,
-  MeetingParticipantCountry
-} from "@likelion2026/shared";
+import type { CreateMeetingTokenResponse } from "@likelion2026/shared";
+import type { Room } from "livekit-client";
 
 import { createMeetingToken } from "../api/create-meeting-token";
 import {
@@ -12,20 +10,18 @@ import {
 } from "./device-preflight";
 import {
   getMeetingSessionControllerTransition,
-  isMeetingSessionActive,
   type MeetingSessionControllerEvent,
   type MeetingSessionControllerStatus
 } from "./meeting-session-transition";
 import {
+  normalizeMeetingSessionJoinRequest,
+  shouldIgnoreMeetingSessionStart,
+  type MeetingSessionJoinRequest
+} from "./meeting-session-join-request";
+import {
   useLiveKitMeetingSession,
   type LiveKitMeetingSessionState
 } from "./use-livekit-meeting-session";
-
-export interface MeetingSessionJoinRequest {
-  participantCountry: MeetingParticipantCountry;
-  participantName: string;
-  roomName: string;
-}
 
 export interface MeetingSessionController {
   activeJoinRequest: MeetingSessionJoinRequest | null;
@@ -34,6 +30,7 @@ export interface MeetingSessionController {
   errorMessage?: string;
   leave: () => Promise<void>;
   retry: () => Promise<CreateMeetingTokenResponse | null>;
+  room: Room | null;
   session: LiveKitMeetingSessionState;
   setCameraEnabled: (enabled: boolean) => Promise<void>;
   setMicrophoneEnabled: (enabled: boolean) => Promise<void>;
@@ -53,6 +50,7 @@ export function useMeetingSessionController(): MeetingSessionController {
   const {
     connect,
     disconnect,
+    room,
     session,
     setCameraEnabled,
     setMicrophoneEnabled
@@ -128,13 +126,15 @@ export function useMeetingSessionController(): MeetingSessionController {
 
   const start = useCallback(
     async (request: MeetingSessionJoinRequest) => {
-      const normalizedRequest = normalizeJoinRequest(request);
+      const normalizedRequest = normalizeMeetingSessionJoinRequest(request);
       const currentStatus = statusRef.current;
 
       if (
-        activeJoinRequestRef.current &&
-        isSameJoinRequest(activeJoinRequestRef.current, normalizedRequest) &&
-        isMeetingSessionActive(currentStatus)
+        shouldIgnoreMeetingSessionStart(
+          activeJoinRequestRef.current,
+          normalizedRequest,
+          currentStatus
+        )
       ) {
         return null;
       }
@@ -233,33 +233,13 @@ export function useMeetingSessionController(): MeetingSessionController {
     errorMessage,
     leave,
     retry,
+    room,
     session,
     setCameraEnabled,
     setMicrophoneEnabled,
     start,
     status
   };
-}
-
-function normalizeJoinRequest(
-  request: MeetingSessionJoinRequest
-): MeetingSessionJoinRequest {
-  return {
-    participantCountry: request.participantCountry,
-    participantName: request.participantName.trim(),
-    roomName: request.roomName.trim()
-  };
-}
-
-function isSameJoinRequest(
-  left: MeetingSessionJoinRequest,
-  right: MeetingSessionJoinRequest
-): boolean {
-  return (
-    left.participantCountry === right.participantCountry &&
-    left.participantName === right.participantName &&
-    left.roomName === right.roomName
-  );
 }
 
 function isAbortError(error: unknown): boolean {

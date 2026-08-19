@@ -78,6 +78,7 @@ const INITIAL_SESSION_STATE: LiveKitMeetingSessionState = {
 export function useLiveKitMeetingSession(): {
   connect: (tokenResponse: CreateMeetingTokenResponse) => Promise<void>;
   disconnect: () => Promise<void>;
+  room: Room | null;
   session: LiveKitMeetingSessionState;
   setCameraEnabled: (enabled: boolean) => Promise<void>;
   setMicrophoneEnabled: (enabled: boolean) => Promise<void>;
@@ -135,7 +136,7 @@ export function useLiveKitMeetingSession(): {
       await disconnect();
 
       const room = new Room({
-        adaptiveStream: true,
+        adaptiveStream: false,
         dynacast: true
       });
       roomRef.current = room;
@@ -291,6 +292,7 @@ export function useLiveKitMeetingSession(): {
   return {
     connect,
     disconnect,
+    room: roomRef.current,
     session,
     setCameraEnabled,
     setMicrophoneEnabled
