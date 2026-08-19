@@ -1008,6 +1008,46 @@ button {
   margin: 0 0 14px;
 }
 
+.meeting-room-session-panel {
+  display: grid;
+  gap: 12px;
+  max-height: calc(100% - 48px);
+  max-width: 460px;
+  overflow: auto;
+}
+
+.meeting-room-session-header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.meeting-room-session-header span,
+.meeting-room-session-status-grid span {
+  color: #627084;
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.meeting-room-session-status-grid {
+  background: #f7f9fc;
+  border: 1px solid #d6dee7;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.meeting-room-session-status-grid code {
+  color: #486077;
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
 .primary-button {
   background: #1558d6;
   border: 1px solid #1558d6;
@@ -1148,7 +1188,8 @@ button {
 }
 
 .meeting-device-status.permission-denied,
-.meeting-device-status.device-unavailable {
+.meeting-device-status.device-unavailable,
+.meeting-device-status.security-unavailable {
   color: #a33030;
 }
 
@@ -1199,6 +1240,8 @@ button {
 }
 
 .meeting-session-state.connecting,
+.meeting-session-state.requesting-permission,
+.meeting-session-state.leaving,
 .meeting-session-state.publishing,
 .meeting-session-state.reconnecting {
   color: #8a5a0a;

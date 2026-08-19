@@ -6,14 +6,16 @@ import type {
 import { SERVER_URL } from "../../../shared/config/environment";
 
 export async function createMeetingToken(
-  request: CreateMeetingTokenRequest
+  request: CreateMeetingTokenRequest,
+  options: { signal?: AbortSignal } = {}
 ): Promise<CreateMeetingTokenResponse> {
   const response = await fetch(`${SERVER_URL}/meeting/token`, {
     body: JSON.stringify(request),
     headers: {
       "Content-Type": "application/json"
     },
-    method: "POST"
+    method: "POST",
+    signal: options.signal
   });
 
   if (!response.ok) {
