@@ -54,6 +54,17 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-19 - 오피스 맵 벽과 가구 충돌 영역
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, Test-driven Development
+- 사용 목적: 배경 이미지로만 표시되던 오피스에서 아바타가 벽과 주요 가구를 통과하는 문제를 해결
+- 입력 맥락: `office-map.png`의 내보낸 좌표, Phaser Arcade Physics 이동 구조, 기본 데스크·회의실 위치
+- AI 제안 또는 산출물: 좌표 기반 충돌 영역, 위치 이동 보정 함수, 기본 데스크 및 회의실 입구 회귀 테스트
+- 팀원 검토·수정 내용: 맵에서 실제로 막아야 할 가구와 통과해야 할 문·복도는 로컬 브라우저에서 확인 후 조정한다.
+- 검증 결과: 충돌 영역 단위 테스트 4건과 client typecheck, client production build를 통과했다. 실제 맵에서 가구별 경계와 문·복도 통과 여부는 팀원 브라우저 검토가 필요하다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/143
+
 ### 2026-08-19 - 고유 아바타 선택과 서버 중복 방지
 
 - 담당자: 사용자 검토 예정
