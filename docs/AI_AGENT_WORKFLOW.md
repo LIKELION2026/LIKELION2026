@@ -65,6 +65,17 @@
 - 검증 결과: 충돌 영역·다중 회의 구역·편집기 보정 로직 단위 테스트 15건, client·server typecheck, client production build를 통과했다. Vite의 500kB 번들 경고는 Phaser·LiveKit 기반 기존 번들 크기 경고로 남아 있다. 실제 맵에서 가구별 경계와 문·복도 통과 여부는 팀원 브라우저 검토가 필요하다.
 - 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/151
 
+### 2026-08-19 - 전체 아바타 앉기 프레임과 UI 중심 정렬 보정
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Systematic Debugging, Test-driven Development
+- 사용 목적: 일부 아바타가 `C` 키로 앉을 때 프레임이 잘리거나 HUD·아바타 선택 화면에서 중심이 어긋나는 문제를 줄임
+- 입력 맥락: 12개 아바타의 `6 x 4`, `256px` 스프라이트 시트와 Phaser 프레임 정규화·UI 아이콘 렌더링 구조
+- AI 제안 또는 산출물: 프레임 이동량을 투명 여백 안으로 제한하는 보정 함수, 캐릭터별 아이콘 중심값, 선택 화면의 공용 아바타 아이콘 적용, 회귀 테스트
+- 팀원 검토·수정 내용: 모든 앉기 시트의 사용 프레임 216개가 비어 있지 않음을 확인했다. 실제 오피스에서 각 캐릭터의 네 방향 앉기와 이동 전환은 팀원이 최종 확인한다.
+- 검증 결과: client typecheck, client production build, 아바타 스프라이트 단위 테스트 8건을 통과했다. 앉기 시트 프레임 216개에서 비어 있는 프레임은 없었다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/pull/155
+
 ### 2026-08-19 - 고유 아바타 선택과 서버 중복 방지
 
 - 담당자: 사용자 검토 예정
