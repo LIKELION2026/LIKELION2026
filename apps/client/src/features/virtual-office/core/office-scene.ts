@@ -19,6 +19,11 @@ import {
   getCalendarPresenceLabel,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
+import {
+  getNearestWalkableOfficePosition,
+  OFFICE_COLLISION_AREAS,
+  OFFICE_WALKABLE_BOUNDS,
+} from "../model/office-collision";
 import { OFFICE_MAP, OFFICE_MAP_MEETING_ZONE } from "../model/office-map";
 import type { OfficeSceneBootstrap } from "../model/office-scene-bootstrap";
 import { isTextEntryFocused } from "../model/keyboard-focus";
@@ -97,12 +102,18 @@ export class OfficeScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor("#111216");
     this.cameras.main.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
-    this.physics.world.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
+    this.physics.world.setBounds(
+      OFFICE_WALKABLE_BOUNDS.x,
+      OFFICE_WALKABLE_BOUNDS.y,
+      OFFICE_WALKABLE_BOUNDS.width,
+      OFFICE_WALKABLE_BOUNDS.height,
+    );
 
     this.createAvatarFrames();
     this.createAvatarAnimations();
     this.drawOffice();
     this.createLocalAvatar();
+    this.createOfficeColliders();
     this.createInput();
     this.syncCameraViewport();
     this.scale.on(Phaser.Scale.Events.RESIZE, this.syncCameraViewport, this);
@@ -133,9 +144,10 @@ export class OfficeScene extends Phaser.Scene {
       return;
     }
 
-    this.player.setPosition(x, y);
-    this.playerBody.reset(x, y);
-    this.cameras.main.centerOn(x, y);
+    const position = getNearestWalkableOfficePosition({ x, y });
+    this.player.setPosition(position.x, position.y);
+    this.playerBody.reset(position.x, position.y);
+    this.cameras.main.centerOn(position.x, position.y);
   }
 
   setLocalAvatarId(avatarId: string | undefined): void {
@@ -164,8 +176,9 @@ export class OfficeScene extends Phaser.Scene {
   moveLocalAvatarTo(x: number, y: number): void {
     this.isFollowingLocalAvatar = true;
     this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
-    this.player.setPosition(x, y);
-    this.playerBody.reset(x, y);
+    const position = getNearestWalkableOfficePosition({ x, y });
+    this.player.setPosition(position.x, position.y);
+    this.playerBody.reset(position.x, position.y);
     this.playerBody.setVelocity(0, 0);
     this.playAvatarAnimation(
       this.player,
@@ -176,8 +189,8 @@ export class OfficeScene extends Phaser.Scene {
     this.callbacks.onLocalMovement({
       animation: "idle",
       direction: this.direction,
-      x: Math.round(x),
-      y: Math.round(y),
+      x: Math.round(position.x),
+      y: Math.round(position.y),
     });
   }
 
@@ -262,6 +275,21 @@ export class OfficeScene extends Phaser.Scene {
       "idle",
     );
     this.cameras.main.startFollow(this.player, true, 0.14, 0.14);
+  }
+
+  private createOfficeColliders(): void {
+    const obstacles = OFFICE_COLLISION_AREAS.map((area) => {
+      const obstacle = this.add.zone(
+        area.x + area.width / 2,
+        area.y + area.height / 2,
+        area.width,
+        area.height,
+      );
+      this.physics.add.existing(obstacle, true);
+      return obstacle;
+    });
+
+    this.physics.add.collider(this.player, obstacles);
   }
 
   private drawOffice(): void {
