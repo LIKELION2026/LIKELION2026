@@ -318,6 +318,27 @@ export class OfficeService {
     return toOfficeTodo(data as TodoRow);
   }
 
+  async deleteTodo(
+    todoId: string,
+    guestToken: string
+  ): Promise<{ memberId: string; workspaceId: string }> {
+    const { data: existing, error: findError } = await this.supabase
+      .from("todos")
+      .select("member_id")
+      .eq("id", todoId)
+      .maybeSingle();
+    this.throwIfError(findError, "find office todo");
+    if (!existing) {
+      throw new NotFoundException("Office todo was not found");
+    }
+
+    const memberId = existing.member_id as string;
+    const member = await this.requireMemberOwnership(memberId, guestToken);
+    const { error } = await this.supabase.from("todos").delete().eq("id", todoId);
+    this.throwIfError(error, "delete office todo");
+    return { memberId, workspaceId: member.workspace_id };
+  }
+
   async createCalendarEvent(
     memberId: string,
     request: CreateOfficeCalendarEventRequest

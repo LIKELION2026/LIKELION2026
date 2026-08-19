@@ -43,6 +43,13 @@ export async function updateOfficeTodo(
   });
 }
 
+export async function deleteOfficeTodo(todoId: string, guestToken: string): Promise<void> {
+  await requestOfficeTodo<void>(
+    `/office/todos/${todoId}?${new URLSearchParams({ guestToken })}`,
+    { method: "DELETE" }
+  );
+}
+
 async function requestOfficeTodo<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${SERVER_URL}${path}`, {
     ...init,
@@ -56,5 +63,5 @@ async function requestOfficeTodo<T>(path: string, init?: RequestInit): Promise<T
     throw new Error("TODO 정보를 불러오지 못했습니다.");
   }
 
-  return (await response.json()) as T;
+  return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }

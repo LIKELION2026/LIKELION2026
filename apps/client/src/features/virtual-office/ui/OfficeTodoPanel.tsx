@@ -130,6 +130,20 @@ export function OfficeTodoPanel({
     }
   };
 
+  const deleteTodo = async (todoId: string) => {
+    setIsSubmitting(true);
+    setWriteError(null);
+    try {
+      await controller.deleteTodo(todoId);
+      showSuccess("TODO를 삭제했습니다.");
+    } catch (error) {
+      setWriteError("TODO를 삭제하지 못했습니다. 다시 시도해 주세요.");
+      showError(error, "TODO를 삭제하지 못했습니다. 다시 시도해 주세요.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <aside aria-label="상태 변경 및 내 업무" className="std-panel">
       <header className="std-header">
@@ -259,7 +273,18 @@ export function OfficeTodoPanel({
             <ul className="std-todo-list">
               {controller.ownTodos.map((todo) => (
                 <li key={todo.id}>
-                  <p>{todo.title}</p>
+                  <div className="std-todo-item-head">
+                    <p>{todo.title}</p>
+                    <button
+                      aria-label={`${todo.title} 삭제`}
+                      className="std-todo-delete-button"
+                      disabled={isSubmitting}
+                      onClick={() => void deleteTodo(todo.id)}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
                   <div className="office-todo-controls">
                     <select
                       aria-label={`${todo.title} 상태`}
