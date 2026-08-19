@@ -2422,10 +2422,11 @@ button {
   border-radius: 18px;
   box-shadow: 0 14px 34px rgb(7 13 24 / 24%);
   color: #ffffff;
-  grid-column: 1 / -1;
+  grid-column: 1;
   grid-row: 1;
   justify-self: center;
-  max-width: min(100%, 1490px);
+  margin: var(--meeting-main-inset) var(--meeting-main-inset) 0;
+  max-width: min(calc(100% - var(--meeting-main-gutter)), 1490px);
   min-width: 0;
   padding: 8px;
   transition: opacity 0.16s ease, visibility 0.16s ease;
@@ -2442,7 +2443,7 @@ button {
 .meeting-participant-scroll {
   display: flex;
   gap: 14px;
-  max-width: min(calc(100vw - 60px), 1470px);
+  max-width: 100%;
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -2462,13 +2463,15 @@ button {
 
 .meeting-participant-tile.strip,
 .meeting-participant-empty {
-  flex: 0 0 clamp(250px, 25vw, 360px);
-  min-width: 250px;
+  flex: 0 0 clamp(280px, 28vw, 410px);
+  min-width: 280px;
 }
 
 .meeting-participant-tile.expanded,
 .meeting-participant-empty.expanded {
+  aspect-ratio: auto;
   border-radius: 20px;
+  height: 100%;
   min-width: 0;
   width: 100%;
 }
@@ -2579,38 +2582,28 @@ button {
 }
 
 .meeting-expanded-grid {
-  align-self: center;
+  align-self: stretch;
   background: rgb(15 23 42 / 88%);
   border: 1px solid rgb(226 232 240 / 18%);
   border-radius: 24px;
   box-shadow: 0 20px 54px rgb(7 13 24 / 32%);
-  grid-column: 1 / -1;
-  grid-row: 2;
-  justify-self: center;
-  max-height: min(58vh, 560px);
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: stretch;
+  margin: var(--meeting-main-inset);
+  max-height: none;
   min-height: 0;
   overflow: hidden;
   padding: 18px;
-  width: min(82vw, 1040px);
-}
-
-.meeting-expanded-grid.count-1 {
-  width: min(68vw, 720px);
-}
-
-.meeting-expanded-grid.count-2 {
-  width: min(76vw, 860px);
-}
-
-.meeting-expanded-grid.count-4 {
-  width: min(76vw, 900px);
 }
 
 .meeting-expanded-grid-content {
   align-content: center;
   display: grid;
   gap: 14px;
+  grid-auto-rows: minmax(0, 1fr);
   grid-template-columns: repeat(var(--meeting-expanded-columns, 3), minmax(0, 1fr));
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
@@ -2914,11 +2907,11 @@ button {
   color: #ffffff;
   display: grid;
   gap: 4px;
-  grid-column: 1 / -1;
-  grid-row: 3;
+  grid-column: 1;
+  grid-row: 2;
   justify-self: center;
   margin-bottom: 4px;
-  max-width: min(calc(100vw - 48px), 780px);
+  max-width: min(calc(100% - var(--meeting-main-gutter)), 780px);
   padding: 10px 16px;
   text-align: center;
   width: fit-content;
@@ -2946,7 +2939,7 @@ button {
 .meeting-live-translation-caption.status {
   background: rgb(15 23 42 / 82%);
   border-style: solid;
-  max-width: min(calc(100vw - 48px), 560px);
+  max-width: min(calc(100% - var(--meeting-main-gutter)), 560px);
 }
 
 .meeting-live-translation-caption.status p {
@@ -3095,10 +3088,11 @@ button {
   box-shadow: 0 18px 42px rgb(7 13 24 / 28%);
   display: flex;
   gap: 8px;
-  grid-column: 1 / -1;
-  grid-row: 4;
+  grid-column: 1;
+  grid-row: 3;
   justify-self: center;
-  max-width: min(100%, 760px);
+  margin: 0 var(--meeting-main-inset) var(--meeting-main-inset);
+  max-width: min(calc(100% - var(--meeting-main-gutter)), 760px);
   overflow-x: auto;
   padding: 8px;
 }
@@ -3639,8 +3633,8 @@ button {
 
   .meeting-participant-tile.strip,
   .meeting-participant-empty {
-    flex-basis: 190px;
-    min-width: 190px;
+    flex-basis: 210px;
+    min-width: 210px;
   }
 
   .meeting-status-icon {
@@ -3654,9 +3648,8 @@ button {
   }
 
   .meeting-expanded-grid {
-    max-height: min(56vh, 460px);
     padding: 12px;
-    width: min(calc(100vw - 24px), 680px);
+    width: auto;
   }
 
   .meeting-control-bar {
