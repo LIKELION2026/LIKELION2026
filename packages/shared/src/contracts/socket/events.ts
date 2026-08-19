@@ -16,6 +16,7 @@ import type {
 } from "./presence";
 import type {
   OfficeCalendarUpdatedPayload,
+  OfficeMeetingSummaryReadyPayload,
   OfficeTodosUpdatedPayload
 } from "./office-lifecycle";
 import type {
@@ -37,6 +38,7 @@ export type SocketEventPayloadMap = {
   [SOCKET_EVENT_NAMES.MEETING_REQUESTED]: MeetingRequestedPayload;
   [SOCKET_EVENT_NAMES.MEMBER_STATUS_UPDATED]: MemberStatusUpdatedPayload;
   [SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED]: OfficeCalendarUpdatedPayload;
+  [SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY]: OfficeMeetingSummaryReadyPayload;
   [SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUEST]: OfficeSummonRequestPayload;
   [SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUESTED]: OfficeSummonRequestedPayload;
   [SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESPOND]: OfficeSummonRespondPayload;

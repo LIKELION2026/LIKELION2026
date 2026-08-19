@@ -205,6 +205,35 @@ def test_leaving_an_unknown_participant_is_safe():
     assert agent.workers() == {}
 
 
+def test_a_participant_who_left_is_still_in_ever_participants():
+    # 회의 요약은 중간에 나간 사람도 포함해야 한다. `_workers`와 달리
+    # `remove_participant`가 지우지 않는다.
+    agent = make_agent()
+    agent.add_participant(korean())
+
+    agent.remove_participant("guest-kr-1")
+
+    assert agent.workers() == {}
+    assert set(agent.ever_participants()) == {"guest-kr-1"}
+
+
+def test_ever_participants_accumulates_across_the_whole_session():
+    agent = make_agent()
+    agent.add_participant(korean())
+    agent.remove_participant("guest-kr-1")
+    agent.add_participant(vietnamese())
+
+    assert set(agent.ever_participants()) == {"guest-kr-1", "guest-vn-1"}
+
+
+def test_a_skipped_participant_is_not_in_ever_participants():
+    agent = make_agent()
+
+    agent.add_participant(FakeParticipant(attributes={}))
+
+    assert agent.ever_participants() == {}
+
+
 def test_stopping_the_agent_stops_every_worker():
     agent = make_agent()
     korean_worker = agent.add_participant(korean())

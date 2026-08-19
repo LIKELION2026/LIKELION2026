@@ -1996,6 +1996,33 @@ button {
   margin-top: 2px;
 }
 
+.cal-detail-summary {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  background: rgb(107 74 53 / 8%);
+  border: none;
+  border-radius: 6px;
+  color: #4a2f1e;
+  cursor: pointer;
+  display: -webkit-box;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 6px 0 0;
+  overflow: hidden;
+  padding: 6px 8px;
+  text-align: left;
+  white-space: pre-wrap;
+  width: 100%;
+}
+
+.cal-detail-summary.expanded {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
 .cal-detail-owners {
   display: flex;
   flex-shrink: 0;

@@ -30,3 +30,9 @@ export interface OfficeCalendarUpdatedPayload {
   occurredAt: string;
   teamId: string;
 }
+
+export interface OfficeMeetingSummaryReadyPayload {
+  eventId: string;
+  occurredAt: string;
+  teamId: string;
+}

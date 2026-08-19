@@ -7,6 +7,12 @@ Anthropic API 비용을 집행할 수 없어 무료 티어를 쓸 수 있는 Gem
 import os
 
 from ..errors import ProviderUnavailableError, TranslationError
+from ..summarizer import (
+    MeetingSummary,
+    SummaryRequest,
+    build_summary_system_prompt,
+    parse_summary_response,
+)
 from ..translator import TranslationRequest, build_system_prompt
 
 # 실측(운영 로그)에서 확인한 일시적 실패 패턴이다. SDK가 원문 오류를 그대로
@@ -128,6 +134,69 @@ class GeminiTranslator:
         if not text:
             raise TranslationError("Gemini가 빈 응답을 반환했습니다.")
         return text
+
+
+class GeminiSummarizer:
+    """`Summarizer` 계약의 Gemini 구현. 회의 요약(한/베 동시 생성)에 쓴다."""
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str = DEFAULT_MODEL,
+        temperature: float = DEFAULT_TEMPERATURE,
+        timeout_ms: int = DEFAULT_TIMEOUT_MS,
+        client: object | None = None,
+    ) -> None:
+        if timeout_ms < MIN_TIMEOUT_MS:
+            raise ValueError(
+                f"Gemini는 {MIN_TIMEOUT_MS}ms 미만 timeout을 허용하지 않습니다."
+            )
+        self._model = model
+        self._temperature = temperature
+        self._timeout_ms = timeout_ms
+
+        if client is not None:
+            self._client = client
+            self._types = _import_types()
+            return
+
+        resolved_key = api_key or os.environ.get(ENV_API_KEY)
+        if not resolved_key:
+            raise TranslationError(
+                f"{ENV_API_KEY}가 없습니다. .env에 키를 채우거나 api_key를 넘기세요."
+            )
+
+        genai, types = _import_genai()
+        self._client = genai.Client(
+            api_key=resolved_key,
+            http_options=types.HttpOptions(timeout=timeout_ms),
+        )
+        self._types = types
+
+    def summarize(self, request: SummaryRequest) -> MeetingSummary:
+        config = self._types.GenerateContentConfig(
+            system_instruction=build_summary_system_prompt(request),
+            temperature=self._temperature,
+            response_mime_type="application/json",
+            automatic_function_calling=self._types.AutomaticFunctionCallingConfig(
+                disable=True
+            ),
+        )
+
+        try:
+            response = self._client.models.generate_content(
+                model=self._model,
+                contents=request.transcript_text,
+                config=config,
+            )
+        except Exception as error:  # provider 예외 타입은 SDK마다 다르다
+            message = f"Gemini 요약 호출이 실패했습니다: {error}"
+            lowered_message = str(error).lower()
+            if any(marker in lowered_message for marker in _TRANSIENT_ERROR_MARKERS):
+                raise ProviderUnavailableError(message) from error
+            raise TranslationError(message) from error
+
+        return parse_summary_response(response.text, provider_name="Gemini")
 
 
 def _import_genai():

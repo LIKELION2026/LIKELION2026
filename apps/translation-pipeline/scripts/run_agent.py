@@ -19,8 +19,8 @@ Ctrl+C로 종료한다. `dev` 명령도 있지만 deprecated 경고를 낸다.
 
 설정은 `.env`로 준다. 프레임워크가 명령줄을 쓰기 때문에 인자로 받지 않는다.
 
-    PIPELINE_SERVER_URL               자막을 보낼 Server 주소
-    TRANSLATION_MODEL                 번역 모델
+    PIPELINE_SERVER_URL               자막·회의 요약을 보낼 Server 주소
+    TRANSLATION_MODEL                 번역·요약 모델
     OPENAI_API_KEY                    있으면 Gemini가 429에 걸릴 때 OpenAI로 대체한다
     TRANSLATION_FALLBACK_MODEL        대체 provider(OpenAI) 모델
     TRANSLATION_ENDPOINTING_MS        발화 종료로 볼 무음 길이
@@ -57,18 +57,30 @@ from translation_pipeline import (  # noqa: E402
     DEFAULT_HEDGE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
     DEFAULT_MIN_INTERIM_CHARS,
+    FallbackSummarizer,
     FallbackTranslator,
+    MeetingSummaryPublisher,
+    MeetingSummaryPublishError,
     ParticipantAudioRunner,
     SessionEvent,
     SubtitlePublisher,
+    SummaryRequest,
+    TranscriptRecorder,
     TranslationAgent,
+    TranslationError,
     is_lab_meeting_room,
+    utc_now_iso,
 )
 from translation_pipeline.livekit_room import (  # noqa: E402
     attach_existing_participants,
     register_participant_events,
 )
-from translation_pipeline.providers import GeminiTranslator, OpenAITranslator  # noqa: E402
+from translation_pipeline.providers import (  # noqa: E402
+    GeminiSummarizer,
+    GeminiTranslator,
+    OpenAISummarizer,
+    OpenAITranslator,
+)
 from translation_pipeline.providers.gemini import DEFAULT_MODEL  # noqa: E402
 from translation_pipeline.providers.openai import (  # noqa: E402
     DEFAULT_MODEL as DEFAULT_FALLBACK_MODEL,
@@ -221,6 +233,65 @@ def build_translator_factory(model: str, fallback_model: str):
     )
 
 
+def build_summarizer_factory(model: str, fallback_model: str):
+    """회의 요약 provider의 factory를 만든다. `build_translator_factory`와 같은
+    `OPENAI_API_KEY` 분기 로직을 쓴다 — 번역과 같은 provider를 쓰므로."""
+    if not os.environ.get(FALLBACK_API_KEY_ENV):
+        return lambda: GeminiSummarizer(model=model)
+
+    return lambda: FallbackSummarizer(
+        primary=GeminiSummarizer(model=model),
+        fallback=OpenAISummarizer(model=fallback_model),
+    )
+
+
+async def publish_meeting_summary(
+    *,
+    agent: TranslationAgent,
+    recorder: TranscriptRecorder,
+    room_name: str,
+    started_at: str,
+    summarizer_factory,
+    server_url: str | None,
+) -> None:
+    """회의 요약을 만들어 Server로 보낸다.
+
+    이 함수의 어떤 실패도 밖으로 올리지 않는다 — 회의 종료 처리(job shutdown)를
+    막으면 안 된다. `publisher.py`의 "발행 실패가 파이프라인을 멈추지 않는다"는
+    원칙을 요약에도 그대로 적용한다.
+    """
+    if recorder.is_empty():
+        print(f"[{now()}] 회의 요약 생략: 기록된 발화가 없습니다.")
+        return
+
+    transcript_text = recorder.render()
+    try:
+        summarizer = summarizer_factory()
+        summary = summarizer.summarize(
+            SummaryRequest(room_name=room_name, transcript_text=transcript_text)
+        )
+    except TranslationError as error:
+        print(f"[{now()}] 회의 요약 생성 실패: {error}")
+        return
+
+    ever_participant_identities = list(agent.ever_participants().keys())
+    publisher = MeetingSummaryPublisher(server_url=server_url)
+    try:
+        publisher.publish(
+            room_name=room_name,
+            starts_at=started_at,
+            ends_at=utc_now_iso(),
+            ever_participant_identities=ever_participant_identities,
+            summary_ko=summary.summary_ko,
+            summary_vi=summary.summary_vi,
+        )
+    except MeetingSummaryPublishError as error:
+        print(f"[{now()}] 회의 요약 발행 실패: {error}")
+        return
+
+    print(f"[{now()}] 회의 요약 발행 완료: 참가자 {len(ever_participant_identities)}명")
+
+
 async def translate_room(ctx: JobContext) -> None:
     """배정받은 회의방에서 참가자 전원을 통역한다."""
     room_name = ctx.room.name
@@ -242,6 +313,12 @@ async def translate_room(ctx: JobContext) -> None:
     hedge_after_ms = env_int("TRANSLATION_HEDGE_AFTER_MS", DEFAULT_HEDGE_AFTER_MS)
 
     reporter = ConsoleReporter()
+    recorder = TranscriptRecorder()
+
+    def on_event(event: SessionEvent) -> None:
+        reporter.on_event(event)
+        recorder.record(event)
+
     publisher = SubtitlePublisher(server_url=server_url)
     if server_url is None:
         # 이 값을 안 넣으면 자막이 로컬 서버로 간다. 발행은 성공하고 에러도
@@ -259,7 +336,7 @@ async def translate_room(ctx: JobContext) -> None:
         finalize_after_ms=finalize_after_ms,
         min_interim_chars=min_interim_chars,
         hedge_after_ms=hedge_after_ms,
-        on_event=reporter.on_event,
+        on_event=on_event,
     )
     runner = ParticipantAudioRunner(agent=agent, room=ctx.room)
 
@@ -287,8 +364,23 @@ async def translate_room(ctx: JobContext) -> None:
     async def on_shutdown() -> None:
         await runner.shutdown()
         reporter.summarize()
+        try:
+            await publish_meeting_summary(
+                agent=agent,
+                recorder=recorder,
+                room_name=room_name,
+                started_at=session_started_at,
+                summarizer_factory=build_summarizer_factory(model, fallback_model),
+                server_url=server_url,
+            )
+        except Exception as error:  # 어떤 실패도 job 종료를 막으면 안 된다
+            print(f"[{now()}] 회의 요약 처리 중 알 수 없는 오류: {error}")
 
     ctx.add_shutdown_callback(on_shutdown)
+
+    # 회의 시작 시각의 근사값이다 — 방이 배정받는 시점이 참가자가 들어오기
+    # 직전이라 실제 첫 발화와 초 단위로만 차이 난다.
+    session_started_at = utc_now_iso()
 
     # 영상은 받지 않는다. 통역에는 오디오만 필요하고, 받으면 대역폭만 쓴다.
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)

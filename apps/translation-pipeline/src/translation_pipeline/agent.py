@@ -202,6 +202,9 @@ class TranslationAgent:
         self._on_event = on_event
         self._worker_factory = worker_factory or ParticipantWorker
         self._workers: dict[str, ParticipantWorker] = {}
+        # 나간 참가자도 회의 요약 대상에 남아야 하므로 `_workers`와 달리
+        # 참가자가 나가도 지우지 않는다(`remove_participant`가 손대지 않음).
+        self._ever_participants: dict[str, ParticipantInfo] = {}
 
     @property
     def room_name(self) -> str:
@@ -210,11 +213,16 @@ class TranslationAgent:
     def workers(self) -> dict[str, ParticipantWorker]:
         return dict(self._workers)
 
+    def ever_participants(self) -> dict[str, ParticipantInfo]:
+        """이 방에 한 번이라도 있었던 통역 대상 참가자 전원."""
+        return dict(self._ever_participants)
+
     def add_participant(self, participant) -> ParticipantWorker | None:
         """참가자를 통역 대상으로 받는다. 대상이 아니면 ``None``."""
         info = read_participant(participant)
         if info is None:
             return None
+        self._ever_participants[info.identity] = info
         if info.identity in self._workers:
             return self._workers[info.identity]
 

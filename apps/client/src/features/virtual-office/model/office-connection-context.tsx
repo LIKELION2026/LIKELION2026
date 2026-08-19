@@ -47,6 +47,8 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   const socketCallbacks = useMemo<OfficeSocketCallbacks>(
     () => ({
       onCalendarUpdated: () => callbacksRef.current.onCalendarUpdated?.(),
+      onMeetingSummaryReady: (payload) =>
+        callbacksRef.current.onMeetingSummaryReady?.(payload),
       onSummonRequested: (payload) => callbacksRef.current.onSummonRequested?.(payload),
       onSummonResolved: (payload) => callbacksRef.current.onSummonResolved?.(payload),
       onTodosUpdated: () => callbacksRef.current.onTodosUpdated?.()
