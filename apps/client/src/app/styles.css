@@ -1323,26 +1323,326 @@ button {
   display: none;
 }
 
-.meeting-room-panel-slot {
-  background: #f8fafc;
-  border: 1px dashed #b6c3d3;
-  border-radius: 12px;
-  color: #516173;
+.meeting-chat-panel {
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
   display: grid;
-  gap: 4px;
-  padding: 12px;
+  gap: 10px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
 }
 
-.meeting-room-panel-slot p {
+.meeting-chat-panel.collapsed {
+  grid-template-rows: auto;
+}
+
+.meeting-chat-panel.collapsed .meeting-chat-header {
+  background: rgb(255 255 255 / 96%);
+  border: 1px solid rgb(203 213 225 / 90%);
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 18%);
+  padding: 8px 8px 8px 14px;
+}
+
+.meeting-chat-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.meeting-chat-header strong {
+  color: #172235;
+  font-size: 16px;
+}
+
+.meeting-chat-collapse-button,
+.meeting-chat-new-message-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+.meeting-chat-unread-badge {
+  align-items: center;
+  background: #16a34a;
+  border-radius: 999px;
+  color: #ffffff;
+  display: inline-flex;
+  font-size: 11px;
+  height: 18px;
+  justify-content: center;
+  min-width: 18px;
+  padding: 0 5px;
+}
+
+.meeting-chat-status {
+  background: #eef5ff;
+  border: 1px solid #c6d9f7;
+  border-radius: 12px;
+  color: #31537a;
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+}
+
+.meeting-chat-status span {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.meeting-chat-status small {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.meeting-chat-status.reconnecting {
+  background: #fffbeb;
+  border-color: #f6d88f;
+  color: #8a5a0a;
+}
+
+.meeting-chat-status.idle,
+.meeting-chat-status.unavailable {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+.meeting-chat-list {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.meeting-chat-message {
+  border: 1px solid transparent;
+  border-radius: 16px;
+  display: grid;
+  gap: 6px;
+  max-width: 88%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+}
+
+.meeting-chat-message.remote {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  justify-self: start;
+}
+
+.meeting-chat-message.local {
+  background: #dcfce7;
+  border-color: #86efac;
+  justify-self: end;
+}
+
+.meeting-chat-message.translation {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.meeting-chat-message.local.translation {
+  background: #dffbe9;
+  border-color: #86efac;
+}
+
+.meeting-chat-message.failed {
+  border-color: #fca5a5;
+}
+
+.meeting-chat-message.sending {
+  opacity: 0.72;
+}
+
+.meeting-chat-message header,
+.meeting-chat-message footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.meeting-chat-message header strong {
+  color: #172235;
+  font-size: 12px;
+}
+
+.meeting-chat-message header time,
+.meeting-chat-message footer span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.meeting-chat-kind {
+  background: rgb(79 70 229 / 12%);
+  border: 1px solid rgb(79 70 229 / 22%);
+  border-radius: 999px;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+}
+
+.meeting-chat-kind.pending {
+  background: rgb(217 119 6 / 12%);
+  border-color: rgb(217 119 6 / 22%);
+  color: #92400e;
+}
+
+.meeting-chat-message p {
   color: #172235;
   font-size: 13px;
+  line-height: 1.48;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.meeting-chat-source {
+  border-top: 1px solid rgb(100 116 139 / 18%);
+  color: #64748b !important;
+  font-size: 12px !important;
+  padding-top: 6px;
+}
+
+.meeting-chat-message footer {
+  justify-content: space-between;
+}
+
+.meeting-chat-message footer div {
+  display: flex;
+  gap: 4px;
+}
+
+.meeting-chat-message footer button {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #334155;
+  font-size: 11px;
   font-weight: 800;
+  padding: 4px 8px;
+}
+
+.meeting-chat-empty,
+.meeting-chat-error {
+  color: #58687c;
+  font-size: 13px;
+  line-height: 1.5;
   margin: 0;
 }
 
-.meeting-room-panel-slot span {
-  font-size: 12px;
-  line-height: 1.5;
+.meeting-chat-error {
+  color: #a33030;
+}
+
+.meeting-chat-new-message-button {
+  box-shadow: 0 10px 24px rgb(15 23 42 / 12%);
+  justify-self: center;
+}
+
+.meeting-chat-form {
+  display: grid;
+  gap: 8px;
+}
+
+.meeting-chat-form textarea {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #172235;
+  font: inherit;
+  line-height: 1.45;
+  min-height: 64px;
+  padding: 10px;
+  resize: none;
+}
+
+.meeting-chat-form textarea:disabled {
+  background: #e2e8f0;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.meeting-chat-form-footer {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.meeting-chat-form-footer span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.meeting-chat-form-footer button {
+  background: #16a34a;
+  border: 1px solid #15803d;
+  border-radius: 999px;
+  color: #ffffff;
+  font-weight: 900;
+  padding: 8px 14px;
+}
+
+.meeting-chat-form-footer button:disabled {
+  background: #94a3b8;
+  border-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.meeting-live-translation-caption {
+  align-self: end;
+  background: rgb(15 23 42 / 90%);
+  border: 1px solid rgb(226 232 240 / 20%);
+  border-radius: 18px;
+  box-shadow: 0 16px 34px rgb(7 13 24 / 28%);
+  color: #ffffff;
+  display: grid;
+  gap: 4px;
+  grid-column: 1 / -1;
+  grid-row: 3;
+  justify-self: center;
+  margin-bottom: 4px;
+  max-width: min(calc(100vw - 48px), 780px);
+  padding: 10px 16px;
+  text-align: center;
+  width: fit-content;
+}
+
+.meeting-live-translation-caption span {
+  color: #a7f3d0;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.meeting-live-translation-caption p {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.meeting-live-translation-caption.partial {
+  border-style: dashed;
 }
 
 .meeting-control-bar {
