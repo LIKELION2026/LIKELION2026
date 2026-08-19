@@ -8,6 +8,7 @@ import {
 import {
   DEFAULT_AVATAR_ID,
   getAvatarFrameIndex,
+  getRequiredAvatarFrameIndices,
   getAvatarSpriteDefinition,
   getAvatarSpriteDefinitions,
   shouldFlipAvatarSprite,
@@ -17,30 +18,25 @@ import {
   getCalendarPresenceLabel,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
+import {
+  OFFICE_MAP,
+  OFFICE_MAP_MEETING_ZONE,
+} from "../model/office-map";
 import type { OfficeSceneBootstrap } from "../model/office-scene-bootstrap";
 import { isTextEntryFocused } from "../model/keyboard-focus";
 
 export const OFFICE_SCENE_KEY = "office-scene";
 
-const MOCK_OFFICE_MAP_SCALE = 1.5;
 const OFFICE_SIZE = {
-  height: 544 * MOCK_OFFICE_MAP_SCALE,
-  width: 960 * MOCK_OFFICE_MAP_SCALE,
-} as const;
-
-const MEETING_ROOM = {
-  height: 128 * MOCK_OFFICE_MAP_SCALE,
-  width: 128 * MOCK_OFFICE_MAP_SCALE,
-  x: 624 * MOCK_OFFICE_MAP_SCALE,
-  y: 304 * MOCK_OFFICE_MAP_SCALE,
+  height: OFFICE_MAP.height,
+  width: OFFICE_MAP.width,
 } as const;
 
 const REMOTE_INTERPOLATION_DELAY_MS = 120;
 const MAX_REMOTE_POSITION_SAMPLES = 4;
-const MOCK_OFFICE_MAP_TEXTURE_KEY = "mock-office-map";
-const MOCK_OFFICE_MAP_ASSET_PATH = "/assets/maps/moyo-lobby.webp";
 const CAMERA_VISIBLE_WORLD_RATIO = 0.78;
-const CAMERA_MIN_ZOOM = 0.75;
+const CAMERA_DEFAULT_ZOOM = 0.85;
+const CAMERA_MIN_ZOOM = 0.45;
 const CAMERA_MAX_ZOOM = 3.2;
 const CAMERA_WHEEL_ZOOM_SENSITIVITY = 0.0012;
 const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
@@ -75,7 +71,8 @@ export class OfficeScene extends Phaser.Scene {
   private direction: PresenceMovePayload["direction"] = "down";
   private isFollowingLocalAvatar = true;
   private inMeetingRoom = false;
-  private localAvatarId = DEFAULT_AVATAR_ID;
+  private isSitting = false;
+  private localAvatarId: string = DEFAULT_AVATAR_ID;
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
@@ -83,6 +80,7 @@ export class OfficeScene extends Phaser.Scene {
     "down" | "left" | "right" | "up",
     Phaser.Input.Keyboard.Key
   >;
+  private sitToggle!: Phaser.Input.Keyboard.Key;
 
   constructor(callbacks: OfficeSceneCallbacks) {
     super(OFFICE_SCENE_KEY);
@@ -90,14 +88,15 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(MOCK_OFFICE_MAP_TEXTURE_KEY, MOCK_OFFICE_MAP_ASSET_PATH);
+    this.load.image(OFFICE_MAP.textureKey, OFFICE_MAP.assetPath);
     getAvatarSpriteDefinitions().forEach((definition) => {
       this.load.image(definition.textureKey, definition.assetPath);
+      this.load.image(definition.sitTextureKey, definition.sitAssetPath);
     });
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor("#bda79a");
+    this.cameras.main.setBackgroundColor("#111216");
     this.cameras.main.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
     this.physics.world.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
 
@@ -237,6 +236,7 @@ export class OfficeScene extends Phaser.Scene {
       },
       false,
     ) as Record<"down" | "left" | "right" | "up", Phaser.Input.Keyboard.Key>;
+    this.sitToggle = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
     keyboard.disableGlobalCapture();
   }
 
@@ -261,41 +261,24 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private drawOffice(): void {
+    // Keep the detailed Figma map smooth while avatar sheets stay pixel-sharp.
+    this.textures
+      .get(OFFICE_MAP.textureKey)
+      .setFilter(Phaser.Textures.FilterMode.LINEAR);
+
     this.add
       .image(
         OFFICE_SIZE.width / 2,
         OFFICE_SIZE.height / 2,
-        MOCK_OFFICE_MAP_TEXTURE_KEY,
+        OFFICE_MAP.textureKey,
       )
       .setOrigin(0.5)
-      .setScale(MOCK_OFFICE_MAP_SCALE)
       .setDepth(0);
-
-    this.add
-      .rectangle(
-        MEETING_ROOM.x,
-        MEETING_ROOM.y,
-        MEETING_ROOM.width,
-        MEETING_ROOM.height,
-        0x315da9,
-        0.18,
-      )
-      .setOrigin(0)
-      .setStrokeStyle(2, 0x315da9)
-      .setDepth(1);
-    this.add
-      .text(MEETING_ROOM.x + 18, MEETING_ROOM.y + 16, "MEETING ROOM", {
-        color: "#315da9",
-        fontFamily: "monospace",
-        fontSize: "16px",
-        fontStyle: "bold",
-      })
-      .setDepth(2);
   }
 
   private syncCameraViewport(): void {
     const responsiveZoom = Math.max(
-      2,
+      CAMERA_DEFAULT_ZOOM,
       this.scale.width / (OFFICE_SIZE.width * CAMERA_VISIBLE_WORLD_RATIO),
       this.scale.height / (OFFICE_SIZE.height * CAMERA_VISIBLE_WORLD_RATIO),
     );
@@ -347,15 +330,23 @@ export class OfficeScene extends Phaser.Scene {
         this.player,
         this.localAvatarId,
         this.direction,
-        "idle",
+        this.isSitting ? "sit" : "idle",
       );
       this.callbacks.onLocalMovement({
-        animation: "idle",
+        animation: this.isSitting ? "sit" : "idle",
         direction: this.direction,
         x: Math.round(this.player.x),
         y: Math.round(this.player.y),
       });
       return;
+    }
+
+    if (Phaser.Input.Keyboard.JustDown(this.sitToggle)) {
+      this.isSitting = !this.isSitting;
+      if (this.isSitting) {
+        // A movement key can still be held when C is pressed.
+        this.resetMovementKeys();
+      }
     }
 
     const horizontal =
@@ -365,6 +356,10 @@ export class OfficeScene extends Phaser.Scene {
       Number(this.cursors.down.isDown || this.wasd.down.isDown) -
       Number(this.cursors.up.isDown || this.wasd.up.isDown);
     const isMoving = horizontal !== 0 || vertical !== 0;
+
+    if (isMoving) {
+      this.isSitting = false;
+    }
 
     if (isMoving && !this.isFollowingLocalAvatar) {
       this.isFollowingLocalAvatar = true;
@@ -379,6 +374,24 @@ export class OfficeScene extends Phaser.Scene {
       this.direction = "down";
     } else if (vertical < 0) {
       this.direction = "up";
+    }
+
+    if (this.isSitting) {
+      this.playerBody.setVelocity(0, 0);
+      this.playAvatarAnimation(
+        this.player,
+        this.localAvatarId,
+        this.direction,
+        "sit",
+      );
+      this.player.setDepth(this.player.y);
+      this.callbacks.onLocalMovement({
+        animation: "sit",
+        direction: this.direction,
+        x: Math.round(this.player.x),
+        y: Math.round(this.player.y),
+      });
+      return;
     }
 
     const velocity = new Phaser.Math.Vector2(horizontal, vertical)
@@ -403,10 +416,10 @@ export class OfficeScene extends Phaser.Scene {
 
   private updateMeetingRoomState(): void {
     const isInside =
-      this.player.x >= MEETING_ROOM.x &&
-      this.player.x <= MEETING_ROOM.x + MEETING_ROOM.width &&
-      this.player.y >= MEETING_ROOM.y &&
-      this.player.y <= MEETING_ROOM.y + MEETING_ROOM.height;
+      this.player.x >= OFFICE_MAP_MEETING_ZONE.x &&
+      this.player.x <= OFFICE_MAP_MEETING_ZONE.x + OFFICE_MAP_MEETING_ZONE.width &&
+      this.player.y >= OFFICE_MAP_MEETING_ZONE.y &&
+      this.player.y <= OFFICE_MAP_MEETING_ZONE.y + OFFICE_MAP_MEETING_ZONE.height;
 
     if (isInside === this.inMeetingRoom) {
       return;
@@ -542,12 +555,37 @@ export class OfficeScene extends Phaser.Scene {
 
   private createAvatarFrames(): void {
     getAvatarSpriteDefinitions().forEach((definition) => {
-      const sourceImage = this.textures
+      const walkSourceImage = this.textures
         .get(definition.textureKey)
         .getSourceImage() as HTMLCanvasElement | HTMLImageElement;
+      const sitSourceImage = this.textures
+        .get(definition.sitTextureKey)
+        .getSourceImage() as HTMLCanvasElement | HTMLImageElement;
 
-      definition.frameSources.forEach((source, frame) => {
-        const frameKey = getAvatarFrameKey(definition, frame);
+      this.createAvatarFramesFromSource(
+        definition,
+        definition.textureKey,
+        walkSourceImage,
+        getRequiredAvatarFrameIndices(definition),
+      );
+      this.createAvatarFramesFromSource(
+        definition,
+        definition.sitTextureKey,
+        sitSourceImage,
+        getRequiredAvatarFrameIndices(definition, "sit"),
+      );
+    });
+  }
+
+  private createAvatarFramesFromSource(
+    definition: AvatarSpriteDefinition,
+    textureKey: string,
+    sourceImage: HTMLCanvasElement | HTMLImageElement,
+    requiredFrames: readonly number[],
+  ): void {
+    requiredFrames.forEach((frame) => {
+        const source = definition.frameSources[frame]!;
+        const frameKey = getAvatarFrameKey(definition, frame, textureKey);
         if (this.textures.exists(frameKey)) {
           return;
         }
@@ -573,28 +611,43 @@ export class OfficeScene extends Phaser.Scene {
           source.height,
         );
 
-        const bounds = getOpaquePixelBounds(
-          texture.context.getImageData(0, 0, source.width, source.height),
+        const imageData = texture.context.getImageData(
+          0,
+          0,
+          source.width,
+          source.height,
         );
+        const isolatedComponent =
+          textureKey === definition.sitTextureKey
+            ? getLargestOpaqueComponent(imageData)
+            : undefined;
+        const bounds = isolatedComponent?.bounds ?? getOpaquePixelBounds(imageData);
         const xOffset = Math.round(
           source.width / 2 - (bounds.left + bounds.width / 2),
         );
         const yOffset = definition.footBaseline - bounds.bottom;
 
         texture.context.clearRect(0, 0, source.width, source.height);
-        texture.context.drawImage(
-          sourceImage,
-          source.x,
-          source.y,
-          source.width,
-          source.height,
-          xOffset,
-          yOffset,
-          source.width,
-          source.height,
-        );
+        if (isolatedComponent) {
+          texture.context.putImageData(
+            isolatedComponent.imageData,
+            xOffset,
+            yOffset,
+          );
+        } else {
+          texture.context.drawImage(
+            sourceImage,
+            source.x,
+            source.y,
+            source.width,
+            source.height,
+            xOffset,
+            yOffset,
+            source.width,
+            source.height,
+          );
+        }
         texture.refresh();
-      });
     });
   }
 
@@ -624,6 +677,24 @@ export class OfficeScene extends Phaser.Scene {
             repeat: -1,
           });
         }
+
+        const sitKey = getAvatarAnimationKey(definition, direction, "sit");
+        if (!this.anims.exists(sitKey)) {
+          this.anims.create({
+            frameRate: 1,
+            frames: [
+              {
+                key: getAvatarFrameKey(
+                  definition,
+                  definition.sitFramesByDirection[direction][0]!,
+                  definition.sitTextureKey,
+                ),
+              },
+            ],
+            key: sitKey,
+            repeat: -1,
+          });
+        }
       });
     });
   }
@@ -642,6 +713,89 @@ export class OfficeScene extends Phaser.Scene {
       true,
     );
   }
+
+  private resetMovementKeys(): void {
+    this.cursors.down.reset();
+    this.cursors.left.reset();
+    this.cursors.right.reset();
+    this.cursors.up.reset();
+    this.wasd.down.reset();
+    this.wasd.left.reset();
+    this.wasd.right.reset();
+    this.wasd.up.reset();
+  }
+}
+
+function getLargestOpaqueComponent(imageData: ImageData): {
+  bounds: { bottom: number; left: number; width: number };
+  imageData: ImageData;
+} {
+  const { data, height, width } = imageData;
+  const pixelCount = width * height;
+  const visited = new Uint8Array(pixelCount);
+  let largestComponent: number[] = [];
+
+  for (let index = 0; index < pixelCount; index += 1) {
+    if (visited[index] || data[index * 4 + 3] === 0) {
+      continue;
+    }
+
+    const component: number[] = [];
+    const queue = [index];
+    visited[index] = 1;
+
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const current = queue[cursor]!;
+      component.push(current);
+      const x = current % width;
+      const y = Math.floor(current / width);
+      const neighbors = [
+        x > 0 ? current - 1 : -1,
+        x < width - 1 ? current + 1 : -1,
+        y > 0 ? current - width : -1,
+        y < height - 1 ? current + width : -1,
+      ];
+
+      neighbors.forEach((neighbor) => {
+        if (neighbor < 0 || visited[neighbor] || data[neighbor * 4 + 3] === 0) {
+          return;
+        }
+        visited[neighbor] = 1;
+        queue.push(neighbor);
+      });
+    }
+
+    if (component.length > largestComponent.length) {
+      largestComponent = component;
+    }
+  }
+
+  if (largestComponent.length === 0) {
+    throw new Error("Avatar frame has no visible pixels.");
+  }
+
+  const filteredData = new Uint8ClampedArray(data.length);
+  let left = width;
+  let right = -1;
+  let bottom = -1;
+
+  largestComponent.forEach((index) => {
+    const x = index % width;
+    const y = Math.floor(index / width);
+    const offset = index * 4;
+    filteredData[offset] = data[offset]!;
+    filteredData[offset + 1] = data[offset + 1]!;
+    filteredData[offset + 2] = data[offset + 2]!;
+    filteredData[offset + 3] = data[offset + 3]!;
+    left = Math.min(left, x);
+    right = Math.max(right, x);
+    bottom = Math.max(bottom, y);
+  });
+
+  return {
+    bounds: { bottom, left, width: right - left + 1 },
+    imageData: new ImageData(filteredData, width, height),
+  };
 }
 
 function getOpaquePixelBounds(imageData: ImageData): {
@@ -653,24 +807,20 @@ function getOpaquePixelBounds(imageData: ImageData): {
   let left = width;
   let right = -1;
   let bottom = -1;
-
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const alpha = data[(y * width + x) * 4 + 3];
       if (alpha === 0) {
         continue;
       }
-
       left = Math.min(left, x);
       right = Math.max(right, x);
       bottom = Math.max(bottom, y);
     }
   }
-
   if (right === -1 || bottom === -1) {
     throw new Error("Avatar frame has no visible pixels.");
   }
-
   return { bottom, left, width: right - left + 1 };
 }
 
@@ -688,8 +838,9 @@ function getAvatarIdleFrame(
 function getAvatarFrameKey(
   definition: AvatarSpriteDefinition,
   frame: number,
+  textureKey = definition.textureKey,
 ): string {
-  return `${definition.id}-frame-${frame}`;
+  return `${textureKey}-${definition.id}-frame-${frame}`;
 }
 
 function getAvatarAnimationKey(
