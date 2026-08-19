@@ -9,6 +9,8 @@ export * from "./contracts/socket/office-summon";
 export * from "./contracts/socket/presence";
 export * from "./contracts/socket/subtitle";
 export * from "./domain/collaboration";
+export * from "./domain/avatar";
 export * from "./domain/language";
 export * from "./domain/member";
 export * from "./domain/meeting";
+export * from "./domain/office-map";

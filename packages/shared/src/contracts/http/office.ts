@@ -12,13 +12,19 @@ import type {
   PublicOfficeTodo,
   TodoStatus
 } from "../../domain/collaboration";
+import type { OfficeAvatarId } from "../../domain/avatar";
 import type { LanguageCode } from "../../domain/language";
 
 export interface CreateGuestOfficeSessionRequest {
+  avatarId?: OfficeAvatarId;
   countryCode: CountryCode;
   displayName: string;
   guestToken?: string;
   language: LanguageCode;
+}
+
+export interface GuestOfficeAvatarAvailabilityResponse {
+  availableAvatarIds: OfficeAvatarId[];
 }
 
 export interface GuestOfficeSessionResponse {
