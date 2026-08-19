@@ -19,6 +19,11 @@ export class CreateOfficeCalendarEventDto implements CreateOfficeCalendarEventRe
   @IsOptional()
   isAllDay?: boolean;
 
+  @IsOptional()
+  @IsString()
+  @Length(1, 160)
+  location?: string;
+
   @IsISO8601()
   startsAt!: string;
 
