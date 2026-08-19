@@ -16,6 +16,7 @@ export interface AvatarFrameSource {
 
 export interface AvatarSpriteDefinition {
   assetPath: string;
+  faceCenterOffset: { x: number; y: number };
   footBaseline: number;
   frameSources: AvatarFrameSource[];
   id: string;
@@ -57,12 +58,39 @@ const AVATAR_LABELS: Record<OfficeAvatarId, string> = {
   zebra: "얼룩말",
 };
 
+// The exported sheets keep a common 256px frame but each character is drawn at
+// a different center. These offsets center the idle-down frame only in UI icons.
+const AVATAR_FACE_CENTER_OFFSETS: Record<
+  OfficeAvatarId,
+  { x: number; y: number }
+> = {
+  capybara: { x: 0, y: -13.5 },
+  cat: { x: -15.5, y: -10.5 },
+  cow: { x: -27, y: -13 },
+  dog: { x: -5.5, y: -15 },
+  eagle: { x: -15.5, y: -19 },
+  hippo: { x: -42, y: -3 },
+  monkey: { x: -6, y: -13.5 },
+  parrot: { x: -10, y: -2 },
+  red_panda: { x: -15.5, y: -19.5 },
+  sheep: { x: 1, y: -11 },
+  wolf: { x: -29.5, y: -5 },
+  zebra: { x: 0.5, y: -13.5 },
+};
+
+// Capybara's front and sitting frames leave less lower margin than the other
+// sheets. Keep its baseline higher so the feet do not meet the frame edge.
+const AVATAR_FOOT_BASELINES: Partial<Record<OfficeAvatarId, number>> = {
+  capybara: 210,
+};
+
 function createAvatarSpriteDefinition(
   id: OfficeAvatarId,
 ): AvatarSpriteDefinition {
   return {
     assetPath: `/assets/${id}.png`,
-    footBaseline: 236,
+    faceCenterOffset: AVATAR_FACE_CENTER_OFFSETS[id],
+    footBaseline: AVATAR_FOOT_BASELINES[id] ?? 236,
     frameSources: createFrameSources(),
     id,
     idleFrameByDirection: { down: 0, left: 2, right: 2, up: 1 },
@@ -141,15 +169,13 @@ export function getRequiredAvatarFrameIndices(
 export function shouldFlipAvatarSprite(
   _avatarId: string | undefined,
   direction: AvatarDirection,
-  animation: AvatarAnimation,
+  _animation: AvatarAnimation,
 ): boolean {
   if (direction !== "left" && direction !== "right") {
     return false;
   }
 
-  if (animation === "sit") {
-    return direction === "left";
-  }
-
-  return direction === "left" ? animation === "walk" : animation === "idle";
+  // All supplied side-facing frames look right. Keep one flip rule for idle,
+  // walking, and sitting so a character cannot reverse when it stops moving.
+  return direction === "left";
 }

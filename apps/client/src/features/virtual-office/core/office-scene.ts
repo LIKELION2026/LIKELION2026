@@ -14,7 +14,11 @@ import {
   shouldFlipAvatarSprite,
   type AvatarSpriteDefinition,
 } from "./avatar-sprite-definition";
-import { removeNearTransparentPixels } from "./avatar-pixel-normalizer";
+import {
+  constrainOpaqueFrameOffset,
+  removeDetachedPixelArtifacts,
+  removeNearTransparentPixels,
+} from "./avatar-pixel-normalizer";
 import {
   getCalendarPresenceLabel,
   shouldDimCalendarPresence,
@@ -85,6 +89,7 @@ export class OfficeScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
+  private sittingDirection: PresenceMovePayload["direction"] = "down";
   private wasd!: Record<
     "down" | "left" | "right" | "up",
     Phaser.Input.Keyboard.Key
@@ -429,9 +434,14 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     if (Phaser.Input.Keyboard.JustDown(this.sitToggle)) {
-      this.isSitting = !this.isSitting;
-      if (this.isSitting) {
+      if (!this.isSitting) {
+        this.sittingDirection = this.direction;
+        this.isSitting = true;
         // A movement key can still be held when C is pressed.
+        this.resetMovementKeys();
+      } else {
+        this.isSitting = false;
+        this.direction = this.sittingDirection;
         this.resetMovementKeys();
       }
     }
@@ -707,15 +717,29 @@ export class OfficeScene extends Phaser.Scene {
         source.height,
       );
       const normalizedImageData = new ImageData(
-        removeNearTransparentPixels(imageData.data),
+        removeDetachedPixelArtifacts(
+          removeNearTransparentPixels(imageData.data),
+          imageData.width,
+          imageData.height,
+        ),
         imageData.width,
         imageData.height,
       );
       const bounds = getOpaquePixelBounds(normalizedImageData);
-      const xOffset = Math.round(
+      const xOffset = constrainOpaqueFrameOffset(
+        Math.round(
         source.width / 2 - (bounds.left + bounds.width / 2),
+        ),
+        bounds.left,
+        bounds.right,
+        source.width,
       );
-      const yOffset = definition.footBaseline - bounds.bottom;
+      const yOffset = constrainOpaqueFrameOffset(
+        definition.footBaseline - bounds.bottom,
+        bounds.top,
+        bounds.bottom,
+        source.height,
+      );
 
       texture.context.clearRect(0, 0, source.width, source.height);
       texture.context.putImageData(normalizedImageData, xOffset, yOffset);
@@ -801,12 +825,15 @@ export class OfficeScene extends Phaser.Scene {
 function getOpaquePixelBounds(imageData: ImageData): {
   bottom: number;
   left: number;
+  right: number;
+  top: number;
   width: number;
 } {
   const { data, height, width } = imageData;
   let left = width;
   let right = -1;
   let bottom = -1;
+  let top = height;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const alpha = data[(y * width + x) * 4 + 3];
@@ -815,13 +842,14 @@ function getOpaquePixelBounds(imageData: ImageData): {
       }
       left = Math.min(left, x);
       right = Math.max(right, x);
+      top = Math.min(top, y);
       bottom = Math.max(bottom, y);
     }
   }
   if (right === -1 || bottom === -1) {
     throw new Error("Avatar frame has no visible pixels.");
   }
-  return { bottom, left, width: right - left + 1 };
+  return { bottom, left, right, top, width: right - left + 1 };
 }
 
 function getAvatarIdleFrame(
