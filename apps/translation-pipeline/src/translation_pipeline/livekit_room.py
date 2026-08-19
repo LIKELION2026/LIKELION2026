@@ -12,7 +12,7 @@
 import asyncio
 from typing import Callable
 
-from .agent import TranslationAgent
+from .agent import TranslationAgent, participant_receives_translation, read_participant
 from .livekit_audio import open_participant_audio, pump_audio
 
 
@@ -53,6 +53,32 @@ class ParticipantAudioRunner:
         self._tasks[identity] = asyncio.ensure_future(pump_audio(stream, worker.audio))
         return True
 
+    async def refresh(self, participant) -> bool:
+        """참가자 attributes 변경을 반영한다.
+
+        말하는 언어가 바뀌면 STT 언어도 달라져야 하므로 기존 워커와 오디오
+        태스크를 닫고 새로 붙인다. 통역 대상이 아니게 바뀌면 떼어낸다.
+        """
+        identity = (getattr(participant, "identity", "") or "").strip()
+        if not identity:
+            return False
+
+        next_info = read_participant(participant)
+        existing_worker = self._agent.workers().get(identity)
+
+        if next_info is None:
+            await self.detach(identity)
+            return False
+
+        if existing_worker is not None and existing_worker.info == next_info:
+            if identity in self._tasks:
+                return True
+
+            return self.attach(participant)
+
+        await self.detach(identity)
+        return self.attach(participant)
+
     async def detach(self, identity: str) -> None:
         """참가자를 떼고 태스크와 스레드를 정리한다."""
         task = self._tasks.pop(identity, None)
@@ -81,7 +107,34 @@ def register_participant_events(
     스크립트에 두지 않고 모듈로 옮겨 테스트한다.
     """
 
+    async def _sync_translation_targets(extra_participant=None) -> None:
+        if not room_has_translation_receivers(room, extra_participant):
+            for identity in list(runner.tracked()):
+                await runner.detach(identity)
+            return
+
+        participants = list(room.remote_participants.values())
+        if extra_participant is not None and all(
+            participant.identity != extra_participant.identity
+            for participant in participants
+        ):
+            participants.append(extra_participant)
+
+        for participant in participants:
+            was_tracked = participant.identity in runner.tracked()
+            if await runner.refresh(participant):
+                if not was_tracked and on_attached is not None:
+                    on_attached(participant)
+                continue
+            if on_skipped is not None:
+                on_skipped(participant)
+
     def _connected(participant) -> None:
+        if not room_has_translation_receivers(room, participant):
+            if on_skipped is not None:
+                on_skipped(participant)
+            return
+
         if runner.attach(participant):
             if on_attached is not None:
                 on_attached(participant)
@@ -93,17 +146,57 @@ def register_participant_events(
         if on_detached is not None:
             on_detached(identity)
         # 이걸 놓치면 워커 스레드와 오디오 태스크가 그대로 남는다.
-        asyncio.create_task(runner.detach(identity))
+        asyncio.create_task(_detach_and_sync_translation_targets(identity))
+
+    async def _detach_and_sync_translation_targets(identity: str) -> None:
+        await runner.detach(identity)
+        await _sync_translation_targets()
+
+    def _attributes_changed(*args) -> None:
+        participant = extract_participant_from_attribute_event(*args)
+        if participant is None:
+            return
+
+        asyncio.create_task(_sync_translation_targets(participant))
 
     room.on("participant_connected", _connected)
     room.on("participant_disconnected", _disconnected)
+    room.on("participant_attributes_changed", _attributes_changed)
 
 
-def attach_existing_participants(room, runner: ParticipantAudioRunner, on_attached=None, on_skipped=None) -> None:
+def attach_existing_participants(
+    room, runner: ParticipantAudioRunner, on_attached=None, on_skipped=None
+) -> None:
     """워커가 들어가기 전에 이미 있던 참가자를 받는다."""
+    if not room_has_translation_receivers(room):
+        if on_skipped is not None:
+            for participant in list(room.remote_participants.values()):
+                on_skipped(participant)
+        return
+
     for participant in list(room.remote_participants.values()):
         if runner.attach(participant):
             if on_attached is not None:
                 on_attached(participant)
         elif on_skipped is not None:
             on_skipped(participant)
+
+
+def room_has_translation_receivers(room, extra_participant=None) -> bool:
+    """방 안에 AI 번역을 켠 참가자가 하나라도 있는지 확인한다."""
+    participants = list(room.remote_participants.values())
+    if extra_participant is not None:
+        participants.append(extra_participant)
+
+    return any(
+        participant_receives_translation(participant) for participant in participants
+    )
+
+
+def extract_participant_from_attribute_event(*args):
+    """LiveKit SDK 버전별 attributes changed 인자 차이를 흡수한다."""
+    for value in reversed(args):
+        if hasattr(value, "identity"):
+            return value
+
+    return None

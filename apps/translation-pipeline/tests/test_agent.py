@@ -13,8 +13,11 @@ from translation_pipeline.agent import (
     COUNTRY_ATTRIBUTE,
     LANGUAGE_ATTRIBUTE,
     LANGUAGE_BY_COUNTRY,
+    TARGET_LANGUAGE_ATTRIBUTE,
+    TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE,
     ParticipantInfo,
     TranslationAgent,
+    participant_receives_translation,
     read_participant,
 )
 
@@ -111,6 +114,18 @@ def test_a_participant_with_an_unsupported_language_is_skipped():
     participant = FakeParticipant(attributes={LANGUAGE_ATTRIBUTE: "en"})
 
     assert read_participant(participant) is None
+
+
+def test_translation_receiving_is_off_by_default():
+    assert participant_receives_translation(korean()) is False
+
+
+def test_translation_receiving_reads_the_livekit_attribute():
+    participant = FakeParticipant(
+        attributes={TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE: "true"}
+    )
+
+    assert participant_receives_translation(participant) is True
 
 
 def test_a_participant_without_identity_is_skipped():
@@ -249,6 +264,17 @@ def test_the_country_attribute_key_matches_the_server():
     source = read_source(SERVER_MEETING_SERVICE)
 
     assert re.search(rf"\b{COUNTRY_ATTRIBUTE}\b", source)
+
+
+def test_the_translation_attribute_keys_match_the_server():
+    shared_source = read_source(SHARED_MEETING_CONTRACT)
+    server_source = read_source(SERVER_MEETING_SERVICE)
+
+    assert re.search(rf"\b{TARGET_LANGUAGE_ATTRIBUTE}\b", shared_source)
+    assert re.search(
+        rf"\b{TRANSLATION_RECEIVING_ENABLED_ATTRIBUTE}\b", shared_source
+    )
+    assert re.search(r"\bMEETING_PARTICIPANT_ATTRIBUTE_KEYS\b", server_source)
 
 
 def test_the_country_language_map_matches_the_shared_contract():
