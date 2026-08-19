@@ -9,7 +9,7 @@ import type {
 
 import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
-import { MeetingRoomSessionPanel } from "../../realtime-meeting/ui/MeetingRoomSessionPanel";
+import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
 import { OfficeScene } from "../core/office-scene";
 import { useOfficeConnection } from "../model/office-connection-context";
 import { useOfficeStore } from "../model/office-store";
@@ -206,7 +206,15 @@ export function VirtualOffice(): JSX.Element {
   }, [isSceneReady, session?.member.avatarId]);
 
   return (
-    <section className="virtual-office" aria-label="가상 오피스">
+    <section
+      className={[
+        "virtual-office",
+        isInsideMeetingRoom ? "in-meeting-room" : ""
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label="가상 오피스"
+    >
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud
         avatarId={session?.member.avatarId}
@@ -258,7 +266,7 @@ export function VirtualOffice(): JSX.Element {
         request={pendingSummon}
       />
       {isInsideMeetingRoom ? (
-        <MeetingRoomSessionPanel
+        <MeetingRoomOverlay
           controller={meetingController}
           isOfficeSessionReady={Boolean(session)}
           roomLabel={meetingRoomSection.label}
