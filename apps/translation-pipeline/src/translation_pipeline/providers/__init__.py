@@ -6,5 +6,6 @@ provider를 추가할 때는 이 패키지에 파일을 하나 더 두고, 파�
 """
 
 from .gemini import GeminiTranslator
+from .openai import OpenAITranslator
 
-__all__ = ["GeminiTranslator"]
+__all__ = ["GeminiTranslator", "OpenAITranslator"]

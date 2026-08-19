@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from .context import ConversationTurn
-from .errors import TranslationError
+from .errors import ProviderUnavailableError, TranslationError
 from .glossary import GlossaryEntry
 from .guidelines import load_guidelines
 from .languages import ensure_supported, language_name
@@ -112,6 +112,30 @@ class HedgedTranslator:
 
         assert last_error is not None
         raise last_error
+
+
+class FallbackTranslator:
+    """1차 provider가 일시적으로 응답하지 못할 때만 2차 provider로 넘기는 감싸개.
+
+    일시 실패(``ProviderUnavailableError`` — 호출 한도 초과, 서버 과부하,
+    타임아웃)만 대체 대상이다. 그 외 실패(잘못된 요청, 빈 응답 등)는 provider를
+    바꿔도 다시 실패할 뿐이므로 그대로 올린다 — ``HedgedTranslator``와 같은
+    "실패는 재시도하지 않는다"는 원칙을 지킨다.
+
+    상태를 따로 기억하지 않는다. 호출마다 1차부터 다시 시도하므로, 1차가
+    회복되면 다음 호출에서 자연히 1차로 돌아간다.
+    """
+
+    def __init__(self, primary: Translator, fallback: Translator) -> None:
+        self._primary = primary
+        self._fallback = fallback
+
+    def translate(self, request: TranslationRequest) -> str:
+        try:
+            return self._primary.translate(request)
+        except ProviderUnavailableError as error:
+            print(f"  [대체 provider] 1차 provider 일시 실패, 대체 provider로 전환합니다: {error}")
+            return self._fallback.translate(request)
 
 
 def build_system_prompt(request: TranslationRequest) -> str:

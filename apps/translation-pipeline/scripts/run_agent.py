@@ -21,6 +21,8 @@ Ctrl+C로 종료한다. `dev` 명령도 있지만 deprecated 경고를 낸다.
 
     PIPELINE_SERVER_URL               자막을 보낼 Server 주소
     TRANSLATION_MODEL                 번역 모델
+    OPENAI_API_KEY                    있으면 Gemini가 429에 걸릴 때 OpenAI로 대체한다
+    TRANSLATION_FALLBACK_MODEL        대체 provider(OpenAI) 모델
     TRANSLATION_ENDPOINTING_MS        발화 종료로 볼 무음 길이
     TRANSLATION_INTERIM_INTERVAL_MS   중간 결과 번역 간격
     TRANSLATION_FINALIZE_AFTER_MS     이만큼 조용하면 열린 발화를 확정한다
@@ -55,6 +57,7 @@ from translation_pipeline import (  # noqa: E402
     DEFAULT_HEDGE_AFTER_MS,
     DEFAULT_INTERIM_INTERVAL_MS,
     DEFAULT_MIN_INTERIM_CHARS,
+    FallbackTranslator,
     ParticipantAudioRunner,
     SessionEvent,
     SubtitlePublisher,
@@ -65,8 +68,12 @@ from translation_pipeline.livekit_room import (  # noqa: E402
     attach_existing_participants,
     register_participant_events,
 )
-from translation_pipeline.providers import GeminiTranslator  # noqa: E402
+from translation_pipeline.providers import GeminiTranslator, OpenAITranslator  # noqa: E402
 from translation_pipeline.providers.gemini import DEFAULT_MODEL  # noqa: E402
+from translation_pipeline.providers.openai import (  # noqa: E402
+    DEFAULT_MODEL as DEFAULT_FALLBACK_MODEL,
+    ENV_API_KEY as FALLBACK_API_KEY_ENV,
+)
 from translation_pipeline.stt import DEFAULT_ENDPOINTING_MS  # noqa: E402
 
 # 방 안에서 이 워커가 쓰는 참가자 ID.
@@ -191,11 +198,37 @@ async def handle_request(request: JobRequest) -> None:
     await request.accept(identity=AGENT_IDENTITY, name=AGENT_NAME)
 
 
+def build_translator_factory(model: str, fallback_model: str):
+    """1차(Gemini) provider의 factory를 만든다.
+
+    ``OPENAI_API_KEY``가 있으면 Gemini가 호출 한도(429)에 걸렸을 때만 OpenAI로
+    넘기는 `FallbackTranslator`로 감싼다. 키가 없으면 기존과 같이 Gemini만
+    쓴다 — 이 환경변수를 안 채운 개발자의 기존 동작은 바뀌지 않는다.
+
+    다음 호출에서는 다시 Gemini부터 시도하므로, 한도가 풀리면 자연히 Gemini로
+    돌아간다. 별도로 "복구됐는지" 확인하는 상태를 두지 않는다.
+    """
+    if not os.environ.get(FALLBACK_API_KEY_ENV):
+        return lambda: GeminiTranslator(model=model)
+
+    print(
+        f"[{now()}] {FALLBACK_API_KEY_ENV} 설정됨: Gemini가 한도(429)에 걸리면"
+        f" OpenAI({fallback_model})로 대체합니다."
+    )
+    return lambda: FallbackTranslator(
+        primary=GeminiTranslator(model=model),
+        fallback=OpenAITranslator(model=fallback_model),
+    )
+
+
 async def translate_room(ctx: JobContext) -> None:
     """배정받은 회의방에서 참가자 전원을 통역한다."""
     room_name = ctx.room.name
     server_url = os.environ.get("PIPELINE_SERVER_URL") or None
     model = (os.environ.get("TRANSLATION_MODEL") or "").strip() or DEFAULT_MODEL
+    fallback_model = (
+        os.environ.get("TRANSLATION_FALLBACK_MODEL") or ""
+    ).strip() or DEFAULT_FALLBACK_MODEL
     endpointing_ms = env_int("TRANSLATION_ENDPOINTING_MS", AGENT_ENDPOINTING_MS)
     interim_interval_ms = env_int(
         "TRANSLATION_INTERIM_INTERVAL_MS", DEFAULT_INTERIM_INTERVAL_MS
@@ -219,7 +252,7 @@ async def translate_room(ctx: JobContext) -> None:
         )
     agent = TranslationAgent(
         room_name=room_name,
-        translator_factory=lambda: GeminiTranslator(model=model),
+        translator_factory=build_translator_factory(model, fallback_model),
         publisher=publisher,
         endpointing_ms=endpointing_ms,
         interim_interval_ms=interim_interval_ms,

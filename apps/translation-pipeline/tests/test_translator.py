@@ -5,10 +5,15 @@ import time
 import pytest
 
 from translation_pipeline.context import ConversationTurn
-from translation_pipeline.errors import TranslationError, UnsupportedLanguageError
+from translation_pipeline.errors import (
+    ProviderUnavailableError,
+    TranslationError,
+    UnsupportedLanguageError,
+)
 from translation_pipeline.glossary import GlossaryEntry
 from translation_pipeline.translator import (
     FakeTranslator,
+    FallbackTranslator,
     HedgedTranslator,
     TranslationRequest,
     Translator,
@@ -239,3 +244,65 @@ def test_when_the_slow_first_attempt_eventually_succeeds_it_is_used():
 
     assert result == "느리지만 성공"
     assert inner.calls == 2
+
+
+# --- 대체 provider(FallbackTranslator) ---
+#
+# 1차 provider가 일시 실패(ProviderUnavailableError — 호출 한도 초과, 서버
+# 과부하, 타임아웃)했을 때만 2차로 넘긴다. 그 외 실패는 provider를 바꿔도
+# 다시 실패할 뿐이므로 그대로 올린다.
+
+
+def test_uses_the_primary_result_when_it_succeeds():
+    primary = FakeTranslator("1차 번역")
+    fallback = FakeTranslator("2차 번역")
+    translator = FallbackTranslator(primary, fallback)
+
+    result = translator.translate(make_request())
+
+    assert result == "1차 번역"
+    assert len(fallback.requests) == 0
+
+
+def test_falls_back_when_the_primary_is_temporarily_unavailable():
+    primary = ControllableTranslator([(0.0, ProviderUnavailableError("일시 실패"))])
+    fallback = FakeTranslator("2차 번역")
+    translator = FallbackTranslator(primary, fallback)
+
+    result = translator.translate(make_request())
+
+    assert result == "2차 번역"
+    assert primary.calls == 1
+    assert len(fallback.requests) == 1
+
+
+def test_other_failures_are_not_sent_to_the_fallback():
+    # 잘못된 요청이나 빈 응답 같은 실패는 provider를 바꿔도 똑같이 실패한다.
+    # 대체 없이 그대로 올려야 원인 파악이 쉽다.
+    primary = ControllableTranslator([(0.0, TranslationError("일반 실패"))])
+    fallback = FakeTranslator("2차 번역")
+    translator = FallbackTranslator(primary, fallback)
+
+    with pytest.raises(TranslationError) as exc_info:
+        translator.translate(make_request())
+
+    assert not isinstance(exc_info.value, ProviderUnavailableError)
+    assert len(fallback.requests) == 0
+
+
+def test_each_call_retries_the_primary_first():
+    # 상태를 따로 기억하지 않는다. 1차가 회복되면 다음 호출에서 자연히
+    # 1차로 돌아간다.
+    primary = ControllableTranslator(
+        [(0.0, ProviderUnavailableError("일시 실패")), (0.0, "복구된 1차 번역")]
+    )
+    fallback = FakeTranslator("2차 번역")
+    translator = FallbackTranslator(primary, fallback)
+
+    first = translator.translate(make_request())
+    second = translator.translate(make_request())
+
+    assert first == "2차 번역"
+    assert second == "복구된 1차 번역"
+    assert primary.calls == 2
+    assert len(fallback.requests) == 1
