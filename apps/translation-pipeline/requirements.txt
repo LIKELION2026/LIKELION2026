@@ -5,6 +5,9 @@ pytest>=7.0
 # 4단계 번역 provider
 google-genai>=2.18.1
 
+# Gemini 무료 티어 한도(429) 초과 시 대체 provider
+openai>=2.54.0
+
 # 2·6단계 Deepgram 음성 인식
 deepgram-sdk>=7.7.0
 

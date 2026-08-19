@@ -6,8 +6,25 @@ Anthropic API 비용을 집행할 수 없어 무료 티어를 쓸 수 있는 Gem
 
 import os
 
-from ..errors import TranslationError
+from ..errors import ProviderUnavailableError, TranslationError
 from ..translator import TranslationRequest, build_system_prompt
+
+# 실측(운영 로그)에서 확인한 일시적 실패 패턴이다. SDK가 원문 오류를 그대로
+# 감싸서 올리므로 메시지에 아래 표시 중 하나는 들어있다.
+#   429 RESOURCE_EXHAUSTED - 분당 요청 수(RPM) 한도 초과
+#   503 UNAVAILABLE        - 서버 과부하
+#   504 DEADLINE_EXCEEDED  - 서버가 시간 안에 응답하지 못함
+#   read operation timed out - 클라이언트가 응답을 기다리다 자체 타임아웃
+# 소문자로 비교해 대소문자 차이를 신경 쓰지 않는다.
+_TRANSIENT_ERROR_MARKERS = (
+    "429",
+    "resource_exhausted",
+    "503",
+    "unavailable",
+    "504",
+    "deadline_exceeded",
+    "timed out",
+)
 
 # 통역은 지연에 민감해서 flash 계열을 쓴다.
 #
@@ -101,7 +118,11 @@ class GeminiTranslator:
                 config=config,
             )
         except Exception as error:  # provider 예외 타입은 SDK마다 다르다
-            raise TranslationError(f"Gemini 호출이 실패했습니다: {error}") from error
+            message = f"Gemini 호출이 실패했습니다: {error}"
+            lowered_message = str(error).lower()
+            if any(marker in lowered_message for marker in _TRANSIENT_ERROR_MARKERS):
+                raise ProviderUnavailableError(message) from error
+            raise TranslationError(message) from error
 
         text = (response.text or "").strip()
         if not text:

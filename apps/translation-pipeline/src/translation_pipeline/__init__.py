@@ -13,6 +13,7 @@ from .agent import (
 from .context import DEFAULT_MAX_TURNS, ConversationContext, ConversationTurn
 from .errors import (
     GlossaryError,
+    ProviderUnavailableError,
     TranslationError,
     TranslationPipelineError,
     UnknownParticipantError,
@@ -60,6 +61,7 @@ from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_is
 from .translator import (
     DEFAULT_HEDGE_AFTER_MS,
     FakeTranslator,
+    FallbackTranslator,
     HedgedTranslator,
     TranslationRequest,
     Translator,
@@ -75,6 +77,7 @@ __all__ = [
     "ConversationContext",
     "ConversationTurn",
     "FakeTranslator",
+    "FallbackTranslator",
     "Glossary",
     "GlossaryEntry",
     "GlossaryError",
@@ -91,6 +94,7 @@ __all__ = [
     "ParticipantInfo",
     "ParticipantRegistry",
     "ParticipantWorker",
+    "ProviderUnavailableError",
     "RealtimeTranscriber",
     "SubtitleError",
     "SubtitlePayload",
