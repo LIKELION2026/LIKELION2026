@@ -1618,7 +1618,7 @@ button {
   display: flex;
   gap: 8px;
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 4;
   justify-self: center;
   max-width: min(100%, 760px);
   overflow-x: auto;

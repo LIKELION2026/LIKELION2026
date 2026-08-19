@@ -1,5 +1,6 @@
 import { useMemo, useState, type JSX } from "react";
 import { Track } from "livekit-client";
+import type { SubtitleCreatedPayload } from "@likelion2026/shared";
 
 import { useMeetingChat } from "../model/use-meeting-chat";
 import { useMeetingSubtitles } from "../model/use-meeting-subtitles";
@@ -89,6 +90,9 @@ export function MeetingRoomOverlay({
           status={chatState.status}
         />
       </aside>
+      {latestTranslationSubtitle ? (
+        <MeetingLiveTranslationCaption subtitle={latestTranslationSubtitle} />
+      ) : null}
       <MeetingControlBar
         canControlMedia={canControlMedia}
         extraControlSlot={
@@ -119,5 +123,24 @@ export function MeetingRoomOverlay({
         }}
       />
     </div>
+  );
+}
+
+function MeetingLiveTranslationCaption({
+  subtitle
+}: {
+  subtitle: SubtitleCreatedPayload;
+}): JSX.Element {
+  return (
+    <section
+      aria-label="실시간 AI 번역"
+      aria-live="polite"
+      className={`meeting-live-translation-caption ${
+        subtitle.isFinal ? "final" : "partial"
+      }`}
+    >
+      <span>{subtitle.speaker.displayName}</span>
+      <p>{subtitle.translatedText || subtitle.sourceText}</p>
+    </section>
   );
 }
