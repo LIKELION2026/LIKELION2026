@@ -6,9 +6,9 @@
 >
 > 마지막 업데이트: 2026-08-19
 >
-> 상태: 구현 전 계획
+> 상태: 구현 진행
 >
-> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6, https://github.com/LIKELION2026/LIKELION2026/issues/133
+> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6, https://github.com/LIKELION2026/LIKELION2026/issues/133, https://github.com/LIKELION2026/LIKELION2026/issues/134
 
 ## 해결하려는 문제
 
@@ -19,7 +19,7 @@
 - 1:1 또는 소규모 회의방 입장·퇴장
 - 로컬·상대 참가자의 영상과 음성 표시
 - 카메라·마이크 권한, 연결 중, 연결 실패 상태 표시
-- 한국어·영어 자막 UI
+- 한국어·베트남어 자막 UI
 - 실제 음성 인식 전 자막 이벤트 Mock으로 화면과 Socket 계약 검증
 
 회의 요약, 장기 녹화 저장, 자동 업무 배정은 이 기능의 초기 범위에서 제외한다.
@@ -79,8 +79,23 @@ sequenceDiagram
 - 전송 실패 메시지는 사라지지 않고, 사용자가 재시도하거나 삭제할 수 있다.
 - 세션 채팅은 현재 회의 참가자에게만 전달되는 비영속 메시지다. DB 저장과 이전 회의 내역 복원은 후속 범위로 둔다.
 - UI 메모리 보호 상한은 최근 5,000개 메시지다. 1시간 회의에서 일반 채팅과 AI 번역 메시지가 함께 들어오는 상황을 고려해, 기존 100개 제한보다 크게 잡는다.
-- AI 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `translation` kind와 `AI 번역` 라벨로 구분한다. 회의 연결 중에는 자막 Socket 구독을 유지하되, 번역 ON일 때만 자막 payload를 채팅 타임라인에 병합하고 원문은 별도 `sourceText`로 보존한다.
+- AI 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `translation` kind와 `AI 번역` 라벨로 구분한다. 번역 ON 상태에서만 자막 Socket을 구독하고, 켠 시각(`activatedAt`) 이후 payload만 채팅 타임라인에 병합한다. 원문은 별도 `sourceText`로 보존한다.
 - 재연결 중에는 이번 MVP에서 입력을 비활성화한다. 로컬 대기열 전송은 후속 안정화 범위로 둔다.
+
+## AI 번역 ON/OFF 정책
+
+- AI 번역은 기본 ON이다.
+- OFF 상태에서 하단 `Globe` 버튼을 눌러 다시 ON으로 바꾸면 언어 설정 모달을 먼저 띄운다.
+- MVP 지원 언어는 `ko`, `vi`만 허용한다.
+- UI 옵션은 `KR`, `VI`로 표시하고, 내부 언어 코드는 각각 `ko`, `vi`를 사용한다.
+- `나의 언어`와 `상대방에게 보여줄 언어`는 서로 달라야 한다.
+- 저장 성공 전에는 UI를 ON으로 바꾸지 않는다. Client는 LiveKit participant attributes 업데이트가 성공한 뒤에만 `enabled: true`와 `activatedAt`을 반영한다.
+- OFF로 끄면 일반 채팅은 유지하지만 AI 번역 자막/채팅은 더 이상 표시하지 않는다.
+- OFF 중 생성된 번역 payload는 나중에 다시 ON으로 켜도 소급 표시하지 않는다.
+- 저장한 언어 선택은 다음 회의 진입의 기본값으로 재사용한다.
+- 회의 토큰 요청에도 저장한 언어 선택을 포함해 LiveKit participant attributes와 Client UI가 같은 기본값으로 시작한다.
+- 번역 payload가 아직 없을 때는 하단 caption 영역에 `AI 번역 연결 중`, `AI 번역 대기 중`, `AI 번역 연결 실패` 중 하나를 표시한다. 현재 Client는 자막 Socket 상태만 알 수 있으므로, Translation Agent worker의 실제 가동 여부는 별도 heartbeat가 붙기 전까지 `대기 중`과 구분하지 않는다.
+- LiveKit participant attributes 키는 `preferredLanguage`, `translationTargetLanguage`, `translationReceivingEnabled`를 사용한다.
 
 ## Server 구현 기준
 
@@ -88,6 +103,8 @@ sequenceDiagram
 - LiveKit SDK 접근과 토큰 생성 세부 구현은 `apps/server/src/integrations/livekit`에 둔다.
 - 토큰 API는 인증된 사용자와 허용된 룸 이름만 받는다.
 - 토큰은 짧은 TTL을 사용하고, API Key와 Secret은 응답·로그·Client 번들에 포함하지 않는다.
+- 토큰 attributes에는 참가자의 기본 말하기 언어와 번역 수신 상태를 포함한다. 기본값은 `translationReceivingEnabled: "true"`다.
+- Client가 모달 저장 후 자신의 번역 attributes를 갱신할 수 있도록 LiveKit grant에 `canUpdateOwnMetadata`를 포함한다.
 - 룸은 첫 참가자가 연결될 때 생성될 수 있으므로, MVP에서는 별도 룸 생성 API를 강제하지 않는다.
 
 ## 환경변수
