@@ -104,69 +104,6 @@ button {
   width: 100%;
 }
 
-.office-hud {
-  display: flex;
-  gap: 10px;
-  left: 16px;
-  position: absolute;
-  top: 16px;
-  z-index: 1;
-}
-
-.hud-panel {
-  background: rgb(255 255 255 / 94%);
-  border: 1px solid #cbd5df;
-  box-shadow: 0 6px 18px rgb(28 39 53 / 12%);
-  max-width: 300px;
-  padding: 12px;
-}
-
-.hud-title {
-  font-size: 12px;
-  font-weight: 800;
-  margin: 0 0 6px;
-}
-
-.hud-meta {
-  color: #58687c;
-  font-size: 12px;
-  margin: 0;
-}
-
-.connection-state {
-  align-items: center;
-  display: flex;
-  font-size: 12px;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.connection-dot {
-  background: #9aa7b6;
-  border-radius: 50%;
-  height: 8px;
-  width: 8px;
-}
-
-.connection-dot.connected {
-  background: #1a9c63;
-}
-
-.connection-dot.connecting,
-.connection-dot.reconnecting {
-  background: #db8b16;
-}
-
-.status-control {
-  border: 1px solid #cbd5df;
-  border-radius: 4px;
-  color: #172235;
-  font-size: 12px;
-  margin-top: 8px;
-  padding: 6px;
-  width: 100%;
-}
-
 .attendance-button {
   background: #1558d6;
   border: 1px solid #1558d6;
@@ -191,6 +128,158 @@ button {
   width: 100%;
 }
 
+.office-hud {
+  display: flex;
+  gap: 10px;
+  left: 16px;
+  position: absolute;
+  top: 16px;
+  z-index: 1;
+}
+
+.office-hud .hud-panel {
+  background-color: #f6e4c8;
+  background-image: radial-gradient(rgb(107 74 53 / 14%) 1px, transparent 1px);
+  background-size: 6px 6px;
+  border: 4px solid #6b4a35;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px #c99f6c,
+    0 6px 0 rgb(58 39 26 / 35%);
+  color: #4a2f1e;
+  font-family: Galmuri11, "Press Start 2P", Inter, Pretendard, sans-serif;
+  max-width: 300px;
+  padding: 12px;
+}
+
+.office-hud .hud-header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.hud-face {
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.hud-face-sprite {
+  image-rendering: pixelated;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform-origin: top left;
+}
+
+.office-hud .hud-face {
+  background: #fbead2;
+  border: 3px solid #6b4a35;
+}
+
+.office-hud .hud-header-text {
+  min-width: 0;
+}
+
+.office-hud .hud-title {
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0 0 4px;
+}
+
+.office-hud .hud-meta {
+  color: #7a5a3f;
+  font-size: 10px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.office-hud .connection-state {
+  align-items: center;
+  display: flex;
+  font-size: 10px;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.office-hud .connection-dot {
+  background: #9aa7b6;
+  border: 1px solid #6b4a35;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.office-hud .connection-dot.connected {
+  background: #4caf6d;
+}
+
+.office-hud .connection-dot.connecting,
+.office-hud .connection-dot.reconnecting {
+  background: #e0a63a;
+}
+
+.office-hud .status-control {
+  appearance: none;
+  background-color: #fbead2;
+  border: 2px solid #6b4a35;
+  border-radius: 8px;
+  color: #4a2f1e;
+  font-family: inherit;
+  font-size: 11px;
+  margin-top: 8px;
+  padding: 8px;
+  width: 100%;
+}
+
+.office-hud .hud-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.office-hud .hud-nav .office-secondary-button {
+  margin-top: 0;
+}
+
+.office-hud .attendance-button,
+.office-hud .office-secondary-button {
+  background: #e7c79c;
+  border: 2px solid #6b4a35;
+  border-radius: 8px;
+  box-shadow: 0 3px 0 #8a5f3d;
+  color: #4a2f1e;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  margin-top: 8px;
+  padding: 8px;
+  text-align: center;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  width: 100%;
+}
+
+.office-hud .attendance-button {
+  background: #f0895c;
+  border-color: #7a3d24;
+  box-shadow: 0 3px 0 #7a3d24;
+  color: #fff5ea;
+}
+
+.office-hud .attendance-button:hover,
+.office-hud .office-secondary-button:hover {
+  filter: brightness(1.05);
+}
+
+.office-hud .attendance-button:active,
+.office-hud .office-secondary-button:active {
+  box-shadow: 0 0 0 transparent;
+  transform: translateY(3px);
+}
+
 .office-people-panel {
   background: rgb(255 255 255 / 97%);
   border-left: 1px solid #cbd5df;
@@ -205,70 +294,306 @@ button {
   z-index: 2;
 }
 
-.office-todo-panel {
-  background: rgb(255 255 255 / 97%);
-  border-right: 1px solid #cbd5df;
-  box-shadow: 8px 0 22px rgb(28 39 53 / 12%);
-  max-width: 360px;
-  overflow-y: auto;
+.std-panel {
+  background-color: #fce9d5;
+  background-image: radial-gradient(rgb(107 74 53 / 12%) 1px, transparent 1px);
+  background-size: 6px 6px;
+  border: 4px solid #6b4a35;
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 3px #c99f6c,
+    0 6px 18px rgb(28 39 53 / 25%);
+  box-sizing: border-box;
+  color: #4a2f1e;
+  font-family: Galmuri11, "Press Start 2P", Inter, Pretendard, sans-serif;
+  max-width: 420px;
+  overflow: visible;
   padding: 18px;
   position: absolute;
-  left: 0;
-  top: 0;
-  width: min(100%, 360px);
+  left: 16px;
+  top: 16px;
+  width: min(100%, 420px);
   z-index: 2;
 }
 
-.office-todo-form {
-  border-bottom: 1px solid #e2e8ef;
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-  padding-bottom: 14px;
+.std-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
 }
 
-.office-todo-form label,
-.office-todo-form input,
-.office-todo-controls select {
-  color: #172235;
-  font-size: 12px;
+.std-title-img {
+  height: auto;
+  width: 160px;
 }
 
-.office-todo-form input:not([type="checkbox"]),
-.office-todo-controls select {
-  border: 1px solid #cbd5df;
-  border-radius: 4px;
-  padding: 8px;
-}
-
-.office-todo-public-control {
+.std-header-actions {
   align-items: center;
   display: flex;
   gap: 6px;
 }
 
-.office-todo-form .attendance-button {
-  margin-top: 0;
+.std-save-button {
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
-.office-todo-list {
+.std-save-button img {
+  display: block;
+  height: auto;
+  width: 92px;
+}
+
+.std-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.std-body {
+  display: flex;
+  gap: 10px;
   margin-top: 14px;
 }
 
-.office-todo-list ul {
+.std-avatar-card {
+  flex-shrink: 0;
+}
+
+.std-avatar-frame {
+  height: 120px;
+  position: relative;
+  width: 120px;
+}
+
+.std-avatar-frame-bg {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.std-avatar-frame .hud-face {
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.std-status-card {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.std-status-card-bg {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.std-status-card-content {
+  padding: 14px;
+  position: relative;
+}
+
+.std-status-title-img {
+  display: block;
+  height: auto;
+  margin: 0 auto 10px;
+  width: 96px;
+}
+
+.std-status-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.std-status-button {
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  padding: 0;
+  transition: transform 0.05s ease, filter 0.05s ease;
+}
+
+.std-status-button img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.std-status-button:hover {
+  filter: brightness(1.05);
+}
+
+.std-status-button:active {
+  transform: translateY(2px);
+}
+
+.std-status-button.active {
+  filter: drop-shadow(0 0 0 2px #f0895c) brightness(1.03);
+  outline: 3px solid #f0895c;
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+.std-input-frame {
+  margin-top: 10px;
+  position: relative;
+}
+
+.std-input-bg {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.std-input {
+  background: transparent;
+  border: 0;
+  color: #4a2f1e;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 12px 14px;
+  position: relative;
+  width: 100%;
+}
+
+.std-input:focus {
+  outline: 0;
+}
+
+.std-todo-card {
+  height: 220px;
+  margin-top: 14px;
+  position: relative;
+}
+
+.std-todo-card-bg {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+.std-todo-card-content {
+  box-sizing: border-box;
+  height: 100%;
+  inset: 0;
+  padding: 20px 12px 20px 28px;
+  position: absolute;
+  width: 100%;
+}
+
+.std-todo-scroll {
+  scrollbar-color: #6b4a35 #f6e4c8;
+  scrollbar-width: thin;
+}
+
+.std-todo-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.std-todo-scroll::-webkit-scrollbar-button {
+  -webkit-appearance: none;
+  display: none;
+  height: 0;
+  width: 0;
+}
+
+.std-todo-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.std-todo-scroll::-webkit-scrollbar-thumb {
+  background-color: #6b4a35;
+  border: 2px solid #f6e4c8;
+  box-shadow: inset 0 0 0 1px #c99f6c;
+}
+
+.std-todo-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #543a29;
+}
+
+.std-todo-scroll {
+  box-sizing: border-box;
+  height: 100%;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 18px,
+    black calc(100% - 18px),
+    transparent 100%
+  );
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 14px;
+  scroll-padding-block: 20px;
+  scroll-snap-type: y mandatory;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 18px,
+    black calc(100% - 18px),
+    transparent 100%
+  );
+  width: 100%;
+}
+
+.std-todo-empty {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.std-todo-empty img {
+  height: 72px;
+  width: auto;
+}
+
+.std-todo-empty p {
+  color: #7a5a3f;
+  font-size: 11px;
+  margin: 0;
+}
+
+.std-todo-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.office-todo-list li {
-  border-bottom: 1px solid #e2e8ef;
-  padding: 10px 0;
+.std-todo-list li {
+  border-bottom: 1px solid rgb(107 74 53 / 20%);
+  padding: 8px 2px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
-.office-todo-list li p {
-  color: #293a4f;
-  font-size: 13px;
+.std-todo-list li:first-child {
+  padding-top: 0;
+}
+
+.std-todo-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.std-todo-list li p {
+  color: #4a2f1e;
+  font-size: 12px;
   margin: 0 0 8px;
 }
 
@@ -1119,7 +1444,7 @@ button {
     top: 10px;
   }
 
-  .hud-panel {
+  .office-hud .hud-panel {
     max-width: 220px;
   }
 

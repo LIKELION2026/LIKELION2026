@@ -175,6 +175,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
     <section className="virtual-office" aria-label="가상 오피스">
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud
+        avatarId={session?.member.avatarId}
         connectionState={connectionState}
         memberCount={effectiveMembers.length}
         onAttendanceChange={updateAttendance}
@@ -186,9 +187,14 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         selfStatus={effectiveSelf?.status}
       />
       <OfficeTodoPanel
+        avatarId={session?.member.avatarId}
         controller={todoController}
         isOpen={isTodoPanelOpen}
+        onAttendanceChange={updateAttendance}
         onClose={() => setIsTodoPanelOpen(false)}
+        onStatusChange={updateStatus}
+        selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
+        selfStatus={effectiveSelf?.status}
       />
       <OfficeCalendarModal
         controller={calendarController}
