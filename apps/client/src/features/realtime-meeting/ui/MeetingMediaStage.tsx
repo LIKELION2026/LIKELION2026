@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { JSX } from "react";
 import { Track } from "livekit-client";
 
@@ -6,6 +5,7 @@ import type {
   LiveKitMeetingMediaTrack,
   LiveKitMeetingSessionState
 } from "../model/use-livekit-meeting-session";
+import { MeetingAudioSinks } from "./MeetingAudioSinks";
 import { MeetingMediaTrackElement } from "./MeetingMediaTrackElement";
 
 interface MeetingMediaStageProps {
@@ -25,9 +25,6 @@ export function MeetingMediaStage({
   session,
   videoTracks
 }: MeetingMediaStageProps): JSX.Element | null {
-  const [playbackActivationToken, setPlaybackActivationToken] = useState(0);
-  const [isPlaybackBlocked, setIsPlaybackBlocked] = useState(false);
-
   if (session.status === "idle" || session.status === "failed") {
     return null;
   }
@@ -56,16 +53,7 @@ export function MeetingMediaStage({
           아직 표시할 카메라 영상이 없습니다.
         </div>
       )}
-      <div className="meeting-audio-sinks" aria-hidden="true">
-        {remoteAudioTracks.map((mediaTrack) => (
-          <MeetingMediaTrackElement
-            key={mediaTrack.id}
-            mediaTrack={mediaTrack}
-            onPlaybackBlocked={() => setIsPlaybackBlocked(true)}
-            playbackActivationToken={playbackActivationToken}
-          />
-        ))}
-      </div>
+      <MeetingAudioSinks remoteAudioTracks={remoteAudioTracks} />
       <div className="meeting-media-controls">
         <button
           className="secondary-button"
@@ -83,18 +71,6 @@ export function MeetingMediaStage({
         >
           {session.isCameraEnabled ? "카메라 끄기" : "카메라 켜기"}
         </button>
-        {isPlaybackBlocked ? (
-          <button
-            className="secondary-button"
-            onClick={() => {
-              setIsPlaybackBlocked(false);
-              setPlaybackActivationToken((currentToken) => currentToken + 1);
-            }}
-            type="button"
-          >
-            원격 오디오 재생
-          </button>
-        ) : null}
       </div>
     </div>
   );

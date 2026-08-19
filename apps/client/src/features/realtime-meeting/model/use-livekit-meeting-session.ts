@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CreateMeetingTokenResponse } from "@likelion2026/shared";
-import { Room, RoomEvent, Track } from "livekit-client";
+import {
+  ConnectionQuality,
+  Room,
+  RoomEvent,
+  Track,
+  type Participant,
+  type TrackPublication
+} from "livekit-client";
 
 export type LiveKitMeetingSessionStatus =
   | "idle"
@@ -22,6 +29,18 @@ export interface LiveKitMeetingMediaTrack {
   track: Track;
 }
 
+export interface LiveKitMeetingParticipant {
+  connectionQuality: ConnectionQuality;
+  identity: string;
+  isCameraEnabled: boolean;
+  isLocal: boolean;
+  isMicrophoneEnabled: boolean;
+  isReconnecting: boolean;
+  isSpeaking: boolean;
+  participantName: string;
+  videoTrack?: LiveKitMeetingMediaTrack;
+}
+
 export interface LiveKitMeetingSessionState {
   audioTrackCount: number;
   errorMessage?: string;
@@ -31,6 +50,7 @@ export interface LiveKitMeetingSessionState {
   isMicrophoneUpdating: boolean;
   mediaTracks: LiveKitMeetingMediaTrack[];
   participantIdentity?: string;
+  participants: LiveKitMeetingParticipant[];
   remoteParticipantCount: number;
   roomName?: string;
   status: LiveKitMeetingSessionStatus;
@@ -49,6 +69,7 @@ const INITIAL_SESSION_STATE: LiveKitMeetingSessionState = {
   isMicrophoneEnabled: false,
   isMicrophoneUpdating: false,
   mediaTracks: [],
+  participants: [],
   remoteParticipantCount: 0,
   status: "idle",
   videoTrackCount: 0
@@ -140,10 +161,17 @@ export function useLiveKitMeetingSession(): {
         })
         .on(RoomEvent.ParticipantConnected, syncConnectedSession)
         .on(RoomEvent.ParticipantDisconnected, syncConnectedSession)
+        .on(RoomEvent.ParticipantNameChanged, syncConnectedSession)
+        .on(RoomEvent.ActiveSpeakersChanged, syncConnectedSession)
+        .on(RoomEvent.ConnectionQualityChanged, syncConnectedSession)
+        .on(RoomEvent.TrackPublished, syncConnectedSession)
+        .on(RoomEvent.TrackUnpublished, syncConnectedSession)
         .on(RoomEvent.TrackSubscribed, syncConnectedSession)
         .on(RoomEvent.TrackUnsubscribed, syncConnectedSession)
         .on(RoomEvent.TrackMuted, syncConnectedSession)
         .on(RoomEvent.TrackUnmuted, syncConnectedSession)
+        .on(RoomEvent.TrackStreamStateChanged, syncConnectedSession)
+        .on(RoomEvent.TrackSubscriptionStatusChanged, syncConnectedSession)
         .on(RoomEvent.LocalTrackPublished, syncConnectedSession)
         .on(RoomEvent.LocalTrackUnpublished, syncConnectedSession)
         .on(RoomEvent.Disconnected, () => {
@@ -155,6 +183,7 @@ export function useLiveKitMeetingSession(): {
             isMicrophoneEnabled: false,
             isMicrophoneUpdating: false,
             mediaTracks: [],
+            participants: [],
             remoteParticipantCount: 0,
             status: "disconnected",
             videoTrackCount: 0
@@ -292,6 +321,7 @@ function createSessionStateFromRoom(
     isMicrophoneUpdating: false,
     mediaTracks: getMediaTracks(room),
     participantIdentity: meta?.participantIdentity ?? room.localParticipant.identity,
+    participants: getMeetingParticipants(room),
     remoteParticipantCount: room.remoteParticipants.size,
     roomName: meta?.roomName ?? room.name,
     status,
@@ -303,45 +333,98 @@ function getMediaTracks(room: Room): LiveKitMeetingMediaTrack[] {
   const mediaTracks: LiveKitMeetingMediaTrack[] = [];
 
   room.localParticipant.trackPublications.forEach((publication) => {
-    const track = publication.track;
-    if (!track || !isRenderableTrackKind(publication.kind)) {
-      return;
+    const mediaTrack = createMediaTrackFromPublication(
+      room.localParticipant,
+      publication,
+      true
+    );
+    if (mediaTrack) {
+      mediaTracks.push(mediaTrack);
     }
-
-    mediaTracks.push({
-      id: `local:${publication.trackSid}`,
-      isLocal: true,
-      isMuted: publication.isMuted,
-      kind: publication.kind,
-      participantIdentity: room.localParticipant.identity,
-      participantName:
-        room.localParticipant.name ?? room.localParticipant.identity ?? "You",
-      source: publication.source,
-      track
-    });
   });
 
   room.remoteParticipants.forEach((participant) => {
     participant.trackPublications.forEach((publication) => {
-      const track = publication.track;
-      if (!track || !isRenderableTrackKind(publication.kind)) {
-        return;
+      const mediaTrack = createMediaTrackFromPublication(
+        participant,
+        publication,
+        false
+      );
+      if (mediaTrack) {
+        mediaTracks.push(mediaTrack);
       }
-
-      mediaTracks.push({
-        id: `remote:${participant.identity}:${publication.trackSid}`,
-        isLocal: false,
-        isMuted: publication.isMuted,
-        kind: publication.kind,
-        participantIdentity: participant.identity,
-        participantName: participant.name ?? participant.identity,
-        source: publication.source,
-        track
-      });
     });
   });
 
   return mediaTracks;
+}
+
+function getMeetingParticipants(room: Room): LiveKitMeetingParticipant[] {
+  return [
+    createMeetingParticipant(room.localParticipant, true),
+    ...Array.from(room.remoteParticipants.values()).map((participant) =>
+      createMeetingParticipant(participant, false)
+    )
+  ];
+}
+
+function createMeetingParticipant(
+  participant: Participant,
+  isLocal: boolean
+): LiveKitMeetingParticipant {
+  const cameraPublication = participant.getTrackPublication(
+    Track.Source.Camera
+  );
+  const microphonePublication = participant.getTrackPublication(
+    Track.Source.Microphone
+  );
+  const videoTrack = createMediaTrackFromPublication(
+    participant,
+    cameraPublication,
+    isLocal
+  );
+
+  return {
+    connectionQuality: participant.connectionQuality,
+    identity: participant.identity,
+    isCameraEnabled: Boolean(cameraPublication && !cameraPublication.isMuted),
+    isLocal,
+    isMicrophoneEnabled: Boolean(
+      microphonePublication && !microphonePublication.isMuted
+    ),
+    isReconnecting: participant.connectionQuality === ConnectionQuality.Lost,
+    isSpeaking: participant.isSpeaking,
+    participantName: getParticipantName(participant, isLocal),
+    videoTrack: videoTrack?.kind === Track.Kind.Video ? videoTrack : undefined
+  };
+}
+
+function createMediaTrackFromPublication(
+  participant: Participant,
+  publication: TrackPublication | undefined,
+  isLocal: boolean
+): LiveKitMeetingMediaTrack | undefined {
+  const track = publication?.track;
+  if (!publication || !track || !isRenderableTrackKind(publication.kind)) {
+    return undefined;
+  }
+
+  return {
+    id: `${isLocal ? "local" : "remote"}:${participant.identity}:${
+      publication.trackSid
+    }`,
+    isLocal,
+    isMuted: publication.isMuted,
+    kind: publication.kind,
+    participantIdentity: participant.identity,
+    participantName: getParticipantName(participant, isLocal),
+    source: publication.source,
+    track
+  };
+}
+
+function getParticipantName(participant: Participant, isLocal: boolean): string {
+  return participant.name ?? participant.identity ?? (isLocal ? "나" : "참가자");
 }
 
 function isRenderableTrackKind(

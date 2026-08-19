@@ -6,10 +6,6 @@ import type {
   MeetingSessionJoinRequest
 } from "../model/use-meeting-session-controller";
 import type { MeetingSessionControllerStatus } from "../model/meeting-session-transition";
-import {
-  MeetingMediaStage,
-  splitMeetingMediaTracks
-} from "./MeetingMediaStage";
 import { MeetingSubtitlePanel } from "./MeetingSubtitlePanel";
 import { useMeetingSubtitles } from "../model/use-meeting-subtitles";
 
@@ -64,14 +60,11 @@ export function MeetingRoomSessionPanel({
   const subtitleState = useMeetingSubtitles(
     canControlMedia ? session.roomName : undefined
   );
-  const { remoteAudioTracks, videoTracks } = splitMeetingMediaTracks(
-    session.mediaTracks
-  );
 
   return (
-    <aside
+    <section
       aria-label="회의실 연결 상태"
-      className="meeting-prompt meeting-room-session-panel"
+      className="meeting-room-session-panel"
     >
       <div className="meeting-room-session-header">
         <div>
@@ -128,18 +121,6 @@ export function MeetingRoomSessionPanel({
           다시 시도
         </button>
       ) : null}
-      <MeetingMediaStage
-        canControlMedia={canControlMedia}
-        onCameraToggle={() => {
-          void controller.setCameraEnabled(!session.isCameraEnabled);
-        }}
-        onMicrophoneToggle={() => {
-          void controller.setMicrophoneEnabled(!session.isMicrophoneEnabled);
-        }}
-        remoteAudioTracks={remoteAudioTracks}
-        session={session}
-        videoTracks={videoTracks}
-      />
       {canControlMedia ? (
         <MeetingSubtitlePanel
           errorMessage={subtitleState.errorMessage}
@@ -147,7 +128,7 @@ export function MeetingRoomSessionPanel({
           subtitles={subtitleState.subtitles}
         />
       ) : null}
-    </aside>
+    </section>
   );
 }
 
