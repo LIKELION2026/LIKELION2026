@@ -13,6 +13,7 @@ import {
 import type {
   CalendarEventListResponse,
   CalendarMemberStatusListResponse,
+  GuestOfficeAvatarAvailabilityResponse,
   GuestOfficeSessionResponse,
   OfficeCollaborationPresence,
   OfficeTodoListResponse,
@@ -46,6 +47,11 @@ export class OfficeController {
     @Body() request: CreateGuestOfficeSessionDto
   ): Promise<GuestOfficeSessionResponse> {
     return this.officeService.createOrRestoreSession(request);
+  }
+
+  @Get("avatars")
+  getGuestAvatarAvailability(): Promise<GuestOfficeAvatarAvailabilityResponse> {
+    return this.officeService.getGuestAvatarAvailability();
   }
 
   @Patch("members/:memberId/attendance")

@@ -19,12 +19,14 @@ import { useOfficeTodos } from "../model/use-office-todos";
 import { createPeopleContext } from "../model/people-context";
 import { applyCalendarPresence } from "../model/calendar-presence";
 import { getOfficeSceneBootstrap } from "../model/office-scene-bootstrap";
+import { getOfficeEntryPhase } from "../model/office-entry-phase";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarModal } from "./OfficeCalendarModal";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
+import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
 
 export function VirtualOffice(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,7 @@ export function VirtualOffice(): JSX.Element {
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
     isPreparingSession,
+    isRestoringStoredSession,
     prepareSession,
     registerSocketCallbacks,
     respondToSummon,
@@ -57,6 +60,12 @@ export function VirtualOffice(): JSX.Element {
     []
   );
   const sceneBootstrap = useMemo(() => getOfficeSceneBootstrap(self), [self]);
+  const entryPhase = getOfficeEntryPhase({
+    hasSession: Boolean(session),
+    isPreparingSession,
+    isRestoringStoredSession,
+    isSceneReady
+  });
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -271,7 +280,8 @@ export function VirtualOffice(): JSX.Element {
           roomLabel={meetingRoomSection.label}
         />
       ) : null}
-      {!session ? (
+      {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
+      {entryPhase === "onboarding" ? (
         <GuestOnboarding
           error={sessionError}
           isSubmitting={isPreparingSession}

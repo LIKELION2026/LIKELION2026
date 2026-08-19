@@ -10,11 +10,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   type CreateGuestOfficeSessionRequest,
   type GuestOfficeSessionResponse,
+  type GuestOfficeAvatarAvailabilityResponse,
   type OfficeCollaborationPresence,
   type OfficeDesk,
   type OfficeMemberPresence,
   type OfficeMember,
   type OfficeAvatarState,
+  OFFICE_DEFAULT_DESKS,
   type MemberStatus,
   type OfficeTodo,
   type OfficeCalendarEvent,
@@ -31,7 +33,7 @@ import {
 import { randomUUID } from "node:crypto";
 
 import { SUPABASE_CLIENT } from "../../integrations/supabase/supabase.constants";
-import { selectNewGuestAvatarId } from "./office-avatar";
+import { getAvailableGuestAvatarIds, selectNewGuestAvatarId } from "./office-avatar";
 
 interface WorkspaceRow {
   id: string;
@@ -102,14 +104,7 @@ interface CalendarParticipantRow {
   member_id: string;
 }
 
-const DEFAULT_DESKS = [
-  { label: "Korea desk 1", positionX: 192, positionY: 264, zone: "korea-zone" },
-  { label: "Korea desk 2", positionX: 288, positionY: 264, zone: "korea-zone" },
-  { label: "Korea desk 3", positionX: 384, positionY: 264, zone: "korea-zone" },
-  { label: "Vietnam desk 1", positionX: 672, positionY: 264, zone: "vietnam-zone" },
-  { label: "Vietnam desk 2", positionX: 768, positionY: 264, zone: "vietnam-zone" },
-  { label: "Vietnam desk 3", positionX: 864, positionY: 264, zone: "vietnam-zone" }
-] as const satisfies ReadonlyArray<
+const DEFAULT_DESKS = OFFICE_DEFAULT_DESKS satisfies ReadonlyArray<
   Pick<OfficeDesk, "label" | "positionX" | "positionY" | "zone">
 >;
 
@@ -140,6 +135,12 @@ export class OfficeService {
     const presence = await this.ensurePresence(member.id, desk);
 
     return { desk, guestToken, member, presence };
+  }
+
+  async getGuestAvatarAvailability(): Promise<GuestOfficeAvatarAvailabilityResponse> {
+    const workspace = await this.ensureWorkspace();
+    const assignedAvatarIds = await this.getAssignedAvatarIds(workspace.id);
+    return { availableAvatarIds: getAvailableGuestAvatarIds(assignedAvatarIds) };
   }
 
   async updateAttendance(
@@ -750,10 +751,20 @@ export class OfficeService {
     guestToken: string,
     request: CreateGuestOfficeSessionRequest
   ): Promise<OfficeMember> {
+    const assignedAvatarIds = await this.getAssignedAvatarIds(workspaceId);
+    const avatarId = request.avatarId ?? selectNewGuestAvatarId(assignedAvatarIds);
+    if (!avatarId) {
+      throw new ConflictException("No available avatar remains in this office");
+    }
+
+    if (assignedAvatarIds.includes(avatarId)) {
+      throw new ConflictException("This avatar is already in use");
+    }
+
     const { data, error } = await this.supabase
       .from("members")
       .insert({
-        avatar_id: selectNewGuestAvatarId(),
+        avatar_id: avatarId,
         country_code: request.countryCode,
         guest_token: guestToken,
         name: request.displayName.trim(),
@@ -763,8 +774,22 @@ export class OfficeService {
       .select("avatar_id, country_code, guest_token, id, name, preferred_language, workspace_id")
       .single();
 
+    if (error?.code === "23505") {
+      throw new ConflictException("This avatar is already in use");
+    }
     this.throwIfError(error, "create office member");
     return toMember(data as MemberRow);
+  }
+
+  private async getAssignedAvatarIds(workspaceId: string): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from("members")
+      .select("avatar_id")
+      .eq("workspace_id", workspaceId);
+    this.throwIfError(error, "read assigned office avatars");
+    return ((data ?? []) as Array<Pick<MemberRow, "avatar_id">>).map(
+      (member) => member.avatar_id
+    );
   }
 
   private async updateMemberProfile(
