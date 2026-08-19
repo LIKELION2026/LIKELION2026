@@ -2476,6 +2476,16 @@ button {
   width: 100%;
 }
 
+.meeting-participant-tile .vsc-controller,
+.meeting-participant-tile [class~="vsc-controller"],
+.meeting-media-tile .vsc-controller,
+.meeting-media-tile [class~="vsc-controller"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 .meeting-participant-tile.speaking {
   border-color: #6ee7b7;
   box-shadow: 0 0 0 3px rgb(110 231 183 / 22%);
