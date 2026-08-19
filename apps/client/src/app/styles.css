@@ -2410,10 +2410,6 @@ button {
   z-index: 4;
 }
 
-.meeting-room-overlay.expanded {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .meeting-room-overlay > * {
   pointer-events: auto;
 }
@@ -2659,18 +2655,6 @@ button {
   padding: 0;
 }
 
-.meeting-chat-panel.collapsed {
-  grid-template-rows: auto;
-}
-
-.meeting-chat-panel.collapsed .meeting-chat-header {
-  background: rgb(255 255 255 / 96%);
-  border: 1px solid rgb(203 213 225 / 90%);
-  border-radius: 999px;
-  box-shadow: 0 12px 28px rgb(15 23 42 / 18%);
-  padding: 8px 8px 8px 14px;
-}
-
 .meeting-chat-header {
   align-items: center;
   display: flex;
@@ -2683,7 +2667,6 @@ button {
   font-size: 16px;
 }
 
-.meeting-chat-collapse-button,
 .meeting-chat-new-message-button {
   align-items: center;
   background: #ffffff;

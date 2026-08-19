@@ -27,7 +27,6 @@ export function MeetingRoomOverlay({
   defaultSourceLanguage
 }: MeetingRoomOverlayProps): JSX.Element {
   const { session } = controller;
-  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [isExpandedView, setIsExpandedView] = useState(false);
   const canControlMedia =
     session.status === "connected" || session.status === "reconnecting";
@@ -104,12 +103,7 @@ export function MeetingRoomOverlay({
       ) : null}
       <aside
         aria-label="회의 채팅 패널"
-        className={[
-          "meeting-room-side-panel",
-          isChatCollapsed ? "collapsed" : ""
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        className="meeting-room-side-panel"
       >
         <MeetingChatPanel
           errorMessage={
@@ -118,7 +112,6 @@ export function MeetingRoomOverlay({
             subtitleState.errorMessage
           }
           messages={chatState.messages}
-          onCollapsedChange={setIsChatCollapsed}
           onDeleteMessage={chatState.deleteMessage}
           onRetryMessage={chatState.retryMessage}
           onSendMessage={chatState.sendMessage}
