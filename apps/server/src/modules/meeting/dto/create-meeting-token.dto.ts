@@ -2,16 +2,26 @@ import {
   CreateMeetingTokenRequest,
   LAB_MEETING_ROOM_NAME_PATTERN,
   MEETING_PARTICIPANT_COUNTRIES,
+  PARTICIPANT_IDENTITY_PATTERN,
   type MeetingParticipantCountry
 } from "@likelion2026/shared";
 import { Transform } from "class-transformer";
-import { IsIn, IsString, Length, Matches } from "class-validator";
+import { IsIn, IsOptional, IsString, Length, Matches } from "class-validator";
 
 export class CreateMeetingTokenDto implements CreateMeetingTokenRequest {
   @Transform(({ value }) => trimString(value))
   @IsString()
   @IsIn([...MEETING_PARTICIPANT_COUNTRIES])
   participantCountry!: MeetingParticipantCountry;
+
+  @Transform(({ value }) => trimOptionalString(value))
+  @IsOptional()
+  @IsString()
+  @Matches(new RegExp(PARTICIPANT_IDENTITY_PATTERN), {
+    message:
+      "participantIdentity must start with an alphanumeric character and contain only letters, numbers, hyphens, or underscores"
+  })
+  participantIdentity?: string;
 
   @Transform(({ value }) => trimString(value))
   @IsString()
@@ -29,4 +39,13 @@ export class CreateMeetingTokenDto implements CreateMeetingTokenRequest {
 
 function trimString(value: unknown): unknown {
   return typeof value === "string" ? value.trim() : value;
+}
+
+function trimOptionalString(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
 }

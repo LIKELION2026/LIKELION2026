@@ -77,8 +77,10 @@ export class MeetingService {
     );
     const preferredLanguage =
       MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY[participantCountry];
-    const participantIdentity =
-      createGuestParticipantIdentity(participantCountry);
+    const participantIdentity = resolveParticipantIdentity(
+      request.participantIdentity,
+      participantCountry
+    );
     const participantName =
       typeof request.participantName === "string"
         ? request.participantName.trim()
@@ -572,4 +574,24 @@ function createGuestParticipantIdentity(
   participantCountry: MeetingParticipantCountry
 ): string {
   return `${participantCountry}-guest-${randomUUID()}`;
+}
+
+function resolveParticipantIdentity(
+  participantIdentity: string | undefined,
+  participantCountry: MeetingParticipantCountry
+): string {
+  const normalizedIdentity =
+    typeof participantIdentity === "string" ? participantIdentity.trim() : "";
+
+  if (!normalizedIdentity) {
+    return createGuestParticipantIdentity(participantCountry);
+  }
+
+  if (!new RegExp(PARTICIPANT_IDENTITY_PATTERN).test(normalizedIdentity)) {
+    throw new BadRequestException(
+      "participantIdentity must start with an alphanumeric character and contain only letters, numbers, hyphens, or underscores"
+    );
+  }
+
+  return normalizedIdentity;
 }

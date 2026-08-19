@@ -93,6 +93,26 @@ test("createToken derives Korea participant language and identity", async () => 
   );
 });
 
+test("createToken preserves an explicit participant identity", async () => {
+  const fakeLiveKitTokenService = new FakeLiveKitTokenService();
+  const service = new MeetingService(
+    fakeLiveKitTokenService as unknown as LiveKitTokenService
+  );
+
+  const response = await service.createToken({
+    participantCountry: "kr",
+    participantIdentity: "member-123_abc",
+    participantName: "Tester",
+    roomName: "lab-likelion-20260816-member"
+  });
+
+  assert.equal(response.participantIdentity, "member-123_abc");
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.participantIdentity,
+    "member-123_abc"
+  );
+});
+
 test("createToken rejects non-lab room names", async () => {
   const service = new MeetingService(
     new FakeLiveKitTokenService() as unknown as LiveKitTokenService
@@ -118,6 +138,23 @@ test("createToken rejects unsupported participant countries", async () => {
     () =>
       service.createToken({
         participantCountry: "jp" as never,
+        participantName: "Tester",
+        roomName: "lab-likelion-20260816-test"
+      }),
+    (error: unknown) => error instanceof BadRequestException
+  );
+});
+
+test("createToken rejects invalid explicit participant identities", async () => {
+  const service = new MeetingService(
+    new FakeLiveKitTokenService() as unknown as LiveKitTokenService
+  );
+
+  await assert.rejects(
+    () =>
+      service.createToken({
+        participantCountry: "kr",
+        participantIdentity: "invalid participant",
         participantName: "Tester",
         roomName: "lab-likelion-20260816-test"
       }),
