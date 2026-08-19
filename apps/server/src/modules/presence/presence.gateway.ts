@@ -14,6 +14,7 @@ import {
   type OfficeCalendarUpdatedPayload,
   type OfficeHeartbeatPayload,
   type OfficeJoinPayload,
+  type OfficeMeetingSummaryReadyPayload,
   type OfficeSummonDecision,
   type OfficeSummonRequestPayload,
   type OfficeSummonRequestedPayload,
@@ -140,6 +141,21 @@ export class PresenceGateway implements OnGatewayDisconnect {
     this.server
       .to(getTeamRoom(payload.teamId))
       .emit(SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED, payload);
+  }
+
+  publishMeetingSummaryReady(
+    payload: OfficeMeetingSummaryReadyPayload & { participantMemberIds: string[] }
+  ): void {
+    const { participantMemberIds, ...eventPayload } = payload;
+
+    for (const memberId of participantMemberIds) {
+      const target = this.presenceService.findConnectedMember(memberId, payload.teamId);
+      if (target) {
+        this.server
+          .to(target.socketId)
+          .emit(SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY, eventPayload);
+      }
+    }
   }
 
   async handleDisconnect(client: Socket): Promise<void> {

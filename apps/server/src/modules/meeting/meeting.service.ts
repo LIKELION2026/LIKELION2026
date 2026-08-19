@@ -25,12 +25,15 @@ import {
   type MeetingRoomStatus,
   type MeetingTranslationLanguageCode,
   type MeetingTranslationPreference,
+  type OfficeCalendarEvent,
+  type SubmitMeetingSummaryRequest,
   type SubtitleCreatedPayload
 } from "@likelion2026/shared";
 import { randomUUID } from "node:crypto";
 
 import { LiveKitTokenService } from "../../integrations/livekit/livekit-token.service";
 import type { LiveKitWebhookSummary } from "../../integrations/livekit/livekit-webhook.service";
+import { OfficeService } from "../office/office.service";
 
 export interface LiveKitWebhookHandledResponse {
   duplicate: boolean;
@@ -71,7 +74,10 @@ export class MeetingService {
   >();
   private readonly roomStates = new Map<string, MeetingRoomStateRecord>();
 
-  constructor(private readonly liveKitTokenService: LiveKitTokenService) {}
+  constructor(
+    private readonly liveKitTokenService: LiveKitTokenService,
+    private readonly officeService: OfficeService
+  ) {}
 
   async createToken(
     request: CreateMeetingTokenRequest
@@ -180,6 +186,20 @@ export class MeetingService {
       roomName: normalizedRoomName,
       updateStrategy: SUBTITLE_UPDATE_STRATEGY
     };
+  }
+
+  async submitSummary(
+    request: SubmitMeetingSummaryRequest
+  ): Promise<OfficeCalendarEvent | null> {
+    assertLabRoomName(request.roomName);
+
+    return this.officeService.createMeetingSummaryEvent({
+      candidateMemberIds: request.everParticipantIdentities,
+      endsAt: request.endsAt,
+      startsAt: request.startsAt,
+      summaryKo: request.summaryKo,
+      summaryVi: request.summaryVi
+    });
   }
 
   handleLiveKitWebhook(
