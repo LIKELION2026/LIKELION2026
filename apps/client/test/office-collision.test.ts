@@ -1,15 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { OFFICE_DEFAULT_DESKS, OFFICE_MEETING_ZONE } from "@likelion2026/shared";
+import { OFFICE_DEFAULT_DESKS, OFFICE_MEETING_ZONES } from "@likelion2026/shared";
 
 import {
   getNearestWalkableOfficePosition,
+  isOfficeCollisionDebugEnabled,
   isOfficeWalkablePosition,
   OFFICE_COLLISION_AREAS,
   OFFICE_WALKABLE_BOUNDS,
 } from "../src/features/virtual-office/model/office-collision.ts";
 
 test("keeps every assigned desk in a walkable position", () => {
+  assert.equal(OFFICE_DEFAULT_DESKS.length, 12);
+
   for (const desk of OFFICE_DEFAULT_DESKS) {
     assert.equal(
       isOfficeWalkablePosition({ x: desk.positionX, y: desk.positionY }),
@@ -19,14 +22,20 @@ test("keeps every assigned desk in a walkable position", () => {
   }
 });
 
-test("keeps the meeting room entrance walkable", () => {
-  assert.equal(
-    isOfficeWalkablePosition({
-      x: OFFICE_MEETING_ZONE.x + OFFICE_MEETING_ZONE.width / 2,
-      y: OFFICE_MEETING_ZONE.y + 40,
-    }),
-    true,
-  );
+test("keeps a walkable position inside every meeting room trigger zone", () => {
+  for (const zone of OFFICE_MEETING_ZONES) {
+    const hasWalkablePosition = Array.from(
+      { length: Math.floor(zone.height / 32) + 1 },
+      (_, row) => zone.y + row * 32,
+    ).some((y) =>
+      Array.from(
+        { length: Math.floor(zone.width / 32) + 1 },
+        (_, column) => zone.x + column * 32,
+      ).some((x) => isOfficeWalkablePosition({ x, y })),
+    );
+
+    assert.equal(hasWalkablePosition, true, zone.id);
+  }
 });
 
 test("moves a teleport target out of a blocked furniture area", () => {
@@ -51,4 +60,10 @@ test("rejects positions outside the furnished office bounds", () => {
     }),
     false,
   );
+});
+
+test("enables collision debugging only when the URL explicitly requests it", () => {
+  assert.equal(isOfficeCollisionDebugEnabled("?debugCollisions=1"), true);
+  assert.equal(isOfficeCollisionDebugEnabled("?debugCollisions=0"), false);
+  assert.equal(isOfficeCollisionDebugEnabled(""), false);
 });
