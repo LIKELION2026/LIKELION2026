@@ -20,6 +20,7 @@ import { useOfficeSocket, type OfficeSocketCallbacks } from "./use-office-socket
 
 interface OfficeConnectionContextValue {
   isPreparingSession: boolean;
+  isRestoringStoredSession: boolean;
   prepareSession: (profile: GuestProfile) => Promise<void>;
   registerSocketCallbacks: (callbacks: OfficeSocketCallbacks) => () => void;
   respondToSummon: (requestId: string, decision: "accepted" | "declined") => void;
@@ -37,6 +38,9 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   const { showError } = useRequestFeedback();
   const [session, setSession] = useState<GuestOfficeSessionResponse | null>(null);
   const [isPreparingSession, setIsPreparingSession] = useState(false);
+  const [isRestoringStoredSession, setIsRestoringStoredSession] = useState(
+    () => getStoredGuestProfile() !== null
+  );
   const [sessionError, setSessionError] = useState<string | null>(null);
   const callbacksRef = useRef<OfficeSocketCallbacks>({});
   const didRestoreStoredProfile = useRef(false);
@@ -81,11 +85,12 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
 
     const storedProfile = getStoredGuestProfile();
     if (!storedProfile) {
+      setIsRestoringStoredSession(false);
       return;
     }
 
     didRestoreStoredProfile.current = true;
-    void prepareSession(storedProfile);
+    void prepareSession(storedProfile).finally(() => setIsRestoringStoredSession(false));
   }, [prepareSession]);
 
   const registerSocketCallbacks = useCallback((callbacks: OfficeSocketCallbacks) => {
@@ -100,6 +105,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   const value = useMemo<OfficeConnectionContextValue>(
     () => ({
       isPreparingSession,
+      isRestoringStoredSession,
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,
@@ -112,6 +118,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
     }),
     [
       isPreparingSession,
+      isRestoringStoredSession,
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,

@@ -14,12 +14,14 @@ import { useOfficeTodos } from "../model/use-office-todos";
 import { createPeopleContext } from "../model/people-context";
 import { applyCalendarPresence } from "../model/calendar-presence";
 import { getOfficeSceneBootstrap } from "../model/office-scene-bootstrap";
+import { getOfficeEntryPhase } from "../model/office-entry-phase";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarModal } from "./OfficeCalendarModal";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
+import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
 
 interface VirtualOfficeProps {
   onOpenMeetingLab: () => void;
@@ -37,6 +39,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
     isPreparingSession,
+    isRestoringStoredSession,
     prepareSession,
     registerSocketCallbacks,
     respondToSummon,
@@ -51,6 +54,12 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const sceneBootstrap = useMemo(() => getOfficeSceneBootstrap(self), [self]);
+  const entryPhase = getOfficeEntryPhase({
+    hasSession: Boolean(session),
+    isPreparingSession,
+    isRestoringStoredSession,
+    isSceneReady
+  });
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -226,7 +235,8 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
           </button>
         </aside>
       ) : null}
-      {!session ? (
+      {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
+      {entryPhase === "onboarding" ? (
         <GuestOnboarding
           error={sessionError}
           isSubmitting={isPreparingSession}

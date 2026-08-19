@@ -565,6 +565,76 @@ button {
   z-index: 3;
 }
 
+.office-loading-screen {
+  align-items: center;
+  background: #f3f6fb;
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+  z-index: 5;
+}
+
+.office-loading-mark {
+  animation: office-loading-bob 1s ease-in-out infinite alternate;
+  background-image: url("/assets/red_panda.png");
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  background-size: 600% 400%;
+  height: 96px;
+  image-rendering: pixelated;
+  margin-bottom: 14px;
+  width: 96px;
+}
+
+.office-loading-brand {
+  color: #1558d6;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.office-loading-message {
+  color: #334155;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 8px 0 10px;
+}
+
+.office-loading-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.office-loading-dots i {
+  animation: office-loading-dot 0.9s ease-in-out infinite alternate;
+  background: #1558d6;
+  border-radius: 50%;
+  display: block;
+  height: 5px;
+  width: 5px;
+}
+
+.office-loading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.office-loading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes office-loading-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-7px); }
+}
+
+@keyframes office-loading-dot {
+  from { opacity: 0.3; transform: translateY(0); }
+  to { opacity: 1; transform: translateY(-3px); }
+}
+
 .guest-onboarding {
   background: #ffffff;
   border: 1px solid #cbd5df;
