@@ -737,3 +737,13 @@
 - 팀원 검토·수정 내용: 사용자가 “1차 작업부터 진행”을 지시했고, 1차 범위는 참가자 스트립·채팅·AI 번역 ON/OFF가 아니라 구역 진입 기반 세션 생명주기 자동화로 고정했다.
 - 검증 결과: 작업 중 로컬 타입체크와 빌드를 실행해 결과를 확인한다. 실제 두 브라우저 영상·음성 송수신과 브라우저 권한 UI는 사람이 로컬 환경에서 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #131, Issue #136
+
+### 2026-08-19 - ZEP형 인게임 화상회의 오버레이와 컨트롤 UI
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Meeting Room 연결 뒤 오피스 페이지를 유지한 채 상단 참가자 영상 스트립, 하단 미디어 컨트롤, 화면 키우기 grid 모드, 우측 패널 슬롯을 표시한다.
+- 입력 맥락: Issue #132, 상위 Issue #136, PR #141 결과물, `useLiveKitMeetingSession`, `MeetingRoomSessionPanel`, `VirtualOffice`, `keyboard-focus.ts`
+- AI 제안 또는 산출물: LiveKit track 중심 상태에 participant view model을 추가해 카메라 OFF 참가자도 스트립에 남기고, active speaker·connection quality·mic/camera 상태를 같은 동기화 함수로 갱신하도록 확장했다. Office 전용 `MeetingRoomOverlay`, Lucide React 아이콘 전용 참가자 스트립, 더 큰 상단 화상 타일, 하단 아이콘 컨트롤 바, 제한 크기 화면 키우기 grid 모드, 오디오 sink 재사용 컴포넌트, 우측 채팅·번역 패널 슬롯을 추가했다. 회의 컨트롤 버튼에 focus가 있어도 WASD/방향키 이동이 막히지 않도록 keyboard focus 판정도 좁혔다.
+- 팀원 검토·수정 내용: 사용자가 “2차 작업” 진행을 지시했고, 상위 이슈의 의존성에 따라 #132를 담당 범위로 확정했다. 실제 채팅 송수신과 번역 언어 모달은 #133, #134 범위로 남겼다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/keyboard-focus.test.ts apps/client/test/meeting-session-transition.test.ts apps/client/test/meeting-control-state.test.ts` 11건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존과 같은 비차단 경고다. 실제 1280×720/1920×1080 브라우저 화면 캡처와 다중 참가자 수동 검증은 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #132, Issue #136
