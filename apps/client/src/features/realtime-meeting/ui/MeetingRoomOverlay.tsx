@@ -2,6 +2,10 @@ import { useMemo, useState, type JSX } from "react";
 import { Track } from "livekit-client";
 import type { LanguageCode, SubtitleCreatedPayload } from "@likelion2026/shared";
 
+import {
+  createMeetingTranslationAvailability,
+  type MeetingTranslationAvailability
+} from "../model/meeting-translation-availability";
 import { useMeetingChat } from "../model/use-meeting-chat";
 import { useMeetingSubtitles } from "../model/use-meeting-subtitles";
 import type { MeetingSessionController } from "../model/use-meeting-session-controller";
@@ -54,6 +58,19 @@ export function MeetingRoomOverlay({
         ? subtitleState.subtitles[subtitleState.subtitles.length - 1]
         : undefined,
     [subtitleState.subtitles, translationPreference.preference.enabled]
+  );
+  const translationAvailability = useMemo(
+    () =>
+      createMeetingTranslationAvailability({
+        errorMessage: subtitleState.errorMessage,
+        isEnabled: translationPreference.preference.enabled,
+        subtitleStatus: subtitleState.status
+      }),
+    [
+      subtitleState.errorMessage,
+      subtitleState.status,
+      translationPreference.preference.enabled
+    ]
   );
   const remoteAudioTracks = useMemo(
     () =>
@@ -110,6 +127,10 @@ export function MeetingRoomOverlay({
       </aside>
       {latestTranslationSubtitle ? (
         <MeetingLiveTranslationCaption subtitle={latestTranslationSubtitle} />
+      ) : translationAvailability.status !== "off" ? (
+        <MeetingTranslationAvailabilityCaption
+          availability={translationAvailability}
+        />
       ) : null}
       <MeetingControlBar
         canControlMedia={canControlMedia}
@@ -157,6 +178,23 @@ export function MeetingRoomOverlay({
         />
       ) : null}
     </div>
+  );
+}
+
+function MeetingTranslationAvailabilityCaption({
+  availability
+}: {
+  availability: MeetingTranslationAvailability;
+}): JSX.Element {
+  return (
+    <section
+      aria-label="AI 번역 상태"
+      aria-live="polite"
+      className={`meeting-live-translation-caption status ${availability.status}`}
+    >
+      <span>{availability.title}</span>
+      <p>{availability.description}</p>
+    </section>
   );
 }
 
