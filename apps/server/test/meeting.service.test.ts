@@ -5,7 +5,8 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import {
   SOCKET_EVENT_NAMES,
   SUBTITLE_UPDATE_STRATEGY,
-  type CreateMockSubtitleRequest
+  type CreateMockSubtitleRequest,
+  type MeetingTranslationPreference
 } from "@likelion2026/shared";
 
 import type { LiveKitTokenService } from "../src/integrations/livekit/livekit-token.service";
@@ -54,12 +55,21 @@ test("createToken trims loginless token input and derives participant policy", a
   assert.equal(response.participantName, "Tester");
   assert.equal(response.participantCountry, "vn");
   assert.equal(response.preferredLanguage, "vi");
+  assert.equal(response.translationPreference.enabled, true);
+  assert.equal(response.translationPreference.sourceLanguage, "vi");
+  assert.equal(response.translationPreference.targetLanguage, "ko");
+  assert.match(
+    response.translationPreference.activatedAt ?? "",
+    /^\d{4}-\d{2}-\d{2}T/
+  );
   assert.deepEqual(fakeLiveKitTokenService.requests, [
     {
       attributes: {
         participantCountry: "vn",
         preferredLanguage: "vi",
-        roomName: "lab-likelion-20260816-test"
+        roomName: "lab-likelion-20260816-test",
+        translationReceivingEnabled: "true",
+        translationTargetLanguage: "ko"
       },
       participantIdentity: response.participantIdentity,
       participantName: "Tester",
@@ -90,6 +100,92 @@ test("createToken derives Korea participant language and identity", async () => 
   assert.equal(
     fakeLiveKitTokenService.requests[0]?.attributes?.preferredLanguage,
     "ko"
+  );
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.attributes?.translationReceivingEnabled,
+    "true"
+  );
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.attributes?.translationTargetLanguage,
+    "vi"
+  );
+});
+
+test("createToken accepts an explicit translation preference", async () => {
+  const fakeLiveKitTokenService = new FakeLiveKitTokenService();
+  const service = new MeetingService(
+    fakeLiveKitTokenService as unknown as LiveKitTokenService
+  );
+
+  const response = await service.createToken({
+    participantCountry: "kr",
+    participantName: "Tester",
+    roomName: "lab-likelion-20260816-translation",
+    translationPreference: {
+      activatedAt: "2026-08-19T09:00:00.000Z",
+      enabled: true,
+      sourceLanguage: "vi",
+      targetLanguage: "ko"
+    }
+  });
+
+  assert.deepEqual(response.translationPreference, {
+    activatedAt: "2026-08-19T09:00:00.000Z",
+    enabled: true,
+    sourceLanguage: "vi",
+    targetLanguage: "ko"
+  });
+  assert.equal(response.preferredLanguage, "vi");
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.attributes?.preferredLanguage,
+    "vi"
+  );
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.attributes?.translationReceivingEnabled,
+    "true"
+  );
+  assert.equal(
+    fakeLiveKitTokenService.requests[0]?.attributes?.translationTargetLanguage,
+    "ko"
+  );
+});
+
+test("createToken rejects invalid translation language pairs", async () => {
+  const service = new MeetingService(
+    new FakeLiveKitTokenService() as unknown as LiveKitTokenService
+  );
+  const basePreference: MeetingTranslationPreference = {
+    enabled: true,
+    sourceLanguage: "ko",
+    targetLanguage: "vi"
+  };
+
+  await assert.rejects(
+    () =>
+      service.createToken({
+        participantCountry: "kr",
+        participantName: "Tester",
+        roomName: "lab-likelion-20260816-translation",
+        translationPreference: {
+          ...basePreference,
+          targetLanguage: "ko"
+        }
+      }),
+    (error: unknown) => error instanceof BadRequestException
+  );
+
+  await assert.rejects(
+    () =>
+      service.createToken({
+        participantCountry: "kr",
+        participantName: "Tester",
+        roomName: "lab-likelion-20260816-translation",
+        translationPreference: {
+          ...basePreference,
+          sourceLanguage: "en" as never
+        }
+      }),
+    (error: unknown) => error instanceof BadRequestException
   );
 });
 
