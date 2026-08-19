@@ -10,6 +10,8 @@ interface LiveKitJwtClaims {
     participantCountry?: string;
     preferredLanguage?: string;
     roomName?: string;
+    translationReceivingEnabled?: string;
+    translationTargetLanguage?: string;
   };
   name: string;
   sub: string;
@@ -18,6 +20,7 @@ interface LiveKitJwtClaims {
     canPublishData: boolean;
     canPublishSources: string[];
     canSubscribe: boolean;
+    canUpdateOwnMetadata: boolean;
     room: string;
     roomJoin: boolean;
   };
@@ -37,7 +40,9 @@ test("createRoomJoinToken limits publish sources to camera and microphone", asyn
     attributes: {
       participantCountry: "kr",
       preferredLanguage: "ko",
-      roomName: "lab-likelion-20260816-test"
+      roomName: "lab-likelion-20260816-test",
+      translationReceivingEnabled: "false",
+      translationTargetLanguage: "vi"
     },
     participantIdentity: "tester-1",
     participantName: "Tester",
@@ -49,12 +54,15 @@ test("createRoomJoinToken limits publish sources to camera and microphone", asyn
   assert.equal(claims.video.canSubscribe, true);
   assert.equal(claims.video.canPublish, true);
   assert.equal(claims.video.canPublishData, true);
+  assert.equal(claims.video.canUpdateOwnMetadata, true);
   assert.deepEqual(claims.video.canPublishSources, ["camera", "microphone"]);
   assert.equal(claims.video.room, "lab-likelion-20260816-test");
   assert.equal(claims.sub, "tester-1");
   assert.equal(claims.name, "Tester");
   assert.equal(claims.attributes.participantCountry, "kr");
   assert.equal(claims.attributes.preferredLanguage, "ko");
+  assert.equal(claims.attributes.translationReceivingEnabled, "false");
+  assert.equal(claims.attributes.translationTargetLanguage, "vi");
 });
 
 function createConfigService(values: Record<string, unknown>): ConfigService {
