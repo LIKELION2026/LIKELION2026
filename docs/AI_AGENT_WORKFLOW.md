@@ -727,3 +727,13 @@
   - Gemini 선택 근거를 사후 벤치마크로 재구성하려 한 것에 대해, `docs/ADR/0001`의 실제 기록(비용 문제)과 다르다는 것을 확인하고 "원래 이유(비용)와 사후 참고자료(품질)는 다르다"고 구분해서 정리했다
 - 검증 결과: 실제 배포 브라우저에서 24개 발화로 파이프라인을 실행해 로그를 확보했다. Gemini/GPT/Claude 3사 채점 결과를 직접 집계해 평균·격차를 계산했다(코드로 재현 가능). STT 오류 5건은 의도한 원문과 인식 결과를 대조해 확인했다. 원어민 검토는 이 작업의 범위가 아니며 Issue #18에 남아 있다.
 - 관련 Issue / PR / Discussion: Issue #18, Issue #126, PR #127, Discussion #129
+
+### 2026-08-19 - 회의실 구역 진입 기반 LiveKit 세션 생명주기 연결
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 Meeting Room 구역에 들어갈 때 `/meeting-lab` 페이지 전환 없이 카메라·마이크 권한 확인과 LiveKit 회의 연결을 자동으로 시작한다.
+- 입력 맥락: Issue #131, 상위 Issue #136, `MeetingLabPage`, `useLiveKitMeetingSession`, `VirtualOffice.onMeetingRoomState`, `docs/PRD.md` F5
+- AI 제안 또는 산출물: MeetingLab의 권한 확인·토큰 요청·LiveKit 연결 흐름을 `useMeetingSessionController`로 분리하고, `idle/requesting-permission/connecting/connected/leaving/failed` 전이를 순수 함수와 테스트로 추가했다. 오피스 Meeting Room 구역 진입·이탈에 같은 컨트롤러를 연결하고, 원격 오디오 autoplay 차단 시 사용자 클릭으로 재생을 재시도하는 경로를 추가했다.
+- 팀원 검토·수정 내용: 사용자가 “1차 작업부터 진행”을 지시했고, 1차 범위는 참가자 스트립·채팅·AI 번역 ON/OFF가 아니라 구역 진입 기반 세션 생명주기 자동화로 고정했다.
+- 검증 결과: 작업 중 로컬 타입체크와 빌드를 실행해 결과를 확인한다. 실제 두 브라우저 영상·음성 송수신과 브라우저 권한 UI는 사람이 로컬 환경에서 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #131, Issue #136
