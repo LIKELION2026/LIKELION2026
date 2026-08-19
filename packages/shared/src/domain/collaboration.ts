@@ -119,6 +119,7 @@ export interface OfficeCalendarEvent {
   eventType: CalendarEventType;
   id: string;
   isAllDay: boolean;
+  location?: string;
   participantMemberIds: string[];
   startsAt: string;
   title: string;
