@@ -36,6 +36,7 @@ export interface CreateMeetingTokenRequest {
   roomName: string;
   participantName: string;
   participantCountry: MeetingParticipantCountry;
+  participantIdentity?: string;
 }
 
 export interface CreateMeetingTokenResponse {
