@@ -12,6 +12,7 @@ import {
   type MemberStatusUpdatePayload,
   type OfficeAttendanceUpdatePayload,
   type OfficeCalendarUpdatedPayload,
+  type OfficeChatSendPayload,
   type OfficeHeartbeatPayload,
   type OfficeJoinPayload,
   type OfficeSummonDecision,
@@ -140,6 +141,29 @@ export class PresenceGateway implements OnGatewayDisconnect {
     this.server
       .to(getTeamRoom(payload.teamId))
       .emit(SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED, payload);
+  }
+
+  @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_CHAT_SEND)
+  handleOfficeChatSend(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: unknown
+  ): void {
+    if (!isOfficeChatSendPayload(payload)) {
+      return;
+    }
+
+    const sender = this.presenceService.getConnection(client.id);
+    if (!sender) {
+      return;
+    }
+
+    this.server.to(getTeamRoom(sender.teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE, {
+      displayName: sender.member.displayName,
+      memberId: sender.member.memberId,
+      occurredAt: new Date().toISOString(),
+      teamId: sender.teamId,
+      text: payload.text.trim()
+    });
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
@@ -375,6 +399,15 @@ function isOfficeAttendanceUpdatePayload(
   return (
     isRecord(value) &&
     (value.attendanceStatus === "working" || value.attendanceStatus === "checked_out")
+  );
+}
+
+function isOfficeChatSendPayload(value: unknown): value is OfficeChatSendPayload {
+  return (
+    isRecord(value) &&
+    typeof value.text === "string" &&
+    value.text.trim().length > 0 &&
+    value.text.trim().length <= 160
   );
 }
 
