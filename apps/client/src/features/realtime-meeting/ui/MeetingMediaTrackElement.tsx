@@ -6,13 +6,23 @@ import type { LiveKitMeetingMediaTrack } from "../model/use-livekit-meeting-sess
 
 interface MeetingMediaTrackElementProps {
   mediaTrack: LiveKitMeetingMediaTrack;
+  onPlaybackBlocked?: () => void;
+  playbackActivationToken?: number;
 }
 
 export function MeetingMediaTrackElement({
-  mediaTrack
+  mediaTrack,
+  onPlaybackBlocked,
+  playbackActivationToken
 }: MeetingMediaTrackElementProps): JSX.Element {
   if (mediaTrack.kind === Track.Kind.Audio) {
-    return <MeetingAudioTrackElement mediaTrack={mediaTrack} />;
+    return (
+      <MeetingAudioTrackElement
+        mediaTrack={mediaTrack}
+        onPlaybackBlocked={onPlaybackBlocked}
+        playbackActivationToken={playbackActivationToken}
+      />
+    );
   }
 
   return <MeetingVideoTrackElement mediaTrack={mediaTrack} />;
@@ -50,7 +60,9 @@ function MeetingVideoTrackElement({
 }
 
 function MeetingAudioTrackElement({
-  mediaTrack
+  mediaTrack,
+  onPlaybackBlocked,
+  playbackActivationToken
 }: MeetingMediaTrackElementProps): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -61,12 +73,12 @@ function MeetingAudioTrackElement({
     }
 
     mediaTrack.track.attach(audioElement);
-    void audioElement.play().catch(() => undefined);
+    void audioElement.play().catch(() => onPlaybackBlocked?.());
 
     return () => {
       mediaTrack.track.detach(audioElement);
     };
-  }, [mediaTrack.track]);
+  }, [mediaTrack.track, onPlaybackBlocked, playbackActivationToken]);
 
   return <audio autoPlay ref={audioRef} />;
 }

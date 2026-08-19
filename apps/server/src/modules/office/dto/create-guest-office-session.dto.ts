@@ -1,11 +1,16 @@
 import {
   COUNTRY_CODES,
   LANGUAGE_CODES,
+  OFFICE_AVATAR_IDS,
   type CreateGuestOfficeSessionRequest
 } from "@likelion2026/shared";
 import { IsIn, IsOptional, IsString, Length, Matches } from "class-validator";
 
 export class CreateGuestOfficeSessionDto implements CreateGuestOfficeSessionRequest {
+  @IsOptional()
+  @IsIn([...OFFICE_AVATAR_IDS])
+  avatarId?: CreateGuestOfficeSessionRequest["avatarId"];
+
   @IsIn([...COUNTRY_CODES])
   countryCode!: CreateGuestOfficeSessionRequest["countryCode"];
 

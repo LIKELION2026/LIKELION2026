@@ -12,13 +12,19 @@ import type {
   PublicOfficeTodo,
   TodoStatus
 } from "../../domain/collaboration";
+import type { OfficeAvatarId } from "../../domain/avatar";
 import type { LanguageCode } from "../../domain/language";
 
 export interface CreateGuestOfficeSessionRequest {
+  avatarId?: OfficeAvatarId;
   countryCode: CountryCode;
   displayName: string;
   guestToken?: string;
   language: LanguageCode;
+}
+
+export interface GuestOfficeAvatarAvailabilityResponse {
+  availableAvatarIds: OfficeAvatarId[];
 }
 
 export interface GuestOfficeSessionResponse {
@@ -69,6 +75,7 @@ export interface CreateOfficeCalendarEventRequest {
   eventType: CalendarEventType;
   guestToken: string;
   isAllDay?: boolean;
+  location?: string;
   startsAt: string;
   title: string;
 }
@@ -78,6 +85,7 @@ export interface UpdateOfficeCalendarEventRequest {
   eventType?: CalendarEventType;
   guestToken: string;
   isAllDay?: boolean;
+  location?: string;
   startsAt?: string;
   title?: string;
 }

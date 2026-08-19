@@ -2,30 +2,33 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 import Phaser from "phaser";
 import type {
+  MeetingParticipantCountry,
   OfficeSummonRequestedPayload,
   OfficeSummonResolvedPayload
 } from "@likelion2026/shared";
 
+import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
+import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
+import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
 import { OfficeScene } from "../core/office-scene";
 import { useOfficeConnection } from "../model/office-connection-context";
 import { useOfficeStore } from "../model/office-store";
 import { useOfficeCalendar } from "../model/use-office-calendar";
+import { useMeetingOfficePresence } from "../model/use-meeting-office-presence";
 import { useOfficeTodos } from "../model/use-office-todos";
 import { createPeopleContext } from "../model/people-context";
 import { applyCalendarPresence } from "../model/calendar-presence";
 import { getOfficeSceneBootstrap } from "../model/office-scene-bootstrap";
+import { getOfficeEntryPhase } from "../model/office-entry-phase";
 import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarModal } from "./OfficeCalendarModal";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
+import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
 
-interface VirtualOfficeProps {
-  onOpenMeetingLab: () => void;
-}
-
-export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Element {
+export function VirtualOffice(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
@@ -37,6 +40,7 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
     isPreparingSession,
+    isRestoringStoredSession,
     prepareSession,
     registerSocketCallbacks,
     respondToSummon,
@@ -50,7 +54,18 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
+  const meetingController = useMeetingSessionController();
+  const meetingRoomSection = useMemo(
+    () => createMeetingRoomSection("meeting-room"),
+    []
+  );
   const sceneBootstrap = useMemo(() => getOfficeSceneBootstrap(self), [self]);
+  const entryPhase = getOfficeEntryPhase({
+    hasSession: Boolean(session),
+    isPreparingSession,
+    isRestoringStoredSession,
+    isSceneReady
+  });
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -93,11 +108,45 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   );
 
   useEffect(() => registerSocketCallbacks(socketCallbacks), [registerSocketCallbacks, socketCallbacks]);
+  useMeetingOfficePresence(meetingController.session.status);
   const peopleContext = createPeopleContext(
     effectiveMembers,
     todoController.publicTodos,
     effectiveSelf?.memberId
   );
+  const meetingJoinRequest = useMemo(() => {
+    if (!session) {
+      return null;
+    }
+
+    return {
+      participantCountry: countryCodeToMeetingParticipantCountry(
+        session.member.countryCode
+      ),
+      participantIdentity: session.member.id,
+      participantName: session.member.name,
+      roomName: meetingRoomSection.roomName
+    };
+  }, [
+    meetingRoomSection.roomName,
+    session?.member.countryCode,
+    session?.member.id,
+    session?.member.name
+  ]);
+
+  useEffect(() => {
+    if (!isInsideMeetingRoom || !meetingJoinRequest) {
+      void meetingController.leave();
+      return;
+    }
+
+    void meetingController.start(meetingJoinRequest);
+  }, [
+    isInsideMeetingRoom,
+    meetingController.leave,
+    meetingController.start,
+    meetingJoinRequest
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -172,9 +221,18 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
   }, [isSceneReady, session?.member.avatarId]);
 
   return (
-    <section className="virtual-office" aria-label="가상 오피스">
+    <section
+      className={[
+        "virtual-office",
+        isInsideMeetingRoom ? "in-meeting-room" : ""
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      aria-label="가상 오피스"
+    >
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud
+        avatarId={session?.member.avatarId}
         connectionState={connectionState}
         memberCount={effectiveMembers.length}
         onAttendanceChange={updateAttendance}
@@ -186,16 +244,20 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         selfStatus={effectiveSelf?.status}
       />
       <OfficeTodoPanel
+        avatarId={session?.member.avatarId}
         controller={todoController}
         isOpen={isTodoPanelOpen}
+        onAttendanceChange={updateAttendance}
         onClose={() => setIsTodoPanelOpen(false)}
+        onStatusChange={updateStatus}
+        selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
+        selfStatus={effectiveSelf?.status}
       />
       <OfficeCalendarModal
         controller={calendarController}
         isOpen={isCalendarOpen}
         members={effectiveMembers}
         onClose={() => setIsCalendarOpen(false)}
-        ownTodos={todoController.ownTodos}
         self={effectiveSelf}
       />
       <OfficePeoplePanel
@@ -218,15 +280,13 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
         request={pendingSummon}
       />
       {isInsideMeetingRoom ? (
-        <aside className="meeting-prompt">
-          <h2>회의실에 들어왔습니다</h2>
-          <p>회의 참여를 선택하면 Meeting Lab에서 LiveKit 연결을 테스트할 수 있습니다.</p>
-          <button className="primary-button" onClick={onOpenMeetingLab} type="button">
-            Meeting Lab 열기
-          </button>
-        </aside>
+        <MeetingRoomOverlay
+          controller={meetingController}
+          defaultSourceLanguage={session?.member.preferredLanguage}
+        />
       ) : null}
-      {!session ? (
+      {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
+      {entryPhase === "onboarding" ? (
         <GuestOnboarding
           error={sessionError}
           isSubmitting={isPreparingSession}
@@ -235,4 +295,10 @@ export function VirtualOffice({ onOpenMeetingLab }: VirtualOfficeProps): JSX.Ele
       ) : null}
     </section>
   );
+}
+
+function countryCodeToMeetingParticipantCountry(
+  countryCode: string
+): MeetingParticipantCountry {
+  return countryCode === "VN" ? "vn" : "kr";
 }

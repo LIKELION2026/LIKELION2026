@@ -1,5 +1,8 @@
 import { SOCKET_EVENT_NAMES } from "../../constants/socket-events";
-import type { LanguageCode } from "../../domain/language";
+import type {
+  LanguageCode,
+  MeetingTranslationLanguageCode
+} from "../../domain/language";
 import {
   SUBTITLE_UPDATE_STRATEGY,
   type SubtitleCreatedPayload,
@@ -12,6 +15,17 @@ export const LAB_MEETING_ROOM_NAME_PATTERN =
 export const PARTICIPANT_IDENTITY_PATTERN =
   "^[a-zA-Z0-9][a-zA-Z0-9_-]{1,63}$";
 export const MEETING_PARTICIPANT_COUNTRIES = ["kr", "vn"] as const;
+
+export const MEETING_PARTICIPANT_ATTRIBUTE_KEYS = {
+  PARTICIPANT_COUNTRY: "participantCountry",
+  PREFERRED_LANGUAGE: "preferredLanguage",
+  ROOM_NAME: "roomName",
+  TRANSLATION_RECEIVING_ENABLED: "translationReceivingEnabled",
+  TRANSLATION_TARGET_LANGUAGE: "translationTargetLanguage"
+} as const;
+
+export type MeetingParticipantAttributeKey =
+  (typeof MEETING_PARTICIPANT_ATTRIBUTE_KEYS)[keyof typeof MEETING_PARTICIPANT_ATTRIBUTE_KEYS];
 
 export type MeetingParticipantCountry =
   (typeof MEETING_PARTICIPANT_COUNTRIES)[number];
@@ -32,10 +46,19 @@ export const MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY: Record<
   vn: "vi"
 };
 
+export interface MeetingTranslationPreference {
+  activatedAt?: string;
+  enabled: boolean;
+  sourceLanguage: MeetingTranslationLanguageCode;
+  targetLanguage: MeetingTranslationLanguageCode;
+}
+
 export interface CreateMeetingTokenRequest {
   roomName: string;
   participantName: string;
   participantCountry: MeetingParticipantCountry;
+  participantIdentity?: string;
+  translationPreference?: MeetingTranslationPreference;
 }
 
 export interface CreateMeetingTokenResponse {
@@ -46,6 +69,7 @@ export interface CreateMeetingTokenResponse {
   participantName: string;
   participantCountry: MeetingParticipantCountry;
   preferredLanguage: LanguageCode;
+  translationPreference: MeetingTranslationPreference;
   expiresAt: string;
 }
 

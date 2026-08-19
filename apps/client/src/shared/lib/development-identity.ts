@@ -2,9 +2,11 @@ import {
   COUNTRY_CODES,
   MEETING_PARTICIPANT_COUNTRIES,
   MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY,
+  OFFICE_AVATAR_IDS,
   type CountryCode,
   type LanguageCode,
-  type MeetingParticipantCountry
+  type MeetingParticipantCountry,
+  type OfficeAvatarId
 } from "@likelion2026/shared";
 
 const MEMBER_ID_STORAGE_KEY = "virtual-office.member-id";
@@ -16,6 +18,7 @@ const DEFAULT_PARTICIPANT_COUNTRY: MeetingParticipantCountry = "kr";
 const DEFAULT_TEAM_ID = "demo-global-team";
 
 export interface GuestProfile {
+  avatarId?: OfficeAvatarId;
   countryCode: CountryCode;
   displayName: string;
   language: LanguageCode;
@@ -111,6 +114,12 @@ function toDevelopmentIdentity(profile: DevelopmentProfile): DevelopmentIdentity
   };
 }
 
+function normalizeOfficeAvatarId(value: unknown): OfficeAvatarId | undefined {
+  return typeof value === "string" && OFFICE_AVATAR_IDS.includes(value as OfficeAvatarId)
+    ? (value as OfficeAvatarId)
+    : undefined;
+}
+
 function readLegacyDevelopmentProfile():
   | Partial<DevelopmentProfile>
   | undefined {
@@ -165,7 +174,10 @@ function normalizeGuestProfile(
     return null;
   }
 
+  const avatarId = normalizeOfficeAvatarId(profile.avatarId);
+
   return {
+    ...(avatarId ? { avatarId } : {}),
     countryCode,
     displayName,
     language: getLanguageByCountryCode(countryCode)

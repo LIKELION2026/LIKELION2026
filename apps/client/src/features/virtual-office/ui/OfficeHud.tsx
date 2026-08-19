@@ -5,8 +5,10 @@ import {
 } from "@likelion2026/shared";
 
 import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/office-store";
+import { AvatarFace } from "./AvatarFace";
 
 interface OfficeHudProps {
+  avatarId: string | undefined;
   connectionState: OfficeConnectionState;
   memberCount: number;
   onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
@@ -19,6 +21,7 @@ interface OfficeHudProps {
 }
 
 export function OfficeHud({
+  avatarId,
   connectionState,
   memberCount,
   onAttendanceChange,
@@ -32,12 +35,17 @@ export function OfficeHud({
   return (
     <div className="office-hud">
       <section className="hud-panel" aria-label="오피스 상태">
-        <p className="hud-title">Demo Global Team</p>
-        <p className="hud-meta">현재 오피스 {memberCount}명</p>
-        <div className="connection-state">
-          <span className={`connection-dot ${connectionState}`} />
-          {getConnectionLabel(connectionState)}
-        </div>
+        <header className="hud-header">
+          <AvatarFace avatarId={avatarId} size={56} />
+          <div className="hud-header-text">
+            <p className="hud-title">Demo Global Team</p>
+            <p className="hud-meta">현재 오피스 {memberCount}명</p>
+            <div className="connection-state">
+              <span className={`connection-dot ${connectionState}`} />
+              {getConnectionLabel(connectionState)}
+            </div>
+          </div>
+        </header>
         <button
           className="attendance-button"
           onClick={() =>
@@ -47,7 +55,7 @@ export function OfficeHud({
           }
           type="button"
         >
-          {selfAttendanceStatus === "working" ? "퇴근하기" : "출근하기"}
+          {selfAttendanceStatus === "working" ? "🌙 퇴근하기" : "🏢 출근하기"}
         </button>
         <select
           aria-label="내 협업 상태"
@@ -61,15 +69,17 @@ export function OfficeHud({
             </option>
           ))}
         </select>
-        <button className="office-secondary-button" onClick={onOpenPeople} type="button">
-          피플 목록
-        </button>
-        <button className="office-secondary-button" onClick={onOpenTodo} type="button">
-          내 TODO
-        </button>
-        <button className="office-secondary-button" onClick={onOpenCalendar} type="button">
-          협업 보드
-        </button>
+        <div className="hud-nav">
+          <button className="office-secondary-button" onClick={onOpenPeople} type="button">
+            👥 피플 목록
+          </button>
+          <button className="office-secondary-button" onClick={onOpenTodo} type="button">
+            📋 내 TODO
+          </button>
+          <button className="office-secondary-button" onClick={onOpenCalendar} type="button">
+            📅 협업 보드
+          </button>
+        </div>
       </section>
     </div>
   );

@@ -26,6 +26,9 @@ importers:
       livekit-client:
         specifier: ^2.21.0
         version: 2.21.0(@types/dom-mediacapture-record@1.0.22)
+      lucide-react:
+        specifier: ^1.31.0
+        version: 1.31.0(react@19.2.8)
       phaser:
         specifier: ^3.90.0
         version: 3.90.0
@@ -1416,6 +1419,11 @@ packages:
   lru-cache@11.5.2:
     resolution: {integrity: sha512-4pfM1Ff0x50o0tQwb5ucw/RzNyD0/YJME6IVcStalZuMWxdt3sR3huStTtxz4PUmvZfRguvDejasvQ2kifR11g==}
     engines: {node: 20 || >=22}
+
+  lucide-react@1.31.0:
+    resolution: {integrity: sha512-G8u2eEtoHUnUa9f8lbvqDhCiORMnYLdUEo06EEG9MQvHQrInKcX3Pa2TH39MM5qyzRcWETxB0+aOwAPI1g1kEg==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
@@ -3363,6 +3371,10 @@ snapshots:
   loglevel@1.9.2: {}
 
   lru-cache@11.5.2: {}
+
+  lucide-react@1.31.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
 
   magic-string@0.30.17:
     dependencies:

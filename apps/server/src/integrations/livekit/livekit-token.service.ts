@@ -45,6 +45,7 @@ export class LiveKitTokenService {
       canPublishData: true,
       canPublishSources: [TrackSource.CAMERA, TrackSource.MICROPHONE],
       canSubscribe: true,
+      canUpdateOwnMetadata: true,
       room: input.roomName,
       roomJoin: true
     };

@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-18
+> 마지막 업데이트: 2026-08-19
 
 ## 목적
 
@@ -53,6 +53,28 @@
 - 검증 결과: 관련 타입과 기능 동작 확인
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
+
+### 2026-08-19 - 오피스 맵 벽과 가구 충돌 영역
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, Test-driven Development
+- 사용 목적: 배경 이미지로만 표시되던 오피스에서 아바타가 벽과 주요 가구를 통과하는 문제를 해결
+- 입력 맥락: `office-map.png`의 내보낸 좌표, Phaser Arcade Physics 이동 구조, 기본 데스크·회의실 위치
+- AI 제안 또는 산출물: 좌표 기반 충돌 영역, 위치 이동 보정 함수, 기본 데스크 및 회의실 입구 회귀 테스트
+- 팀원 검토·수정 내용: 맵에서 실제로 막아야 할 가구와 통과해야 할 문·복도는 로컬 브라우저에서 확인 후 조정한다.
+- 검증 결과: 충돌 영역 단위 테스트 4건과 client typecheck, client production build를 통과했다. 실제 맵에서 가구별 경계와 문·복도 통과 여부는 팀원 브라우저 검토가 필요하다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/143
+
+### 2026-08-19 - 고유 아바타 선택과 서버 중복 방지
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Brainstorming, Test-driven Development
+- 사용 목적: 신규 팀원이 같은 아바타로 입장해 구성원을 구분하기 어려운 문제를 해결
+- 입력 맥락: 최초 입장 모달, 10종의 걷기·앉기 스프라이트 자산, workspace 단위 멤버 데이터
+- AI 제안 또는 산출물: 아바타 사용 가능 목록 API, 선택·랜덤 선택 UI, 서버 재검증, workspace와 avatar ID의 부분 고유 인덱스, 단위 테스트
+- 팀원 검토·수정 내용: 기존 `office-avatar` 테스트 세션은 마이그레이션 대상에서 제외하고, 신규 선택형 아바타만 고유 제약을 적용한다. 실제 배포 Supabase에는 마이그레이션 적용 후 두 브라우저 동시 선택을 검증한다.
+- 검증 결과: 아바타 배정 규칙 단위 테스트, shared/client/server typecheck, client production build 통과. Vite bundle 크기 경고는 기존 Phaser 번들 경고로 남아 있다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/137
 
 ### 2026-08-17 - 오피스 위치와 공개 TODO 실시간 동기화
 
@@ -705,3 +727,66 @@
 - 팀원 검토·수정 내용: `lk agent create --secrets-file .env`가 빈 값의 환경변수에서 실패하는 CLI 버그를 발견해 `.env`의 빈 `ANTHROPIC_API_KEY=` 줄을 제거했다. 컨테이너 stdout이 TTY가 아니라 기본 블록 버퍼링되어 `lk agent logs`에 로그가 안 보이던 것을 `PYTHONUNBUFFERED=1`로 해결했다.
 - 검증 결과: `lk agent deploy`로 배포 후 `lk agent logs`로 실시간 로그 확인. 배포된 워커로 실제 회의방 접속해 자동 배정과 자막 동작 확인. 로컬 노트북을 끈 상태에서도 통역이 계속 동작하는 것 확인.
 - 관련 Issue / PR / Discussion: Issue #120, PR #121
+
+### 2026-08-18 - vi_ko.md 관용구 초안과 번역 정확도 AI 교차검증
+
+- 사용한 Agent / Skill: Claude Code
+- 사용 목적: 베트남어→한국어 관용구 지침(`vi_ko.md`)이 비어 있던 것을 원어민 없이도 임시로 채우고, 실제 파이프라인 번역 품질을 원어민 검토 전 단계에서 가늠할 방법을 만든다
+- 입력 맥락: Issue #18(원어민 검토와 vi_ko 작성이 완료 기준), 기존 `ko_vi.md`, 배포된 LiveKit Cloud 워커
+- AI 제안 또는 산출물:
+  - `ko_vi.md`를 뒤집어 만든 `vi_ko.md` 초안(유보 표현·노고 표현·인사와 요청)
+  - 두 방향 사전 문장을 포함한 마이크 테스트 대사 24개(짧은 문장 + 문맥 있는 긴 문장)
+  - 실제 배포 브라우저 발화 로그에서 STT 인식 오류 5건을 찾아 번역 채점에서 제외하는 처리
+  - Gemini/GPT/Claude 3사에 같은 프롬프트로 19개 번역쌍을 독립 채점시켜 평균·격차를 낸 결과(평균 89.4점, 격차 20점 이상 2건)
+  - Deepgram 공개 WER, Gemini 3.1 Flash-Lite 모델 카드, 외부 번역 벤치마크(Alconost)를 참고자료로 조사
+- 팀원 검토·수정 내용:
+  - 처음엔 "정확도 %"로 표현하려 했으나, 정답(기준 번역)이 없다는 것을 사용자가 지적해 "여러 채점자가 얼마나 같은 판단을 내리는가"로 방향을 바꿨다
+  - `ko_vi.md` 문장을 그대로 역번역(Claude가 새로 번역)하려던 초기 방식을, 사용자가 "실제 파이프라인이 낸 진짜 번역 결과로 평가해야 의미 있다"고 정정해 실제 발화 테스트로 바꿨다
+  - GPT 교차검증에 쓸 OpenAI API 키가 프로젝트에 없어, 프로그램 호출 대신 사용자가 각 서비스 웹 UI에 직접 채점 프롬프트를 붙여넣는 방식으로 바꿨다
+  - 음성 인식 자체가 원문과 다르게 인식된 경우(성조 오인식 등 5건)는 번역 품질 문제가 아니라는 사용자 지적에 따라 채점 대상에서 제외했다
+  - `Closes #126`으로 PR #127을 병합했는데, 그 PR은 완료 기준 4개 중 1개(초안 작성)만 끝낸 상태였다. 이슈를 다시 열어 나머지 3개를 마친 뒤 재종료했다
+  - 결과를 Issue 코멘트에 다 적지 않고 GitHub Discussion으로 옮겨 정리하도록 사용자가 방향을 바꿨다
+  - Gemini 선택 근거를 사후 벤치마크로 재구성하려 한 것에 대해, `docs/ADR/0001`의 실제 기록(비용 문제)과 다르다는 것을 확인하고 "원래 이유(비용)와 사후 참고자료(품질)는 다르다"고 구분해서 정리했다
+- 검증 결과: 실제 배포 브라우저에서 24개 발화로 파이프라인을 실행해 로그를 확보했다. Gemini/GPT/Claude 3사 채점 결과를 직접 집계해 평균·격차를 계산했다(코드로 재현 가능). STT 오류 5건은 의도한 원문과 인식 결과를 대조해 확인했다. 원어민 검토는 이 작업의 범위가 아니며 Issue #18에 남아 있다.
+- 관련 Issue / PR / Discussion: Issue #18, Issue #126, PR #127, Discussion #129
+
+### 2026-08-19 - 회의실 구역 진입 기반 LiveKit 세션 생명주기 연결
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 Meeting Room 구역에 들어갈 때 `/meeting-lab` 페이지 전환 없이 카메라·마이크 권한 확인과 LiveKit 회의 연결을 자동으로 시작한다.
+- 입력 맥락: Issue #131, 상위 Issue #136, `MeetingLabPage`, `useLiveKitMeetingSession`, `VirtualOffice.onMeetingRoomState`, `docs/PRD.md` F5
+- AI 제안 또는 산출물: MeetingLab의 권한 확인·토큰 요청·LiveKit 연결 흐름을 `useMeetingSessionController`로 분리하고, `idle/requesting-permission/connecting/connected/leaving/failed` 전이를 순수 함수와 테스트로 추가했다. 오피스 Meeting Room 구역 진입·이탈에 같은 컨트롤러를 연결하고, 원격 오디오 autoplay 차단 시 사용자 클릭으로 재생을 재시도하는 경로를 추가했다.
+- 팀원 검토·수정 내용: 사용자가 “1차 작업부터 진행”을 지시했고, 1차 범위는 참가자 스트립·채팅·AI 번역 ON/OFF가 아니라 구역 진입 기반 세션 생명주기 자동화로 고정했다.
+- 검증 결과: 작업 중 로컬 타입체크와 빌드를 실행해 결과를 확인한다. 실제 두 브라우저 영상·음성 송수신과 브라우저 권한 UI는 사람이 로컬 환경에서 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #131, Issue #136
+
+### 2026-08-19 - ZEP형 인게임 화상회의 오버레이와 컨트롤 UI
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Meeting Room 연결 뒤 오피스 페이지를 유지한 채 상단 참가자 영상 스트립, 하단 미디어 컨트롤, 화면 키우기 grid 모드, 우측 패널 슬롯을 표시한다.
+- 입력 맥락: Issue #132, 상위 Issue #136, PR #141 결과물, `useLiveKitMeetingSession`, `MeetingRoomSessionPanel`, `VirtualOffice`, `keyboard-focus.ts`
+- AI 제안 또는 산출물: LiveKit track 중심 상태에 participant view model을 추가해 카메라 OFF 참가자도 스트립에 남기고, active speaker·connection quality·mic/camera 상태를 같은 동기화 함수로 갱신하도록 확장했다. Office 전용 `MeetingRoomOverlay`, Lucide React 아이콘 전용 참가자 스트립, 더 큰 상단 화상 타일, 하단 아이콘 컨트롤 바, 제한 크기 화면 키우기 grid 모드, 오디오 sink 재사용 컴포넌트, 우측 채팅·번역 패널 슬롯을 추가했다. 회의 컨트롤 버튼에 focus가 있어도 WASD/방향키 이동이 막히지 않도록 keyboard focus 판정도 좁혔다.
+- 팀원 검토·수정 내용: 사용자가 “2차 작업” 진행을 지시했고, 상위 이슈의 의존성에 따라 #132를 담당 범위로 확정했다. 실제 채팅 송수신과 번역 언어 모달은 #133, #134 범위로 남겼다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/keyboard-focus.test.ts apps/client/test/meeting-session-transition.test.ts apps/client/test/meeting-control-state.test.ts` 11건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존과 같은 비차단 경고다. 실제 1280×720/1920×1080 브라우저 화면 캡처와 다중 참가자 수동 검증은 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #132, Issue #136
+
+### 2026-08-19 - 회의실 세션 채팅과 AI 번역 메시지 타임라인
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 인게임 회의 우측 패널에서 일반 채팅을 주고받고, AI 실시간 번역 자막도 같은 채팅 타임라인에 구분해서 표시한다.
+- 입력 맥락: Issue #133, 상위 Issue #136, 사용자 요청의 “AI 실시간 번역한 것도 채팅에 제공” 및 “1시간 회의 기준으로 최대 제한 확대”, `useLiveKitMeetingSession`, `MeetingRoomOverlay`, `useMeetingSubtitles`
+- AI 제안 또는 산출물: LiveKit Text Stream topic `meeting.chat` 기반 채팅 hook, 500자 입력 검증, optimistic 메시지 병합, local echo 중복 제거, 실패 메시지 재시도·삭제 상태, 우측 채팅 bubble UI, 자막 payload를 `translation` kind로 변환하는 모델, 최근 5,000개 메시지 보관 정책을 추가했다. 이후 우측 패널의 연결 상태 카드를 제거하고 채팅 전용 패널로 정리했으며, 화면 최우측에 붙어 보이지 않도록 오른쪽 여백 컬럼을 추가했다. 채팅 접기 시 바깥 패널 배경도 축소하고, 최신 AI 번역을 하단 컨트롤 위 caption으로도 표시한다. 오버레이 접힘·레이아웃 변화 중 원격 영상이 자동 pause되는 것을 막기 위해 LiveKit `adaptiveStream`은 비활성화하고 `dynacast`는 유지했다. 같은 오피스 세션 사용자가 포커스 복귀나 개발 모드 effect 재실행 때 새 게스트 참가자로 중복 표시되지 않도록 `session.member.id`를 LiveKit `participantIdentity`로 전달하고, 같은 join 요청의 중복 start를 실패 상태가 아닌 경우 무시하도록 분리했다.
+- 팀원 검토·수정 내용: 원래 Issue #133의 100개 제한은 AI 번역 메시지까지 채팅에 같이 담아야 한다는 사용자 지시에 따라 5,000개로 늘렸다. 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `AI 번역` 라벨과 원문을 함께 보여 주는 구조로 분리했다. 사용자가 회의 연결 확인 문구보다 채팅 자체에 집중되도록 요청해 연결 상태 UI는 오버레이에서 제거했다. 채팅 헤더의 `Session Chat` 보조 문구도 제거했다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-chat-message.test.ts apps/client/test/keyboard-focus.test.ts apps/client/test/meeting-session-transition.test.ts apps/client/test/meeting-control-state.test.ts` 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존과 같은 비차단 경고다. 실제 두 브라우저 LiveKit 채팅 송수신과 번역 ON/OFF 수동 확인은 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #133, Issue #136
+
+### 2026-08-19 - AI 번역 언어 설정 모달과 참가자별 ON/OFF 제어
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 회의실 AI 번역을 기본 ON으로 두고, 사용자가 언어 설정을 저장한 이후부터 생성되는 번역만 채팅과 하단 caption에 표시한다.
+- 입력 맥락: Issue #134, 상위 Issue #136, 사용자 요청의 “AI 번역 on/off”, “나의 언어는 KR/VI”, “번역하고픈 언어 -> 상대방에게 보여줄 언어”, “OFF면 번역된 채팅은 올라오지 않음”, #133 채팅 타임라인 구현 결과
+- AI 제안 또는 산출물: Shared에 `MeetingTranslationPreference`, `ko`/`vi` 지원 언어 상수, LiveKit participant attribute key 상수를 추가했다. Server token 발급은 `translationReceivingEnabled: "true"` 기본값과 `translationTargetLanguage`를 포함하고, source/target이 같거나 지원하지 않는 언어면 거부한다. LiveKit grant에 `canUpdateOwnMetadata`를 추가해 Client가 모달 저장 후 자신의 attributes를 갱신할 수 있게 했다. Client는 기본 ON 상태로 자막 Socket을 구독하고, `Globe` 버튼에서 언어 설정 모달을 열어 LiveKit attributes 업데이트 성공 후 새 `activatedAt`을 반영한다. 모달 옵션은 `KR`/`VI`로 표시하고 대상 언어 문구는 `상대방에게 보여줄 언어`로 정리했다. `useMeetingSubtitles`는 initial buffer를 읽지 않으며, `activatedAt` 이전 payload를 버린다. Translation Agent는 방 안에 번역 수신 ON 참가자가 없으면 오디오 워커를 붙이지 않고, participant attributes 변경 시 언어 변경을 반영해 워커를 재시작한다.
+- AI 제안 또는 산출물 추가: 실제 번역 payload가 아직 없을 때 사용자가 침묵 상태와 장애 상태를 구분할 수 있도록 하단 caption 영역에 `AI 번역 연결 중`, `AI 번역 대기 중`, `AI 번역 연결 실패` 상태를 표시했다. 현재 Client는 자막 Socket 상태까지만 알 수 있어 Translation Agent worker heartbeat는 후속 개선 범위로 남겼다.
+- 팀원 검토·수정 내용: 사용자가 최신 `dev`를 base로 새 브랜치를 다시 파라고 정정해, `codex/feat/meeting-translation-preferences`를 `origin/dev` 기준으로 재생성한 뒤 작업했다. 이후 사용자가 기본값을 ON으로 바꾸고 모달 문구를 `KR/VI`, `상대방에게 보여줄 언어`로 수정하라고 지시해 반영했다. 실제 두 브라우저 수동 검증과 LiveKit Cloud 배포 워커 확인은 아직 수행하지 않았다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server test` 62건 통과, `node --test --experimental-strip-types apps/client/test/meeting-translation-preference.test.ts apps/client/test/meeting-subtitle-activation.test.ts apps/client/test/meeting-control-state.test.ts apps/client/test/meeting-chat-message.test.ts` 18건 통과, `uv run --cache-dir .uv-cache --with pytest python -m pytest tests/test_agent.py tests/test_livekit_room.py` 39건 통과. `uv` 테스트 후 임시 `.uv-cache`는 삭제했다.
+- 관련 Issue / PR / Discussion: Issue #134, Issue #136

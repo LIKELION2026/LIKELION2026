@@ -1,9 +1,13 @@
-import type { AvatarAnimation, AvatarDirection } from "@likelion2026/shared";
+import {
+  OFFICE_AVATAR_IDS,
+  type AvatarAnimation,
+  type AvatarDirection,
+  type OfficeAvatarId,
+} from "@likelion2026/shared";
 
-export const DEFAULT_AVATAR_ID = "office-avatar";
-export const GRAY_CAT_AVATAR_ID = "gray-cat";
+export const DEFAULT_AVATAR_ID: OfficeAvatarId = "red_panda";
 
-interface AvatarFrameSource {
+export interface AvatarFrameSource {
   height: number;
   width: number;
   x: number;
@@ -16,84 +20,135 @@ export interface AvatarSpriteDefinition {
   frameSources: AvatarFrameSource[];
   id: string;
   idleFrameByDirection: Record<AvatarDirection, number>;
+  label: string;
   scale: number;
+  sitAssetPath: string;
+  sitFramesByDirection: Record<AvatarDirection, number[]>;
+  sitTextureKey: string;
   textureKey: string;
   walkFramesByDirection: Record<AvatarDirection, number[]>;
 }
 
-const DEFAULT_FRAME_SIZE = 256;
-const DEFAULT_BORDER_TRIM = 2;
-const DEFAULT_FRAME_CONTENT_SIZE = DEFAULT_FRAME_SIZE - DEFAULT_BORDER_TRIM * 2;
+const FRAME_SIZE = 256;
+const BORDER_TRIM = 2;
+const FRAME_CONTENT_SIZE = FRAME_SIZE - BORDER_TRIM * 2;
+const FURNISHED_OFFICE_AVATAR_SCALE = 0.55;
 
-const DEFAULT_AVATAR_DEFINITION: AvatarSpriteDefinition = {
-  assetPath: "/assets/image.png",
-  footBaseline: 236,
-  frameSources: Array.from({ length: 24 }, (_, frame) => ({
-    height: DEFAULT_FRAME_CONTENT_SIZE,
-    width: DEFAULT_FRAME_CONTENT_SIZE,
-    x: (frame % 6) * DEFAULT_FRAME_SIZE + DEFAULT_BORDER_TRIM,
-    y: Math.floor(frame / 6) * DEFAULT_FRAME_SIZE + DEFAULT_BORDER_TRIM
-  })),
-  id: DEFAULT_AVATAR_ID,
-  idleFrameByDirection: { down: 0, left: 2, right: 2, up: 1 },
-  scale: 0.16,
-  textureKey: "office-avatar",
-  walkFramesByDirection: {
-    down: [6, 7, 8, 9, 10, 11],
-    left: [18, 19, 20, 21, 22, 23],
-    right: [18, 19, 20, 21, 22, 23],
-    up: [12, 13, 14, 15, 16, 17]
-  }
+const createFrameSources = (): AvatarFrameSource[] =>
+  Array.from({ length: 24 }, (_, frame) => ({
+    height: FRAME_CONTENT_SIZE,
+    width: FRAME_CONTENT_SIZE,
+    x: (frame % 6) * FRAME_SIZE + BORDER_TRIM,
+    y: Math.floor(frame / 6) * FRAME_SIZE + BORDER_TRIM,
+  }));
+
+const AVATAR_LABELS: Record<OfficeAvatarId, string> = {
+  capybara: "카피바라",
+  cat: "고양이",
+  cow: "소",
+  dog: "강아지",
+  eagle: "독수리",
+  hippo: "하마",
+  monkey: "원숭이",
+  parrot: "앵무새",
+  red_panda: "레드판다",
+  sheep: "양",
+  wolf: "늑대",
+  zebra: "얼룩말",
 };
 
-const GRAY_CAT_AVATAR_DEFINITION: AvatarSpriteDefinition = {
-  assetPath: "/assets/gray-cat.webp",
-  footBaseline: 122,
-  frameSources: [
-    { height: 128, width: 128, x: 56, y: 32 },
-    { height: 128, width: 128, x: 184, y: 32 },
-    { height: 128, width: 128, x: 312, y: 32 },
-    { height: 128, width: 128, x: 440, y: 32 }
-  ],
-  id: GRAY_CAT_AVATAR_ID,
-  idleFrameByDirection: { down: 0, left: 2, right: 3, up: 1 },
-  scale: 0.32,
-  textureKey: "gray-cat-avatar",
-  walkFramesByDirection: {
-    down: [0],
-    left: [2],
-    right: [3],
-    up: [1]
-  }
-};
+function createAvatarSpriteDefinition(
+  id: OfficeAvatarId,
+): AvatarSpriteDefinition {
+  return {
+    assetPath: `/assets/${id}.png`,
+    footBaseline: 236,
+    frameSources: createFrameSources(),
+    id,
+    idleFrameByDirection: { down: 0, left: 2, right: 2, up: 1 },
+    label: AVATAR_LABELS[id],
+    scale: FURNISHED_OFFICE_AVATAR_SCALE,
+    sitAssetPath: `/assets/${id}_sit.png`,
+    sitFramesByDirection: {
+      down: [0, 1, 2, 3, 4, 5],
+      left: [12, 13, 14, 15, 16, 17],
+      right: [12, 13, 14, 15, 16, 17],
+      up: [6, 7, 8, 9, 10, 11],
+    },
+    sitTextureKey: `office-avatar-${id}-sit`,
+    textureKey: `office-avatar-${id}`,
+    walkFramesByDirection: {
+      down: [6, 7, 8, 9, 10, 11],
+      left: [18, 19, 20, 21, 22, 23],
+      right: [18, 19, 20, 21, 22, 23],
+      up: [12, 13, 14, 15, 16, 17],
+    },
+  };
+}
 
-export function getAvatarSpriteDefinition(avatarId: string | undefined): AvatarSpriteDefinition {
-  return avatarId === GRAY_CAT_AVATAR_ID
-    ? GRAY_CAT_AVATAR_DEFINITION
-    : DEFAULT_AVATAR_DEFINITION;
+const AVATAR_SPRITE_DEFINITIONS = OFFICE_AVATAR_IDS.map(
+  createAvatarSpriteDefinition,
+);
+const AVATAR_SPRITE_DEFINITION_BY_ID = new Map(
+  AVATAR_SPRITE_DEFINITIONS.map((definition) => [definition.id, definition]),
+);
+
+export function getAvatarSpriteDefinition(
+  avatarId: string | undefined,
+): AvatarSpriteDefinition {
+  return (
+    AVATAR_SPRITE_DEFINITION_BY_ID.get(avatarId ?? DEFAULT_AVATAR_ID) ??
+    AVATAR_SPRITE_DEFINITION_BY_ID.get(DEFAULT_AVATAR_ID)!
+  );
 }
 
 export function getAvatarSpriteDefinitions(): AvatarSpriteDefinition[] {
-  return [DEFAULT_AVATAR_DEFINITION, GRAY_CAT_AVATAR_DEFINITION];
+  return AVATAR_SPRITE_DEFINITIONS;
 }
 
 export function getAvatarFrameIndex(
   definition: AvatarSpriteDefinition,
   direction: AvatarDirection,
-  animation: AvatarAnimation
+  animation: AvatarAnimation,
 ): number {
-  return animation === "walk"
-    ? definition.walkFramesByDirection[direction][0]!
-    : definition.idleFrameByDirection[direction];
+  if (animation === "walk") {
+    return definition.walkFramesByDirection[direction][0]!;
+  }
+
+  if (animation === "sit") {
+    return definition.sitFramesByDirection[direction][0]!;
+  }
+
+  return definition.idleFrameByDirection[direction];
+}
+
+export function getRequiredAvatarFrameIndices(
+  definition: AvatarSpriteDefinition,
+  animation: "sit" | "walk" = "walk",
+): number[] {
+  if (animation === "sit") {
+    return [...new Set(Object.values(definition.sitFramesByDirection).flat())];
+  }
+
+  return [
+    ...new Set([
+      ...Object.values(definition.idleFrameByDirection),
+      ...Object.values(definition.walkFramesByDirection).flat(),
+    ]),
+  ].sort((left, right) => left - right);
 }
 
 export function shouldFlipAvatarSprite(
-  avatarId: string | undefined,
+  _avatarId: string | undefined,
   direction: AvatarDirection,
-  animation: AvatarAnimation
+  animation: AvatarAnimation,
 ): boolean {
-  if (avatarId === GRAY_CAT_AVATAR_ID || (direction !== "left" && direction !== "right")) {
+  if (direction !== "left" && direction !== "right") {
     return false;
+  }
+
+  if (animation === "sit") {
+    return direction === "left";
   }
 
   return direction === "left" ? animation === "walk" : animation === "idle";

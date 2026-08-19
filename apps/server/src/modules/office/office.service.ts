@@ -10,11 +10,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   type CreateGuestOfficeSessionRequest,
   type GuestOfficeSessionResponse,
+  type GuestOfficeAvatarAvailabilityResponse,
   type OfficeCollaborationPresence,
   type OfficeDesk,
   type OfficeMemberPresence,
   type OfficeMember,
   type OfficeAvatarState,
+  OFFICE_DEFAULT_DESKS,
   type MemberStatus,
   type OfficeTodo,
   type OfficeCalendarEvent,
@@ -31,7 +33,7 @@ import {
 import { randomUUID } from "node:crypto";
 
 import { SUPABASE_CLIENT } from "../../integrations/supabase/supabase.constants";
-import { selectNewGuestAvatarId } from "./office-avatar";
+import { getAvailableGuestAvatarIds, selectNewGuestAvatarId } from "./office-avatar";
 
 interface WorkspaceRow {
   id: string;
@@ -91,6 +93,7 @@ interface CalendarEventRow {
   event_type: OfficeCalendarEvent["eventType"];
   id: string;
   is_all_day: boolean;
+  location: string | null;
   starts_at: string;
   title: string;
   workspace_id: string;
@@ -101,14 +104,7 @@ interface CalendarParticipantRow {
   member_id: string;
 }
 
-const DEFAULT_DESKS = [
-  { label: "Korea desk 1", positionX: 192, positionY: 264, zone: "korea-zone" },
-  { label: "Korea desk 2", positionX: 288, positionY: 264, zone: "korea-zone" },
-  { label: "Korea desk 3", positionX: 384, positionY: 264, zone: "korea-zone" },
-  { label: "Vietnam desk 1", positionX: 672, positionY: 264, zone: "vietnam-zone" },
-  { label: "Vietnam desk 2", positionX: 768, positionY: 264, zone: "vietnam-zone" },
-  { label: "Vietnam desk 3", positionX: 864, positionY: 264, zone: "vietnam-zone" }
-] as const satisfies ReadonlyArray<
+const DEFAULT_DESKS = OFFICE_DEFAULT_DESKS satisfies ReadonlyArray<
   Pick<OfficeDesk, "label" | "positionX" | "positionY" | "zone">
 >;
 
@@ -139,6 +135,12 @@ export class OfficeService {
     const presence = await this.ensurePresence(member.id, desk);
 
     return { desk, guestToken, member, presence };
+  }
+
+  async getGuestAvatarAvailability(): Promise<GuestOfficeAvatarAvailabilityResponse> {
+    const workspace = await this.ensureWorkspace();
+    const assignedAvatarIds = await this.getAssignedAvatarIds(workspace.id);
+    return { availableAvatarIds: getAvailableGuestAvatarIds(assignedAvatarIds) };
   }
 
   async updateAttendance(
@@ -317,6 +319,27 @@ export class OfficeService {
     return toOfficeTodo(data as TodoRow);
   }
 
+  async deleteTodo(
+    todoId: string,
+    guestToken: string
+  ): Promise<{ memberId: string; workspaceId: string }> {
+    const { data: existing, error: findError } = await this.supabase
+      .from("todos")
+      .select("member_id")
+      .eq("id", todoId)
+      .maybeSingle();
+    this.throwIfError(findError, "find office todo");
+    if (!existing) {
+      throw new NotFoundException("Office todo was not found");
+    }
+
+    const memberId = existing.member_id as string;
+    const member = await this.requireMemberOwnership(memberId, guestToken);
+    const { error } = await this.supabase.from("todos").delete().eq("id", todoId);
+    this.throwIfError(error, "delete office todo");
+    return { memberId, workspaceId: member.workspace_id };
+  }
+
   async createCalendarEvent(
     memberId: string,
     request: CreateOfficeCalendarEventRequest
@@ -330,11 +353,12 @@ export class OfficeService {
         ends_at: request.endsAt,
         event_type: request.eventType,
         is_all_day: request.isAllDay ?? false,
+        location: request.location?.trim() || null,
         starts_at: request.startsAt,
         title: request.title.trim(),
         workspace_id: member.workspace_id
       })
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .single();
     this.throwIfError(error, "create calendar event");
 
@@ -353,7 +377,7 @@ export class OfficeService {
     assertCalendarRange(query.startsAt, query.endsAt);
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .eq("workspace_id", workspaceId)
       .lt("starts_at", query.endsAt)
       .gt("ends_at", query.startsAt)
@@ -392,10 +416,11 @@ export class OfficeService {
     const startsAt = request.startsAt ?? existing.starts_at;
     const endsAt = request.endsAt ?? existing.ends_at;
     assertCalendarRange(startsAt, endsAt);
-    const updates: Record<string, boolean | string> = {};
+    const updates: Record<string, boolean | string | null> = {};
     if (request.endsAt !== undefined) updates.ends_at = request.endsAt;
     if (request.eventType !== undefined) updates.event_type = request.eventType;
     if (request.isAllDay !== undefined) updates.is_all_day = request.isAllDay;
+    if (request.location !== undefined) updates.location = request.location.trim() || null;
     if (request.startsAt !== undefined) updates.starts_at = request.startsAt;
     if (request.title !== undefined) updates.title = request.title.trim();
     if (Object.keys(updates).length === 0) {
@@ -405,7 +430,7 @@ export class OfficeService {
       .from("calendar_events")
       .update(updates)
       .eq("id", eventId)
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .single();
     this.throwIfError(error, "update calendar event");
     return (await this.withCalendarParticipants([data as CalendarEventRow]))[0];
@@ -589,7 +614,7 @@ export class OfficeService {
   ): Promise<CalendarEventRow> {
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
       .eq("id", eventId)
       .maybeSingle();
     this.throwIfError(error, "find calendar event");
@@ -726,10 +751,20 @@ export class OfficeService {
     guestToken: string,
     request: CreateGuestOfficeSessionRequest
   ): Promise<OfficeMember> {
+    const assignedAvatarIds = await this.getAssignedAvatarIds(workspaceId);
+    const avatarId = request.avatarId ?? selectNewGuestAvatarId(assignedAvatarIds);
+    if (!avatarId) {
+      throw new ConflictException("No available avatar remains in this office");
+    }
+
+    if (assignedAvatarIds.includes(avatarId)) {
+      throw new ConflictException("This avatar is already in use");
+    }
+
     const { data, error } = await this.supabase
       .from("members")
       .insert({
-        avatar_id: selectNewGuestAvatarId(),
+        avatar_id: avatarId,
         country_code: request.countryCode,
         guest_token: guestToken,
         name: request.displayName.trim(),
@@ -739,8 +774,22 @@ export class OfficeService {
       .select("avatar_id, country_code, guest_token, id, name, preferred_language, workspace_id")
       .single();
 
+    if (error?.code === "23505") {
+      throw new ConflictException("This avatar is already in use");
+    }
     this.throwIfError(error, "create office member");
     return toMember(data as MemberRow);
+  }
+
+  private async getAssignedAvatarIds(workspaceId: string): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from("members")
+      .select("avatar_id")
+      .eq("workspace_id", workspaceId);
+    this.throwIfError(error, "read assigned office avatars");
+    return ((data ?? []) as Array<Pick<MemberRow, "avatar_id">>).map(
+      (member) => member.avatar_id
+    );
   }
 
   private async updateMemberProfile(
@@ -931,6 +980,7 @@ function toCalendarEvent(row: CalendarEventRow): Omit<OfficeCalendarEvent, "part
     eventType: row.event_type,
     id: row.id,
     isAllDay: row.is_all_day,
+    ...(row.location ? { location: row.location } : {}),
     startsAt: row.starts_at,
     title: row.title,
     workspaceId: row.workspace_id

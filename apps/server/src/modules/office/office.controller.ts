@@ -13,6 +13,7 @@ import {
 import type {
   CalendarEventListResponse,
   CalendarMemberStatusListResponse,
+  GuestOfficeAvatarAvailabilityResponse,
   GuestOfficeSessionResponse,
   OfficeCollaborationPresence,
   OfficeTodoListResponse,
@@ -23,6 +24,7 @@ import { CreateGuestOfficeSessionDto } from "./dto/create-guest-office-session.d
 import { CreateOfficeTodoDto } from "./dto/create-office-todo.dto";
 import { CreateOfficeCalendarEventDto } from "./dto/create-office-calendar-event.dto";
 import { DeleteOfficeCalendarEventQueryDto } from "./dto/delete-office-calendar-event-query.dto";
+import { DeleteOfficeTodoQueryDto } from "./dto/delete-office-todo-query.dto";
 import { GetCalendarMemberStatusesQueryDto } from "./dto/get-calendar-member-statuses-query.dto";
 import { GetMemberTodosQueryDto } from "./dto/get-member-todos-query.dto";
 import { GetWorkspaceCalendarEventsQueryDto } from "./dto/get-workspace-calendar-events-query.dto";
@@ -45,6 +47,11 @@ export class OfficeController {
     @Body() request: CreateGuestOfficeSessionDto
   ): Promise<GuestOfficeSessionResponse> {
     return this.officeService.createOrRestoreSession(request);
+  }
+
+  @Get("avatars")
+  getGuestAvatarAvailability(): Promise<GuestOfficeAvatarAvailabilityResponse> {
+    return this.officeService.getGuestAvatarAvailability();
   }
 
   @Patch("members/:memberId/attendance")
@@ -108,6 +115,20 @@ export class OfficeController {
     });
 
     return { todos: [todo] };
+  }
+
+  @Delete("todos/:todoId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTodo(
+    @Param("todoId") todoId: string,
+    @Query() query: DeleteOfficeTodoQueryDto
+  ): Promise<void> {
+    const { memberId, workspaceId } = await this.officeService.deleteTodo(todoId, query.guestToken);
+    this.presenceGateway.publishTodosUpdated({
+      memberId,
+      occurredAt: new Date().toISOString(),
+      teamId: workspaceId
+    });
   }
 
   @Post("members/:memberId/calendar-events")

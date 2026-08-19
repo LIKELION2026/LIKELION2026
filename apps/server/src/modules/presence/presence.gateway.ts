@@ -391,7 +391,7 @@ function isPresenceMovePayload(value: unknown): value is PresenceMovePayload {
       value.direction === "down" ||
       value.direction === "left" ||
       value.direction === "right") &&
-    (value.animation === "idle" || value.animation === "walk")
+    (value.animation === "idle" || value.animation === "walk" || value.animation === "sit")
   );
 }
 
@@ -429,7 +429,7 @@ function isAvatarState(value: unknown): boolean {
       value.direction === "down" ||
       value.direction === "left" ||
       value.direction === "right") &&
-    (value.animation === "idle" || value.animation === "walk")
+    (value.animation === "idle" || value.animation === "walk" || value.animation === "sit")
   );
 }
 
