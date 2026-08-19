@@ -266,11 +266,7 @@ export function VirtualOffice(): JSX.Element {
         request={pendingSummon}
       />
       {isInsideMeetingRoom ? (
-        <MeetingRoomOverlay
-          controller={meetingController}
-          isOfficeSessionReady={Boolean(session)}
-          roomLabel={meetingRoomSection.label}
-        />
+        <MeetingRoomOverlay controller={meetingController} />
       ) : null}
       {!session ? (
         <GuestOnboarding
