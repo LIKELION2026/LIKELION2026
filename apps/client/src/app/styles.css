@@ -578,14 +578,14 @@ button {
 
 .office-loading-mark {
   animation: office-loading-bob 1s ease-in-out infinite alternate;
-  background-image: url("/assets/red_panda.png");
-  background-position: 0 0;
+  background-image: url("/assets/loading.png");
+  background-position: center;
   background-repeat: no-repeat;
-  background-size: 600% 400%;
-  height: 96px;
-  image-rendering: pixelated;
-  margin-bottom: 14px;
-  width: 96px;
+  background-size: 100% auto;
+  height: min(180px, calc((100vw - 48px) * 0.5));
+  margin-bottom: 2px;
+  max-width: calc(100vw - 48px);
+  width: min(360px, calc(100vw - 48px));
 }
 
 .office-loading-brand {
@@ -627,7 +627,7 @@ button {
 
 @keyframes office-loading-bob {
   from { transform: translateY(0); }
-  to { transform: translateY(-7px); }
+  to { transform: translateY(-4px); }
 }
 
 @keyframes office-loading-dot {
