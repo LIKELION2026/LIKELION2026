@@ -89,6 +89,454 @@ button {
   min-height: calc(100vh - 56px);
 }
 
+.collision-editor-page {
+  background: #f4f7fb;
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.collision-editor-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin: 0 auto 20px;
+  max-width: 1800px;
+}
+
+.collision-editor-eyebrow {
+  color: #2463d4;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.collision-editor-header h1 {
+  color: #172235;
+  font-size: 28px;
+  margin: 0;
+}
+
+.collision-editor-header p:not(.collision-editor-eyebrow) {
+  color: #607084;
+  font-size: 14px;
+  margin: 8px 0 0;
+}
+
+.collision-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.collision-editor-button,
+.collision-editor-link,
+.collision-editor-add-button,
+.collision-editor-delete-button {
+  background: #ffffff;
+  border: 1px solid #b8c5d3;
+  border-radius: 4px;
+  color: #27364a;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 38px;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.collision-editor-button-primary {
+  background: #1558d6;
+  border-color: #1558d6;
+  color: #ffffff;
+}
+
+.collision-editor-layout {
+  background: #ffffff;
+  border: 1px solid #d6dee8;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  margin: 0 auto;
+  max-width: 1800px;
+  min-height: calc(100vh - 160px);
+}
+
+.collision-editor-sidebar {
+  border-right: 1px solid #dce4ed;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.collision-editor-sidebar-heading,
+.collision-editor-properties-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.collision-editor-sidebar-heading p {
+  color: #607084;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.collision-editor-sidebar-heading strong {
+  color: #172235;
+  font-size: 16px;
+}
+
+.collision-editor-add-button {
+  border-color: #1558d6;
+  color: #1558d6;
+}
+
+.collision-editor-area-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  max-height: 390px;
+  overflow-y: auto;
+}
+
+.collision-editor-area-item {
+  background: #ffffff;
+  border: 1px solid #dce4ed;
+  border-radius: 4px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  text-align: left;
+}
+
+.collision-editor-area-item[aria-pressed="true"] {
+  background: #edf4ff;
+  border-color: #1558d6;
+}
+
+.collision-editor-area-item strong {
+  color: #26364b;
+  font-size: 12px;
+}
+
+.collision-editor-area-item span {
+  color: #718096;
+  font-size: 11px;
+}
+
+.collision-editor-properties {
+  border-top: 1px solid #dce4ed;
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.collision-editor-configuration {
+  border-top: 1px solid #dce4ed;
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.collision-editor-configuration p {
+  color: #607084;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+
+.collision-editor-configuration strong {
+  color: #172235;
+  font-size: 14px;
+}
+
+.collision-editor-configuration small {
+  color: #718096;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.collision-editor-tone-badge {
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 7px;
+}
+
+.collision-editor-tone-badge-meeting {
+  background: #e2edff;
+  color: #1558d6;
+}
+
+.collision-editor-tone-badge-desk {
+  background: #ddf5e8;
+  color: #16804b;
+}
+
+.collision-editor-desk-list {
+  display: grid;
+  gap: 8px;
+}
+
+.collision-editor-desk {
+  border: 1px solid #dce4ed;
+  border-radius: 4px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  min-width: 0;
+  padding: 8px;
+}
+
+.collision-editor-desk legend {
+  color: #34465b;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.collision-editor-desk label {
+  color: #526276;
+  display: grid;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 4px;
+}
+
+.collision-editor-desk input {
+  border: 1px solid #b8c5d3;
+  border-radius: 4px;
+  color: #172235;
+  min-height: 32px;
+  padding: 5px 6px;
+  width: 100%;
+}
+
+.collision-editor-properties h2 {
+  color: #172235;
+  font-size: 14px;
+  margin: 0;
+}
+
+.collision-editor-delete-button {
+  border-color: #c94e4e;
+  color: #b43b3b;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+
+.collision-editor-properties label {
+  color: #526276;
+  display: grid;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 5px;
+}
+
+.collision-editor-properties input {
+  border: 1px solid #b8c5d3;
+  border-radius: 4px;
+  color: #172235;
+  min-height: 36px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.collision-editor-number-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.collision-editor-canvas-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.collision-editor-legend {
+  align-items: center;
+  border-bottom: 1px solid #dce4ed;
+  color: #526276;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.collision-editor-legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.collision-editor-legend i {
+  border-radius: 2px;
+  display: inline-block;
+  height: 12px;
+  width: 12px;
+}
+
+.collision-editor-legend-area {
+  background: rgb(225 64 64 / 38%);
+  border: 1px solid #df3131;
+}
+
+.collision-editor-legend-meeting {
+  background: rgb(21 88 214 / 22%);
+  border: 1px solid #1558d6;
+}
+
+.collision-editor-legend-desk {
+  background: #22a35a;
+  border-radius: 50% !important;
+}
+
+.collision-editor-legend-selected {
+  background: #1558d6;
+}
+
+.collision-editor-map-viewport {
+  background: #e9eff7;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 22px;
+}
+
+.collision-editor-map-stage {
+  box-shadow: 0 8px 24px rgb(24 36 54 / 16%);
+  position: relative;
+}
+
+.collision-editor-map-stage img,
+.collision-editor-map-overlay {
+  display: block;
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.collision-editor-map-stage img {
+  image-rendering: auto;
+  object-fit: fill;
+  user-select: none;
+}
+
+.collision-editor-map-overlay {
+  touch-action: none;
+}
+
+.collision-editor-area-rect {
+  cursor: move;
+  fill: rgb(225 64 64 / 30%);
+  stroke: #cc3434;
+  stroke-width: 10;
+}
+
+.is-selected .collision-editor-area-rect {
+  fill: rgb(27 94 216 / 28%);
+  stroke: #1558d6;
+  stroke-width: 14;
+}
+
+.collision-editor-area-label {
+  fill: #ffffff;
+  font-family: Inter, Pretendard, sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: rgb(29 34 43 / 78%);
+  stroke-width: 8px;
+  stroke-linejoin: round;
+}
+
+.collision-editor-resize-handle {
+  cursor: nwse-resize;
+  fill: #ffffff;
+  stroke: #1558d6;
+  stroke-width: 10;
+}
+
+.collision-editor-meeting-zone {
+  cursor: move;
+  fill: rgb(21 88 214 / 15%);
+  stroke: #1558d6;
+  stroke-dasharray: 28 18;
+  stroke-width: 12;
+}
+
+.is-selected-meeting .collision-editor-meeting-zone {
+  fill: rgb(21 88 214 / 24%);
+  stroke-width: 16;
+}
+
+.collision-editor-meeting-zone-label {
+  fill: #1558d6;
+  font-family: Inter, Pretendard, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.collision-editor-meeting-resize-handle {
+  cursor: nwse-resize;
+  fill: #ffffff;
+  stroke: #1558d6;
+  stroke-width: 10;
+}
+
+.collision-editor-meeting-list {
+  max-height: 168px;
+}
+
+.collision-editor-meeting-item[aria-pressed="true"] {
+  border-color: #1558d6;
+  box-shadow: inset 3px 0 0 #1558d6;
+}
+
+.collision-editor-meeting-properties {
+  display: grid;
+  gap: 12px;
+}
+
+.collision-editor-desk-marker circle {
+  fill: #1ca354;
+  pointer-events: none;
+  stroke: #ffffff;
+  stroke-width: 8;
+}
+
+.collision-editor-desk-marker text {
+  fill: #0a6932;
+  font-family: Inter, Pretendard, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  paint-order: stroke;
+  pointer-events: none;
+  stroke: #ffffff;
+  stroke-width: 7px;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 900px) {
+  .collision-editor-page { padding: 16px; }
+  .collision-editor-header { flex-direction: column; }
+  .collision-editor-layout { grid-template-columns: 1fr; }
+  .collision-editor-sidebar { border-bottom: 1px solid #dce4ed; border-right: 0; }
+  .collision-editor-area-list { max-height: 180px; }
+  .collision-editor-map-viewport { min-height: 520px; }
+}
+
 .office-page {
   height: calc(100vh - 56px);
   min-height: 620px;
