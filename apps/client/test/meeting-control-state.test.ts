@@ -87,4 +87,18 @@ test("translation control exposes a future integration-friendly on/off state", (
     pressed: true,
     statusText: "번역 켜짐"
   });
+
+  assert.deepEqual(createTranslationControlState(false, false, true), {
+    disabled: true,
+    label: "AI 번역 ON",
+    pressed: false,
+    statusText: "회의 연결 후 AI 번역 설정 가능"
+  });
+
+  assert.deepEqual(createTranslationControlState(true, true), {
+    disabled: true,
+    label: "AI 번역 변경 중",
+    pressed: true,
+    statusText: "번역 켜짐"
+  });
 });

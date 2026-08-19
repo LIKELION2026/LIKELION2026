@@ -53,16 +53,21 @@ export function createExpandViewControlState(
 
 export function createTranslationControlState(
   isEnabled: boolean,
-  isPending = false
+  isPending = false,
+  isUnavailable = false
 ): MeetingControlButtonState {
   return {
-    disabled: isPending,
+    disabled: isPending || isUnavailable,
     label: isPending
       ? "AI 번역 변경 중"
       : isEnabled
         ? "AI 번역 OFF"
         : "AI 번역 ON",
     pressed: isEnabled,
-    statusText: isEnabled ? "번역 켜짐" : "번역 꺼짐"
+    statusText: isUnavailable
+      ? "회의 연결 후 AI 번역 설정 가능"
+      : isEnabled
+        ? "번역 켜짐"
+        : "번역 꺼짐"
   };
 }
