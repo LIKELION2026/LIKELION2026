@@ -21,6 +21,11 @@ export class UpdateOfficeCalendarEventDto implements UpdateOfficeCalendarEventRe
   @IsOptional()
   isAllDay?: boolean;
 
+  @IsOptional()
+  @IsString()
+  @Length(1, 160)
+  location?: string;
+
   @IsISO8601()
   @IsOptional()
   startsAt?: string;

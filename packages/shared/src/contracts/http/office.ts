@@ -69,6 +69,7 @@ export interface CreateOfficeCalendarEventRequest {
   eventType: CalendarEventType;
   guestToken: string;
   isAllDay?: boolean;
+  location?: string;
   startsAt: string;
   title: string;
 }
@@ -78,6 +79,7 @@ export interface UpdateOfficeCalendarEventRequest {
   eventType?: CalendarEventType;
   guestToken: string;
   isAllDay?: boolean;
+  location?: string;
   startsAt?: string;
   title?: string;
 }
