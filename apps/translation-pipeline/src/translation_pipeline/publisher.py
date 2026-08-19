@@ -1,10 +1,9 @@
-"""자막을 Server로 발행한다.
+"""자막·회의 요약을 Server로 발행한다.
 
-Server가 받아서 소켓 이벤트 `subtitle.created`로 브로드캐스트하면 Client
-화면에 자막이 뜬다.
+Server가 받아서 소켓 이벤트로 브로드캐스트하면 Client 화면에 반영된다.
 
-발행 실패는 파이프라인을 멈추지 않는다. 자막 하나를 못 보내는 것보다 회의가
-끊기는 쪽이 더 나쁘다.
+발행 실패는 파이프라인을 멈추지 않는다. 자막 하나(또는 요약 하나)를 못 보내는
+것보다 회의가 끊기는 쪽이 더 나쁘다.
 """
 
 import json
@@ -18,6 +17,7 @@ from .subtitle import SubtitlePayload
 # apps/server/.env.example의 PORT와 맞춘다. 서버가 4000, Client가 5173이다.
 DEFAULT_SERVER_URL = "http://localhost:4000"
 SUBTITLE_PATH = "/meeting/subtitles/mock"
+MEETING_SUMMARY_PATH = "/meeting/summary"
 
 # 실시간 경로라 오래 붙잡고 있으면 다음 발화 처리가 밀린다.
 DEFAULT_TIMEOUT_SECONDS = 3.0
@@ -74,6 +74,76 @@ class SubtitlePublisher:
             ) from error
         except OSError as error:
             raise SubtitlePublishError(f"자막 발행이 실패했습니다: {error}") from error
+
+
+class MeetingSummaryPublishError(TranslationPipelineError):
+    """회의 요약 발행이 실패했을 때 발생한다."""
+
+
+class MeetingSummaryPublisher:
+    """Server의 회의 요약 엔드포인트(``POST /meeting/summary``)로 POST한다."""
+
+    def __init__(
+        self,
+        server_url: str | None = None,
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    ) -> None:
+        base = server_url or os.environ.get(ENV_SERVER_URL) or DEFAULT_SERVER_URL
+        self._url = base.rstrip("/") + MEETING_SUMMARY_PATH
+        self._timeout_seconds = timeout_seconds
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    def publish(
+        self,
+        room_name: str,
+        starts_at: str,
+        ends_at: str,
+        ever_participant_identities: list[str],
+        summary_ko: str,
+        summary_vi: str,
+    ) -> None:
+        """회의 요약 하나를 보낸다. 실패하면 MeetingSummaryPublishError를 던진다."""
+        body = json.dumps(
+            {
+                "roomName": room_name,
+                "startsAt": starts_at,
+                "endsAt": ends_at,
+                "everParticipantIdentities": ever_participant_identities,
+                "summaryKo": summary_ko,
+                "summaryVi": summary_vi,
+            }
+        ).encode("utf-8")
+        request = urllib.request.Request(
+            self._url,
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+
+        try:
+            with urllib.request.urlopen(
+                request, timeout=self._timeout_seconds
+            ) as response:
+                if response.status >= 400:
+                    raise MeetingSummaryPublishError(
+                        f"서버가 {response.status}로 응답했습니다."
+                    )
+        except urllib.error.HTTPError as error:
+            detail = _read_error_body(error)
+            raise MeetingSummaryPublishError(
+                f"서버가 {error.code}로 거절했습니다: {detail}"
+            ) from error
+        except urllib.error.URLError as error:
+            raise MeetingSummaryPublishError(
+                f"서버에 연결하지 못했습니다 ({self._url}): {error.reason}"
+            ) from error
+        except OSError as error:
+            raise MeetingSummaryPublishError(
+                f"회의 요약 발행이 실패했습니다: {error}"
+            ) from error
 
 
 def _read_error_body(error: urllib.error.HTTPError) -> str:

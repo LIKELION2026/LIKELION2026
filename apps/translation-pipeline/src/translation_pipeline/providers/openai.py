@@ -8,6 +8,12 @@ Gemini가 일시적으로 응답하지 못할 때(429 한도 초과, 503/504 과
 import os
 
 from ..errors import TranslationError
+from ..summarizer import (
+    MeetingSummary,
+    SummaryRequest,
+    build_summary_system_prompt,
+    parse_summary_response,
+)
 from ..translator import TranslationRequest, build_system_prompt
 
 # 2026-08-19 조사(OpenAI 공식 deprecations 페이지, Artificial Analysis 벤치마크
@@ -91,6 +97,54 @@ class OpenAITranslator:
         if not text:
             raise TranslationError("OpenAI가 빈 응답을 반환했습니다.")
         return text
+
+
+class OpenAISummarizer:
+    """`Summarizer` 계약의 OpenAI 구현. 회의 요약(한/베 동시 생성)에 쓴다."""
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str = DEFAULT_MODEL,
+        temperature: float = DEFAULT_TEMPERATURE,
+        timeout_ms: int = DEFAULT_TIMEOUT_MS,
+        client: object | None = None,
+    ) -> None:
+        self._model = model
+        self._temperature = temperature
+        self._timeout_ms = timeout_ms
+
+        if client is not None:
+            self._client = client
+            return
+
+        resolved_key = api_key or os.environ.get(ENV_API_KEY)
+        if not resolved_key:
+            raise TranslationError(
+                f"{ENV_API_KEY}가 없습니다. .env에 키를 채우거나 api_key를 넘기세요."
+            )
+
+        openai_module = _import_openai()
+        self._client = openai_module.OpenAI(
+            api_key=resolved_key, timeout=timeout_ms / 1000
+        )
+
+    def summarize(self, request: SummaryRequest) -> MeetingSummary:
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                temperature=self._temperature,
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": build_summary_system_prompt(request)},
+                    {"role": "user", "content": request.transcript_text},
+                ],
+            )
+        except Exception as error:  # provider 예외 타입은 SDK마다 다르다
+            raise TranslationError(f"OpenAI 요약 호출이 실패했습니다: {error}") from error
+
+        text = response.choices[0].message.content
+        return parse_summary_response(text, provider_name="OpenAI")
 
 
 def _import_openai():
