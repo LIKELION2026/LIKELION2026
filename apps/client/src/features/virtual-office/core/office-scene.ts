@@ -21,10 +21,11 @@ import {
 } from "../model/calendar-presence";
 import {
   getNearestWalkableOfficePosition,
+  isOfficeCollisionDebugEnabled,
   OFFICE_COLLISION_AREAS,
   OFFICE_WALKABLE_BOUNDS,
 } from "../model/office-collision";
-import { OFFICE_MAP, OFFICE_MAP_MEETING_ZONE } from "../model/office-map";
+import { OFFICE_MAP, OFFICE_MAP_MEETING_ZONES } from "../model/office-map";
 import type { OfficeSceneBootstrap } from "../model/office-scene-bootstrap";
 import { isTextEntryFocused } from "../model/keyboard-focus";
 
@@ -71,6 +72,10 @@ interface RemotePositionSample {
 export class OfficeScene extends Phaser.Scene {
   private readonly callbacks: OfficeSceneCallbacks;
   private cameraZoom: number | null = null;
+  private collisionDebugEnabled = false;
+  private readonly collisionDebugVisuals: Array<
+    Phaser.GameObjects.Rectangle | Phaser.GameObjects.Text
+  > = [];
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
   private isFollowingLocalAvatar = true;
@@ -85,6 +90,7 @@ export class OfficeScene extends Phaser.Scene {
     Phaser.Input.Keyboard.Key
   >;
   private sitToggle!: Phaser.Input.Keyboard.Key;
+  private collisionDebugToggle!: Phaser.Input.Keyboard.Key;
 
   constructor(callbacks: OfficeSceneCallbacks) {
     super(OFFICE_SCENE_KEY);
@@ -100,6 +106,7 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.collisionDebugEnabled = isOfficeCollisionDebugEnabled(window.location.search);
     this.cameras.main.setBackgroundColor("#111216");
     this.cameras.main.setBounds(0, 0, OFFICE_SIZE.width, OFFICE_SIZE.height);
     this.physics.world.setBounds(
@@ -148,6 +155,15 @@ export class OfficeScene extends Phaser.Scene {
     this.player.setPosition(position.x, position.y);
     this.playerBody.reset(position.x, position.y);
     this.cameras.main.centerOn(position.x, position.y);
+
+    if (position.x !== x || position.y !== y) {
+      this.callbacks.onLocalMovement({
+        animation: "idle",
+        direction: this.direction,
+        x: Math.round(position.x),
+        y: Math.round(position.y),
+      });
+    }
   }
 
   setLocalAvatarId(avatarId: string | undefined): void {
@@ -249,6 +265,7 @@ export class OfficeScene extends Phaser.Scene {
       false,
     ) as Record<"down" | "left" | "right" | "up", Phaser.Input.Keyboard.Key>;
     this.sitToggle = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+    this.collisionDebugToggle = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.O);
     keyboard.disableGlobalCapture();
   }
 
@@ -286,10 +303,41 @@ export class OfficeScene extends Phaser.Scene {
         area.height,
       );
       this.physics.add.existing(obstacle, true);
+      this.createCollisionDebugVisual(area);
       return obstacle;
     });
 
     this.physics.add.collider(this.player, obstacles);
+  }
+
+  private createCollisionDebugVisual(area: {
+    height: number;
+    id: string;
+    width: number;
+    x: number;
+    y: number;
+  }): void {
+    const centerX = area.x + area.width / 2;
+    const centerY = area.y + area.height / 2;
+    const zone = this.add
+      .rectangle(centerX, centerY, area.width, area.height, 0xef4444, 0.18)
+      .setStrokeStyle(3, 0xef4444, 0.9)
+      .setDepth(4)
+      .setVisible(this.collisionDebugEnabled);
+    const label = this.add
+      .text(centerX, centerY, area.id, {
+        align: "center",
+        backgroundColor: "#7f1d1dcc",
+        color: "#ffffff",
+        fontFamily: "monospace",
+        fontSize: "15px",
+        padding: { x: 5, y: 3 },
+      })
+      .setOrigin(0.5)
+      .setDepth(5)
+      .setVisible(this.collisionDebugEnabled);
+
+    this.collisionDebugVisuals.push(zone, label);
   }
 
   private drawOffice(): void {
@@ -373,6 +421,13 @@ export class OfficeScene extends Phaser.Scene {
       return;
     }
 
+    if (Phaser.Input.Keyboard.JustDown(this.collisionDebugToggle)) {
+      this.collisionDebugEnabled = !this.collisionDebugEnabled;
+      this.collisionDebugVisuals.forEach((visual) => {
+        visual.setVisible(this.collisionDebugEnabled);
+      });
+    }
+
     if (Phaser.Input.Keyboard.JustDown(this.sitToggle)) {
       this.isSitting = !this.isSitting;
       if (this.isSitting) {
@@ -447,13 +502,13 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private updateMeetingRoomState(): void {
-    const isInside =
-      this.player.x >= OFFICE_MAP_MEETING_ZONE.x &&
-      this.player.x <=
-        OFFICE_MAP_MEETING_ZONE.x + OFFICE_MAP_MEETING_ZONE.width &&
-      this.player.y >= OFFICE_MAP_MEETING_ZONE.y &&
-      this.player.y <=
-        OFFICE_MAP_MEETING_ZONE.y + OFFICE_MAP_MEETING_ZONE.height;
+    const isInside = OFFICE_MAP_MEETING_ZONES.some(
+      (zone) =>
+        this.player.x >= zone.x &&
+        this.player.x <= zone.x + zone.width &&
+        this.player.y >= zone.y &&
+        this.player.y <= zone.y + zone.height,
+    );
 
     if (isInside === this.inMeetingRoom) {
       return;
