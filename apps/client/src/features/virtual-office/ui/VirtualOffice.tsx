@@ -7,6 +7,7 @@ import type {
   OfficeSummonResolvedPayload
 } from "@likelion2026/shared";
 
+import { useRequestFeedback } from "../../../app/request-feedback";
 import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
 import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
@@ -51,6 +52,7 @@ export function VirtualOffice(): JSX.Element {
     updateAttendance,
     updateStatus
   } = useOfficeConnection();
+  const { showSuccess } = useRequestFeedback();
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
@@ -102,9 +104,16 @@ export function VirtualOffice(): JSX.Element {
       onSummonRequested: handleSummonRequested,
       onSummonResolved: handleSummonResolved,
       onCalendarUpdated: calendarController.refresh,
+      onMeetingSummaryReady: () => showSuccess("회의 요약이 준비되었어요."),
       onTodosUpdated: todoController.refresh
     }),
-    [calendarController.refresh, handleSummonRequested, handleSummonResolved, todoController.refresh]
+    [
+      calendarController.refresh,
+      handleSummonRequested,
+      handleSummonResolved,
+      showSuccess,
+      todoController.refresh
+    ]
   );
 
   useEffect(() => registerSocketCallbacks(socketCallbacks), [registerSocketCallbacks, socketCallbacks]);

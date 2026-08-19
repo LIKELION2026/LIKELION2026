@@ -121,6 +121,7 @@ export function OfficeCalendarModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filterMemberIds, setFilterMemberIds] = useState<Set<string>>(new Set());
   const [isLegendModalOpen, setIsLegendModalOpen] = useState(false);
+  const [expandedSummaryEventIds, setExpandedSummaryEventIds] = useState<Set<string>>(new Set());
   const monthDays = useMemo(() => getMonthGridDays(visibleMonth), [visibleMonth]);
   const visibleRange = useMemo(() => getMonthRange(monthDays), [monthDays]);
   const memberNames = useMemo(() => {
@@ -196,6 +197,18 @@ export function OfficeCalendarModal({
   };
 
   const clearFilter = () => setFilterMemberIds(new Set());
+
+  const toggleSummaryExpanded = (eventId: string) => {
+    setExpandedSummaryEventIds((current) => {
+      const next = new Set(current);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
+  };
 
   const addEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -416,6 +429,22 @@ export function OfficeCalendarModal({
                     <span className="cal-detail-title">
                       <strong>{event.title}</strong>
                       {event.location ? <small>{event.location}</small> : null}
+                      {event.eventType === "meeting" && (event.summaryKo || event.summaryVi) ? (
+                        <button
+                          className={[
+                            "cal-detail-summary",
+                            expandedSummaryEventIds.has(event.id) ? "expanded" : ""
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onClick={() => toggleSummaryExpanded(event.id)}
+                          type="button"
+                        >
+                          {(self?.language === "vi" ? event.summaryVi : event.summaryKo) ??
+                            event.summaryKo ??
+                            event.summaryVi}
+                        </button>
+                      ) : null}
                     </span>
                     <span className="cal-detail-owners">
                       {getEventOwnerNames(event, memberNames).map((name, index) => {
