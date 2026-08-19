@@ -284,7 +284,9 @@ function MeetingChatBubble({
       <p>{message.text}</p>
       {message.kind === "translation" && message.sourceText ? (
         <p className="meeting-chat-source">
-          원문 {message.sourceLanguage}
+          {message.sourceLanguage}
+          {" → "}
+          {message.translatedLanguage}
           {" · "}
           {message.sourceText}
         </p>
