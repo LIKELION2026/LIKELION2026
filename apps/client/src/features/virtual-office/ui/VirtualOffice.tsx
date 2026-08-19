@@ -280,7 +280,10 @@ export function VirtualOffice(): JSX.Element {
         request={pendingSummon}
       />
       {isInsideMeetingRoom ? (
-        <MeetingRoomOverlay controller={meetingController} />
+        <MeetingRoomOverlay
+          controller={meetingController}
+          defaultSourceLanguage={session?.member.preferredLanguage}
+        />
       ) : null}
       {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
       {entryPhase === "onboarding" ? (
