@@ -9,6 +9,7 @@ import type {
 
 import {
   createOfficeTodo,
+  deleteOfficeTodo,
   getMemberOfficeTodos,
   getPublicWorkspaceTodos,
   updateOfficeTodo
@@ -16,6 +17,7 @@ import {
 
 export interface OfficeTodoController {
   createTodo: (input: CreateTodoInput) => Promise<void>;
+  deleteTodo: (todoId: string) => Promise<void>;
   error: string | null;
   isLoading: boolean;
   ownTodos: OfficeTodo[];
@@ -89,8 +91,20 @@ export function useOfficeTodos(
     [refresh, session]
   );
 
+  const deleteTodo = useCallback(
+    async (todoId: string) => {
+      if (!session) {
+        throw new Error("오피스 세션이 준비되지 않았습니다.");
+      }
+
+      await deleteOfficeTodo(todoId, session.guestToken);
+      await refresh();
+    },
+    [refresh, session]
+  );
+
   return useMemo(
-    () => ({ createTodo, error, isLoading, ownTodos, publicTodos, refresh, updateTodo }),
-    [createTodo, error, isLoading, ownTodos, publicTodos, refresh, updateTodo]
+    () => ({ createTodo, deleteTodo, error, isLoading, ownTodos, publicTodos, refresh, updateTodo }),
+    [createTodo, deleteTodo, error, isLoading, ownTodos, publicTodos, refresh, updateTodo]
   );
 }

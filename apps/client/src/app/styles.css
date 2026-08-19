@@ -551,25 +551,11 @@ button {
 .std-todo-scroll {
   box-sizing: border-box;
   height: 100%;
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black 18px,
-    black calc(100% - 18px),
-    transparent 100%
-  );
   overflow-x: hidden;
   overflow-y: auto;
   padding-right: 14px;
   scroll-padding-block: 20px;
   scroll-snap-type: y mandatory;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    black 18px,
-    black calc(100% - 18px),
-    transparent 100%
-  );
   width: 100%;
 }
 
@@ -622,11 +608,122 @@ button {
   margin: 0 0 8px;
 }
 
+.std-todo-item-head {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.std-todo-item-head p {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.std-todo-delete-button {
+  background: transparent;
+  border: 0;
+  color: #a35c4e;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.std-todo-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .office-todo-controls {
   align-items: center;
   display: flex;
   gap: 10px;
   justify-content: space-between;
+}
+
+.office-todo-controls select {
+  appearance: none;
+  background-color: #fbead2;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #6b4a35 50%),
+    linear-gradient(135deg, #6b4a35 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) center,
+    calc(100% - 9px) center;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+  border: 2px solid #6b4a35;
+  border-radius: 8px;
+  color: #4a2f1e;
+  cursor: pointer;
+  flex: 1;
+  font-family: inherit;
+  font-size: 11px;
+  min-width: 0;
+  padding: 6px 24px 6px 8px;
+}
+
+.office-todo-controls select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.office-todo-controls select:focus-visible {
+  outline: 2px solid #8a5f3d;
+  outline-offset: 1px;
+}
+
+.office-todo-public-control {
+  align-items: center;
+  color: #4a2f1e;
+  display: flex;
+  flex-shrink: 0;
+  font-size: 11px;
+  gap: 6px;
+  line-height: 1;
+}
+
+#std-todo-form .office-todo-public-control {
+  margin-top: 8px;
+}
+
+.office-todo-public-control input[type="checkbox"] {
+  appearance: none;
+  background-color: #fbead2;
+  border: 2px solid #6b4a35;
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 16px;
+  margin: 0;
+  position: relative;
+  width: 16px;
+}
+
+.office-todo-public-control input[type="checkbox"]:checked {
+  background-color: #e7c79c;
+}
+
+.office-todo-public-control input[type="checkbox"]:checked::after {
+  color: #4a2f1e;
+  content: "✓";
+  font-size: 12px;
+  left: 50%;
+  line-height: 1;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.office-todo-public-control input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .office-people-panel-header,
