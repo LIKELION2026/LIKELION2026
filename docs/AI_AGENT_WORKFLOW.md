@@ -790,3 +790,13 @@
 - 팀원 검토·수정 내용: 사용자가 최신 `dev`를 base로 새 브랜치를 다시 파라고 정정해, `codex/feat/meeting-translation-preferences`를 `origin/dev` 기준으로 재생성한 뒤 작업했다. 이후 사용자가 기본값을 ON으로 바꾸고 모달 문구를 `KR/VI`, `상대방에게 보여줄 언어`로 수정하라고 지시해 반영했다. 실제 두 브라우저 수동 검증과 LiveKit Cloud 배포 워커 확인은 아직 수행하지 않았다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server test` 62건 통과, `node --test --experimental-strip-types apps/client/test/meeting-translation-preference.test.ts apps/client/test/meeting-subtitle-activation.test.ts apps/client/test/meeting-control-state.test.ts apps/client/test/meeting-chat-message.test.ts` 18건 통과, `uv run --cache-dir .uv-cache --with pytest python -m pytest tests/test_agent.py tests/test_livekit_room.py` 39건 통과. `uv` 테스트 후 임시 `.uv-cache`는 삭제했다.
 - 관련 Issue / PR / Discussion: Issue #134, Issue #136
+
+### 2026-08-19 - 화상회의 오버레이 레이아웃과 불필요 UI 정리
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, Browser Skill
+- 사용 목적: 회의 영상과 채팅을 동시에 보기 쉽게 만들고, 회의 중 불필요하게 나타나는 재생 UI를 제거한다.
+- 입력 맥락: Issue #156, `MeetingRoomOverlay`, `MeetingChatPanel`, `MeetingAudioSinks`, 사용자의 채팅 상시 노출·확대 영상 확장·음성 재생 아이콘 제거 요청
+- AI 제안 또는 산출물: 채팅 접기 상태와 버튼을 제거하고 우측 패널을 항상 보이게 했다. 추가 레이아웃 조정으로 채팅은 화면 오른쪽 끝에 붙은 전체 높이 사이드바로 만들고, 상단 참가자 영상·확대 영상 grid·하단 caption·컨트롤 바는 채팅을 제외한 메인 영역 안에서만 폭을 계산해 가운데 정렬되도록 바꿨다. 확대 모드는 채팅을 유지하면서 좌측 가용 영역 전체를 영상 grid가 사용하도록 바꾸고, 참가자 수에 따라 1~2개 행이 높이를 나눠 쓰도록 정리했다. 확대 전 상단 영상 타일은 `250px~360px` 범위에서 `280px~410px` 범위로 키웠고, 회의 영상 타일 안에 브라우저 영상 속도 확장 프로그램이 주입하는 `.vsc-controller` UI는 숨기도록 제한 CSS를 추가했다. 원격 오디오 자동재생 실패 시 나타나던 `Volume2` 버튼은 제거하고 다음 키보드·포인터 입력에서 숨은 오디오 요소의 재생을 다시 시도하도록 대체했다.
+- 팀원 검토·수정 내용: 사용자가 요청한 네 가지 화면 개선을 하나의 범위로 확정했다. `1.00`은 저장소 전체의 문자열·숫자 포맷·영상 UI를 검색했지만 앱에서 생성하는 코드가 없어 브라우저 영상 속도 확장 프로그램이 주입한 표시로 추정했다. 이후 사용자가 `-`, `+` 버튼으로 `0.9~1.1`이 바뀐다고 재현 정보를 제공해, 회의 영상 영역에 한정해 해당 주입 UI를 숨기는 방식으로 변경했다.
+- 검증 결과: 관련 Client Node 테스트 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. 추가 사이드바 레이아웃 조정 뒤 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 영상 속도 컨트롤 숨김과 확대 전 타일 크기 조정 뒤에도 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 빌드의 chunk-size warning은 기존과 같은 비차단 경고다. Browser Skill 런타임 연결 오류로 실제 회의 화면 수동 확인은 수행하지 못했으며, 두 브라우저 영상·음성 송수신은 사람이 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #156
