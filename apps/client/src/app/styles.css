@@ -2395,16 +2395,17 @@ button {
 }
 
 .meeting-room-overlay {
+  --meeting-main-gutter: 36px;
+  --meeting-main-inset: 18px;
+  column-gap: 0;
   display: grid;
-  column-gap: 18px;
   grid-template-columns:
     minmax(0, 1fr)
-    minmax(320px, 380px)
-    clamp(18px, 5vw, 88px);
+    clamp(340px, 26vw, 420px);
+  grid-template-rows: minmax(0, 1fr) auto auto;
   row-gap: 16px;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
   inset: 0;
-  padding: 18px;
+  padding: 0;
   pointer-events: none;
   position: absolute;
   z-index: 4;
@@ -2615,38 +2616,28 @@ button {
 }
 
 .meeting-room-side-panel {
-  background: rgb(255 255 255 / 96%);
-  border: 1px solid rgb(203 213 225 / 90%);
-  border-radius: 18px;
-  box-shadow: 0 18px 42px rgb(15 23 42 / 22%);
+  align-self: stretch;
+  background: rgb(255 255 255 / 98%);
+  border: 0;
+  border-left: 1px solid rgb(203 213 225 / 88%);
+  border-radius: 0;
+  box-shadow: none;
   display: grid;
   grid-column: 2;
-  grid-row: 2;
+  grid-row: 1 / -1;
   grid-template-rows: minmax(0, 1fr);
+  height: 100%;
   justify-self: stretch;
-  max-height: 100%;
+  max-height: none;
   min-height: 0;
   overflow: hidden;
-  padding: 12px;
-}
-
-.meeting-room-side-panel.collapsed {
-  align-self: start;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  justify-self: end;
-  padding: 0;
-}
-
-.meeting-room-overlay.expanded .meeting-room-side-panel {
-  display: none;
+  padding: 18px 16px;
 }
 
 .meeting-chat-panel {
   background: transparent;
   border: 0;
-  border-radius: 14px;
+  border-radius: 0;
   display: grid;
   gap: 10px;
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
@@ -3589,18 +3580,30 @@ button {
 
 @media (max-width: 960px) {
   .meeting-room-overlay {
-    gap: 12px;
+    --meeting-main-gutter: 24px;
+    --meeting-main-inset: 12px;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(300px, 340px);
+    row-gap: 12px;
+  }
+}
+
+@media (max-width: 720px) {
+  .meeting-room-overlay {
     grid-template-columns: minmax(0, 1fr);
-    padding: 12px;
   }
 
   .meeting-room-side-panel {
-    display: none;
-  }
-
-  .meeting-control-bar {
-    justify-self: stretch;
-    max-width: 100%;
+    border-left: 1px solid rgb(203 213 225 / 88%);
+    border-radius: 0;
+    bottom: 0;
+    height: auto;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: min(340px, calc(100vw - 24px));
+    z-index: 1;
   }
 }
 
