@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-18
+> 마지막 업데이트: 2026-08-19
 
 ## 목적
 
@@ -53,6 +53,17 @@
 - 검증 결과: 관련 타입과 기능 동작 확인
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
+
+### 2026-08-19 - 고유 아바타 선택과 서버 중복 방지
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Brainstorming, Test-driven Development
+- 사용 목적: 신규 팀원이 같은 아바타로 입장해 구성원을 구분하기 어려운 문제를 해결
+- 입력 맥락: 최초 입장 모달, 10종의 걷기·앉기 스프라이트 자산, workspace 단위 멤버 데이터
+- AI 제안 또는 산출물: 아바타 사용 가능 목록 API, 선택·랜덤 선택 UI, 서버 재검증, workspace와 avatar ID의 부분 고유 인덱스, 단위 테스트
+- 팀원 검토·수정 내용: 기존 `office-avatar` 테스트 세션은 마이그레이션 대상에서 제외하고, 신규 선택형 아바타만 고유 제약을 적용한다. 실제 배포 Supabase에는 마이그레이션 적용 후 두 브라우저 동시 선택을 검증한다.
+- 검증 결과: 아바타 배정 규칙 단위 테스트, shared/client/server typecheck, client production build 통과. Vite bundle 크기 경고는 기존 Phaser 번들 경고로 남아 있다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/137
 
 ### 2026-08-17 - 오피스 위치와 공개 TODO 실시간 동기화
 
