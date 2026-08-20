@@ -801,6 +801,26 @@
 - 검증 결과: 관련 Client Node 테스트 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. 추가 사이드바 레이아웃 조정 뒤 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 영상 속도 컨트롤 숨김과 확대 전 타일 크기 조정 뒤에도 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 빌드의 chunk-size warning은 기존과 같은 비차단 경고다. Browser Skill 런타임 연결 오류로 실제 회의 화면 수동 확인은 수행하지 못했으며, 두 브라우저 영상·음성 송수신은 사람이 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #156
 
+### 2026-08-19 - 오피스 아바타 상호작용과 공용 채팅 초안
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 상대 아바타에서 상태·공개 TODO·찾아가기·불러오기·메시지 진입점을 제공하고, 같은 오피스 참여자가 볼 수 있는 짧은 공용 채팅과 말풍선을 추가한다.
+- 입력 맥락: Issue #160, `docs/PRD.md` F1·F2·F4, 기존 TODO Socket 갱신 구조와 협업 보드 디자인 토큰
+- AI 제안 또는 산출물: Shared Socket 계약에 `office.chat.send`와 `office.chat.message`를 추가하고, Server가 연결된 팀 방에만 메시지를 중계하도록 구성했다. Client는 선택된 상대 아바타의 공개 TODO와 빠른 액션을 표시하고, 채팅 메시지를 공용 패널·발화자 말풍선에 동기화하도록 구현했다.
+- 팀원 검토·수정 내용: 아바타 규격 보정은 별도 브랜치에 보존하고, UI·상호작용 개선만 `origin/dev`에서 분리해 작업하도록 사용자가 범위를 확정했다. 1:1 영구 메시지 대신 해커톤 MVP 범위에 맞는 공용 채팅 멘션 진입점으로 제한했다. 이후 상태 라벨이 아바타 몸을 가린다는 피드백에 따라 이름과 상태를 분리하고, 상태는 머리 위 픽셀 태그로 조정했다.
+- 검증 결과: 작업 중 Shared/Client/Server 타입 검사를 시도했다. 현재 `origin/dev`의 회의 번역 Client 코드가 Shared 빌드 결과와 불일치해 기존 번역 타입 오류로 전체 Client 타입 검사가 막혀 있으며, 채팅 UI의 실제 두 브라우저 수동 검증은 후속으로 진행한다.
+- 관련 Issue / PR / Discussion: Issue #160
+
+### 2026-08-20 - 게임형 입장 및 아바타 선택 화면 토큰 정비
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 일반 폼처럼 보이던 이름·국가·아바타 선택 화면을 TODO 상태 패널과 같은 게임형 UI 언어로 정리한다.
+- 입력 맥락: 사용자 제공 입장 화면 캡처, `GuestOnboarding`, `OfficeTodoPanel`, `apps/client/src/app/styles.css`의 기존 픽셀 프레임·도트 질감·버튼 그림자 토큰
+- AI 제안 또는 산출물: 입장 모달과 국가·아바타 선택 카드에 갈색 픽셀 프레임, 점 질감 배경, 눌림 그림자, 선택·사용 중 상태를 반영했다. 4×3 데스크톱 배치와 모바일 3열 축소 규칙은 유지했다.
+- 팀원 검토·수정 내용: 사용자 요청에 따라 아바타 에셋 규격 보정은 이 작업 범위에서 제외하고 UI 토큰 적용만 진행했다.
+- 검증 결과: CSS 변경 후 `git diff --check`로 공백 오류를 확인한다. 실제 브라우저 시각 검수는 팀원이 로컬 화면에서 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #160
+
 ### 2026-08-20 - 6인 회의 성능 최적화 1차와 측정 절차 문서화
 
 - 사용한 Agent / Skill: Codex / Project Workflow Skill

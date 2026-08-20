@@ -4,6 +4,7 @@ import Phaser from "phaser";
 import { useTranslation } from "react-i18next";
 import type {
   MeetingParticipantCountry,
+  OfficeChatMessagePayload,
   OfficeMeetingZoneId,
   OfficeSummonRequestedPayload,
   OfficeSummonResolvedPayload
@@ -30,6 +31,8 @@ import { OfficeMeetingSummaryAlert } from "./OfficeMeetingSummaryAlert";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
 import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
+import { OfficeAvatarActions } from "./OfficeAvatarActions";
+import { OfficeChatPanel } from "./OfficeChatPanel";
 
 export function VirtualOffice(): JSX.Element {
   const { i18n, t } = useTranslation();
@@ -42,6 +45,9 @@ export function VirtualOffice(): JSX.Element {
   const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
   const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<OfficeChatMessagePayload[]>([]);
+  const [chatMentionTargetName, setChatMentionTargetName] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
@@ -50,6 +56,7 @@ export function VirtualOffice(): JSX.Element {
     prepareSession,
     registerSocketCallbacks,
     respondToSummon,
+    sendChatMessage,
     sendMove,
     sendSummonRequest,
     session,
@@ -89,6 +96,10 @@ export function VirtualOffice(): JSX.Element {
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
   }, []);
+  const handleChatMessage = useCallback((message: OfficeChatMessagePayload) => {
+    setChatMessages((current) => [...current, message].slice(-30));
+    sceneRef.current?.showChatBubble(message.memberId, message.text);
+  }, []);
   const handleSummonResolved = useCallback(
     (resolution: OfficeSummonResolvedPayload) => {
       if (
@@ -113,10 +124,12 @@ export function VirtualOffice(): JSX.Element {
       onSummonResolved: handleSummonResolved,
       onCalendarUpdated: calendarController.refresh,
       onMeetingSummaryReady: () => setIsMeetingSummaryAlertVisible(true),
-      onTodosUpdated: todoController.refresh
+      onTodosUpdated: todoController.refresh,
+      onChatMessage: handleChatMessage
     }),
     [
       calendarController.refresh,
+      handleChatMessage,
       handleSummonRequested,
       handleSummonResolved,
       todoController.refresh
@@ -129,6 +142,10 @@ export function VirtualOffice(): JSX.Element {
     effectiveMembers,
     todoController.publicTodos,
     effectiveSelf?.memberId
+  );
+  const selectedPersonContext = useMemo(
+    () => peopleContext.find((context) => context.member.memberId === selectedMemberId) ?? null,
+    [peopleContext, selectedMemberId]
   );
   const meetingJoinRequest = useMemo(() => {
     if (!session || !meetingRoomSection) {
@@ -174,6 +191,7 @@ export function VirtualOffice(): JSX.Element {
       initialAvatar: sceneBootstrap,
       onLocalMovement: sendMove,
       onMeetingRoomState: setActiveMeetingZoneId,
+      onRemoteAvatarSelected: setSelectedMemberId,
       onReady: () => setIsSceneReady(true)
     });
     sceneRef.current = scene;
@@ -217,6 +235,14 @@ export function VirtualOffice(): JSX.Element {
 
     scene.syncRemoteMembers(effectiveMembers, self?.memberId);
   }, [effectiveMembers, i18n.resolvedLanguage, isSceneReady, self?.memberId]);
+
+  useEffect(() => {
+    if (!effectiveSelf || !isSceneReady) {
+      return;
+    }
+
+    sceneRef.current?.setLocalPresence(effectiveSelf);
+  }, [effectiveSelf, isSceneReady]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -294,6 +320,26 @@ export function VirtualOffice(): JSX.Element {
         onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
         todoError={todoController.error}
         todoIsLoading={todoController.isLoading}
+      />
+      <OfficeAvatarActions
+        context={selectedPersonContext}
+        onClose={() => setSelectedMemberId(null)}
+        onFocusMember={(context) => {
+          sceneRef.current?.moveLocalAvatarNear(context.member.avatar.x, context.member.avatar.y);
+          setSelectedMemberId(null);
+        }}
+        onMessageMember={(context) => {
+          setChatMentionTargetName(context.member.displayName);
+          setSelectedMemberId(null);
+        }}
+        onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
+      />
+      <OfficeChatPanel
+        isConnected={connectionState === "connected"}
+        mentionTargetName={chatMentionTargetName}
+        messages={chatMessages}
+        onMentionConsumed={() => setChatMentionTargetName(null)}
+        onSend={sendChatMessage}
       />
       <OfficeSummonModal
         onRespond={(decision) => {

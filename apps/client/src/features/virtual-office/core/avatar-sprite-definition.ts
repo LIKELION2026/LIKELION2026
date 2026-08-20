@@ -5,6 +5,12 @@ import {
   type OfficeAvatarId,
 } from "@likelion2026/shared";
 
+import {
+  getAvatarSpriteLayout,
+  type AvatarFrameCrop,
+  type AvatarSourceFrame,
+} from "./avatar-sprite-layout";
+
 export const DEFAULT_AVATAR_ID: OfficeAvatarId = "red_panda";
 
 export interface AvatarFrameSource {
@@ -17,6 +23,7 @@ export interface AvatarFrameSource {
 export interface AvatarSpriteDefinition {
   assetPath: string;
   footBaseline: number;
+  frameCrop: AvatarFrameCrop;
   frameSources: AvatarFrameSource[];
   id: string;
   idleFrameByDirection: Record<AvatarDirection, number>;
@@ -31,28 +38,25 @@ export interface AvatarSpriteDefinition {
 
 const FRAME_SIZE = 256;
 const BORDER_TRIM = 2;
-const FRAME_CONTENT_SIZE = FRAME_SIZE - BORDER_TRIM * 2;
-const FURNISHED_OFFICE_AVATAR_SCALE = 0.55;
 
-const createFrameSources = (): AvatarFrameSource[] =>
-  Array.from({ length: 24 }, (_, frame) => ({
-    height: FRAME_CONTENT_SIZE,
-    width: FRAME_CONTENT_SIZE,
-    x: (frame % 6) * FRAME_SIZE + BORDER_TRIM,
-    y: Math.floor(frame / 6) * FRAME_SIZE + BORDER_TRIM,
-  }));
+const createFrameSources = (sourceFrame: AvatarSourceFrame): AvatarFrameSource[] =>
+  Array.from({ length: 24 }, (_, frame) =>
+    getAvatarFrameSource(frame, sourceFrame),
+  );
 
 function createAvatarSpriteDefinition(
   id: OfficeAvatarId,
 ): AvatarSpriteDefinition {
+  const layout = getAvatarSpriteLayout(id);
   return {
     assetPath: `/assets/${id}.png`,
-    footBaseline: 236,
-    frameSources: createFrameSources(),
+    footBaseline: layout.footBaseline,
+    frameCrop: layout.frameCrop,
+    frameSources: createFrameSources(layout.sourceFrame),
     id,
     idleFrameByDirection: { down: 0, left: 2, right: 2, up: 1 },
     labelKey: `avatar.labels.${id}`,
-    scale: FURNISHED_OFFICE_AVATAR_SCALE,
+    scale: layout.scale,
     sitAssetPath: `/assets/${id}_sit.png`,
     sitFramesByDirection: {
       down: [0, 1, 2, 3, 4, 5],
@@ -89,6 +93,18 @@ export function getAvatarSpriteDefinition(
 
 export function getAvatarSpriteDefinitions(): AvatarSpriteDefinition[] {
   return AVATAR_SPRITE_DEFINITIONS;
+}
+
+export function getAvatarFrameSource(
+  frame: number,
+  sourceFrame: AvatarSourceFrame,
+): AvatarFrameSource {
+  return {
+    height: sourceFrame.height,
+    width: sourceFrame.width,
+    x: (frame % 6) * FRAME_SIZE + BORDER_TRIM + sourceFrame.offsetX,
+    y: Math.floor(frame / 6) * FRAME_SIZE + BORDER_TRIM + sourceFrame.offsetY,
+  };
 }
 
 export function getAvatarFrameIndex(

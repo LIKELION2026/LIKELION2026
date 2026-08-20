@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   SOCKET_EVENT_NAMES,
+  type OfficeChatMessagePayload,
   type OfficeSummonRequestedPayload,
   type OfficeTodosUpdatedPayload
 } from "@likelion2026/shared";
@@ -28,6 +29,45 @@ test("publishTodosUpdated emits an office todo update to the workspace room", ()
       roomName: "office:workspace-1"
     }
   ]);
+});
+
+test("handleOfficeChatSend relays a trimmed message only to the sender workspace", () => {
+  const gateway = new PresenceGateway({
+    getConnection: (socketId: string) =>
+      socketId === "socket-sender"
+        ? {
+            member: { displayName: "민지", memberId: "member-sender" },
+            teamId: "workspace-1"
+          }
+        : null
+  } as never);
+  const server = createFakeServer();
+  setGatewayServer(gateway, server);
+
+  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "  안녕하세요  " });
+
+  assert.equal(server.sent[0]?.eventName, SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE);
+  assert.equal(server.sent[0]?.roomName, "office:workspace-1");
+  const payload = server.sent[0]?.payload as OfficeChatMessagePayload;
+  assert.equal(payload.displayName, "민지");
+  assert.equal(payload.memberId, "member-sender");
+  assert.equal(payload.text, "안녕하세요");
+});
+
+test("handleOfficeChatSend rejects blank and oversized messages", () => {
+  const gateway = new PresenceGateway({
+    getConnection: () => ({
+      member: { displayName: "민지", memberId: "member-sender" },
+      teamId: "workspace-1"
+    })
+  } as never);
+  const server = createFakeServer();
+  setGatewayServer(gateway, server);
+
+  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "   " });
+  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "a".repeat(161) });
+
+  assert.equal(server.sent.length, 0);
 });
 
 test("handleOfficeSummonRequest sends the requester identity to the selected teammate", () => {

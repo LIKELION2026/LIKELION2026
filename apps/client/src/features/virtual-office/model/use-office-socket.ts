@@ -5,6 +5,7 @@ import {
   type MemberStatus,
   type MemberStatusUpdatedPayload,
   type OfficeCalendarUpdatedPayload,
+  type OfficeChatMessagePayload,
   type OfficeMeetingSummaryReadyPayload,
   type OfficeMemberJoinedPayload,
   type OfficeMemberLeftPayload,
@@ -28,6 +29,7 @@ const HEARTBEAT_INTERVAL_MS = 25_000;
 
 export interface OfficeSocketCallbacks {
   onCalendarUpdated?: () => void;
+  onChatMessage?: (payload: OfficeChatMessagePayload) => void;
   onMeetingSummaryReady?: (payload: OfficeMeetingSummaryReadyPayload) => void;
   onSummonRequested?: (payload: OfficeSummonRequestedPayload) => void;
   onSummonResolved?: (payload: OfficeSummonResolvedPayload) => void;
@@ -41,6 +43,7 @@ export function useOfficeSocket(
   respondToSummon: (requestId: string, decision: "accepted" | "declined") => void;
   sendSummonRequest: (targetMemberId: string) => boolean;
   sendMove: (payload: LocalMovementCommand) => void;
+  sendChatMessage: (text: string) => boolean;
   updateAttendance: (attendanceStatus: AttendanceStatus) => void;
   updateStatus: (status: MemberStatus) => void;
 } {
@@ -125,6 +128,11 @@ export function useOfficeSocket(
         callbacksRef.current.onCalendarUpdated?.();
       }
     };
+    const handleChatMessage = (payload: OfficeChatMessagePayload) => {
+      if (payload.teamId === session.member.workspaceId) {
+        callbacksRef.current.onChatMessage?.(payload);
+      }
+    };
     const handleMeetingSummaryReady = (payload: OfficeMeetingSummaryReadyPayload) => {
       if (payload.teamId === session.member.workspaceId) {
         callbacksRef.current.onMeetingSummaryReady?.(payload);
@@ -152,6 +160,7 @@ export function useOfficeSocket(
     socket.on(SOCKET_EVENT_NAMES.OFFICE_LIFECYCLE_UPDATED, handleLifecycleUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED, handleTodosUpdated);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_CALENDAR_UPDATED, handleCalendarUpdated);
+    socket.on(SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE, handleChatMessage);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY, handleMeetingSummaryReady);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUESTED, handleSummonRequested);
     socket.on(SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESOLVED, handleSummonResolved);
@@ -166,6 +175,11 @@ export function useOfficeSocket(
       socket?.off("connect", handleConnect);
       socket?.off("disconnect", handleDisconnect);
       socket?.io.off("reconnect_attempt", handleReconnectAttempt);
+      socket?.off(SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE, handleChatMessage);
+      socket?.off(
+        SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY,
+        handleMeetingSummaryReady,
+      );
       socket?.disconnect();
       socketRef.current = null;
       lastReceivedSequenceRef.current.clear();
@@ -230,6 +244,17 @@ export function useOfficeSocket(
     return true;
   }, []);
 
+  const sendChatMessage = useCallback((text: string) => {
+    const socket = socketRef.current;
+    const normalizedText = text.trim();
+    if (!socket?.connected || !normalizedText || normalizedText.length > 160) {
+      return false;
+    }
+
+    socket.emit(SOCKET_EVENT_NAMES.OFFICE_CHAT_SEND, { text: normalizedText });
+    return true;
+  }, []);
+
   const respondToSummon = useCallback(
     (requestId: string, decision: "accepted" | "declined") => {
       socketRef.current?.emit(SOCKET_EVENT_NAMES.OFFICE_SUMMON_RESPOND, { decision, requestId });
@@ -237,5 +262,12 @@ export function useOfficeSocket(
     []
   );
 
-  return { respondToSummon, sendMove, sendSummonRequest, updateAttendance, updateStatus };
+  return {
+    respondToSummon,
+    sendChatMessage,
+    sendMove,
+    sendSummonRequest,
+    updateAttendance,
+    updateStatus
+  };
 }

@@ -3,6 +3,7 @@ export * from "./contracts/http/meeting";
 export * from "./contracts/http/office";
 export * from "./contracts/socket/briefing";
 export * from "./contracts/socket/events";
+export * from "./contracts/socket/office-chat";
 export * from "./contracts/socket/meeting";
 export * from "./contracts/socket/office-lifecycle";
 export * from "./contracts/socket/office-summon";

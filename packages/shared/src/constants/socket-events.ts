@@ -12,6 +12,8 @@ export const SOCKET_EVENT_NAMES = {
   OFFICE_ATTENDANCE_UPDATE: "office.attendance.update",
   OFFICE_ATTENDANCE_UPDATED: "office.attendance.updated",
   OFFICE_CALENDAR_UPDATED: "office.calendar.updated",
+  OFFICE_CHAT_SEND: "office.chat.send",
+  OFFICE_CHAT_MESSAGE: "office.chat.message",
   OFFICE_HEARTBEAT: "office.heartbeat",
   OFFICE_JOIN: "office.join",
   OFFICE_LIFECYCLE_UPDATED: "office.lifecycle.updated",
