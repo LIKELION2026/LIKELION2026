@@ -1,3 +1,5 @@
+import type { MeetingRoomSectionId } from "./meeting";
+
 export const OFFICE_WORLD_SIZE = {
   height: 2804,
   width: 4096,
@@ -22,7 +24,7 @@ export const OFFICE_MEETING_ZONES = [
   {
     height: 594,
     id: "main-meeting-room",
-    label: "회의실 1",
+    label: "회의실 4",
     width: 1346,
     x: 1383,
     y: 1838,
@@ -52,3 +54,13 @@ export const OFFICE_MEETING_ZONES = [
     y: 337,
   },
 ] as const;
+
+export type OfficeMeetingZone = (typeof OFFICE_MEETING_ZONES)[number];
+export type OfficeMeetingZoneId = OfficeMeetingZone["id"];
+
+export const OFFICE_MEETING_ZONE_SECTION_IDS = {
+  "main-meeting-room": "meeting-room",
+  "meeting-zone-1": "meeting-room-1",
+  "meeting-zone-2": "meeting-room-2",
+  "meeting-zone-3": "meeting-room-3",
+} as const satisfies Record<OfficeMeetingZoneId, MeetingRoomSectionId>;

@@ -10,7 +10,8 @@ import {
 } from "@likelion2026/shared";
 
 import type { LiveKitTokenService } from "../src/integrations/livekit/livekit-token.service";
-import { MeetingService } from "../src/modules/meeting/meeting.service";
+import { MeetingService as MeetingServiceUnderTest } from "../src/modules/meeting/meeting.service";
+import type { OfficeService } from "../src/modules/office/office.service";
 
 interface CapturedTokenRequest {
   attributes?: Record<string, string>;
@@ -34,6 +35,16 @@ class FakeLiveKitTokenService {
       token: `token-for-${input.roomName}`
     };
   }
+}
+
+class MeetingService extends MeetingServiceUnderTest {
+  constructor(liveKitTokenService: LiveKitTokenService) {
+    super(liveKitTokenService, createOfficeServiceStub());
+  }
+}
+
+function createOfficeServiceStub(): OfficeService {
+  return {} as unknown as OfficeService;
 }
 
 test("createToken trims loginless token input and derives participant policy", async () => {

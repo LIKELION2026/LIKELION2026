@@ -49,6 +49,8 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
     () => ({
       onCalendarUpdated: () => callbacksRef.current.onCalendarUpdated?.(),
       onChatMessage: (payload) => callbacksRef.current.onChatMessage?.(payload),
+      onMeetingSummaryReady: (payload) =>
+        callbacksRef.current.onMeetingSummaryReady?.(payload),
       onSummonRequested: (payload) => callbacksRef.current.onSummonRequested?.(payload),
       onSummonResolved: (payload) => callbacksRef.current.onSummonResolved?.(payload),
       onTodosUpdated: () => callbacksRef.current.onTodosUpdated?.()

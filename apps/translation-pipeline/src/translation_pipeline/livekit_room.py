@@ -10,6 +10,7 @@
 """
 
 import asyncio
+import contextlib
 from typing import Callable
 
 from .agent import TranslationAgent, participant_receives_translation, read_participant
@@ -84,6 +85,8 @@ class ParticipantAudioRunner:
         task = self._tasks.pop(identity, None)
         if task is not None:
             task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
         # 스레드 join이라 루프에서 그대로 기다리면 방 전체가 멈춘다.
         await asyncio.to_thread(self._agent.remove_participant, identity)
 

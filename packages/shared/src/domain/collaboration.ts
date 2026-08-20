@@ -122,6 +122,8 @@ export interface OfficeCalendarEvent {
   location?: string;
   participantMemberIds: string[];
   startsAt: string;
+  summaryKo?: string;
+  summaryVi?: string;
   title: string;
   workspaceId: string;
 }

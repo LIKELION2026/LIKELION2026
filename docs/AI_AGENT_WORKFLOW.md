@@ -820,3 +820,23 @@
 - 팀원 검토·수정 내용: 사용자 요청에 따라 아바타 에셋 규격 보정은 이 작업 범위에서 제외하고 UI 토큰 적용만 진행했다.
 - 검증 결과: CSS 변경 후 `git diff --check`로 공백 오류를 확인한다. 실제 브라우저 시각 검수는 팀원이 로컬 화면에서 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #160
+
+### 2026-08-20 - 6인 회의 성능 최적화 1차와 측정 절차 문서화
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 지도, LiveKit RTC, 채팅, AI 번역 자막이 동시에 동작하는 Meeting Room의 6인 P0 성능 리스크를 줄이고, 수동 부하 검증 절차를 고정한다.
+- 입력 맥락: Issue #135, 의존 Issue #131~#134 결과물, `useLiveKitMeetingSession`, `MeetingParticipantVideoTile`, `useMeetingSubtitles`, `meeting-chat-message`, Translation Agent room runner
+- AI 제안 또는 산출물: LiveKit `adaptiveStream: true` 복구, 720p/15fps camera capture/publish 정책, 기본 화면 participant strip 6명 렌더 예산, expanded view의 strip/grid 중복 video attach 제거, camera/mic OFF publication media element 제외, participant tile memo 비교 함수, 채팅/자막 화면 보관 100개 상한, subtitleId+revision 기반 자막 교체 모델, Translation Agent detach task await 보강, `PERFORMANCE.md` 측정 절차 문서화
+- 팀원 검토·수정 내용: 사용자가 #135 기준 새 브랜치를 요청했고, 브랜치명은 `codex/` 없이 만들어야 한다고 지시했다. 실제 6인 Chrome 부하 측정은 현재 작업 환경에서 수행하지 못하므로 문서에 `미측정`으로 남기고 수동 측정 항목을 분리했다.
+- 검증 결과: 작업 중 관련 Client Node 테스트, Client typecheck, translation-pipeline pytest를 실행해 확인한다. 6명/5분 수동 부하 검증과 DevTools/LiveKit stats 캡처는 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #135
+
+### 2026-08-20 - 물리 회의실별 LiveKit roomName 분리
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 맵의 상단 회의룸 3개와 하단 회의룸 1개가 모두 같은 LiveKit 방으로 연결되는 문제를 고쳐, 물리 회의실별로 독립 회의를 열 수 있게 한다.
+- 입력 맥락: 사용자 요청, Issue #170, `OFFICE_MEETING_ZONES`, `VirtualOffice`, `OfficeScene`, `meeting-room-section.ts`, Translation Pipeline `rooms.py`
+- AI 제안 또는 산출물: Shared에 `MEETING_ROOM_SECTION_IDS`와 `OFFICE_MEETING_ZONE_SECTION_IDS` 계약을 추가하고, Phaser Scene이 boolean 대신 실제 회의 zone id를 React에 전달하도록 바꿨다. Client는 zone id별로 `lab-likelion-<날짜>-meeting-room(-1/-2/-3)` roomName을 만들고, Translation Pipeline도 같은 섹션 slug를 인식하도록 갱신했다.
+- 팀원 검토·수정 내용: 사용자가 LiveKit Cloud 설정 여부를 물었고, 방은 Cloud에서 미리 만드는 대신 토큰의 roomName으로 분리하는 방향을 확인했다. 사용자가 `codex/`로 시작하지 않는 브랜치와 GitHub Issue 생성을 요청해 `feat/meeting-room-zones` 브랜치와 Issue #170을 만들고 작업했다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-room-section.test.ts apps/client/test/office-map.test.ts apps/client/test/meeting-session-join-request.test.ts` 9건 통과, `uv run --cache-dir .uv-cache --with pytest python -m pytest tests/test_rooms.py` 32건 통과, `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과. 실제 LiveKit Cloud에서 다른 물리 회의실 간 음성·영상 분리는 팀원 브라우저 2개 이상으로 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #170

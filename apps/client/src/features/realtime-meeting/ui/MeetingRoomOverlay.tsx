@@ -91,10 +91,12 @@ export function MeetingRoomOverlay({
         .join(" ")}
       data-office-keyboard-scope
     >
-      <MeetingParticipantStrip
-        participants={session.participants}
-        sessionStatus={session.status}
-      />
+      {isExpandedView ? null : (
+        <MeetingParticipantStrip
+          participants={session.participants}
+          sessionStatus={session.status}
+        />
+      )}
       {isExpandedView ? (
         <MeetingParticipantGrid
           participants={session.participants}

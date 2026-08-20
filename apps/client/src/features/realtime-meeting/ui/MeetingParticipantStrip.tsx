@@ -4,6 +4,7 @@ import type {
   LiveKitMeetingParticipant,
   LiveKitMeetingSessionStatus
 } from "../model/use-livekit-meeting-session";
+import { selectMeetingParticipantPreviews } from "../model/meeting-performance";
 import { MeetingParticipantVideoTile } from "./MeetingParticipantVideoTile";
 
 interface MeetingParticipantStripProps {
@@ -15,6 +16,9 @@ export function MeetingParticipantStrip({
   participants,
   sessionStatus
 }: MeetingParticipantStripProps): JSX.Element {
+  const previewParticipants = selectMeetingParticipantPreviews(participants);
+  const hiddenParticipantCount = participants.length - previewParticipants.length;
+
   return (
     <section
       aria-label="회의 참가자 영상"
@@ -24,8 +28,8 @@ export function MeetingParticipantStrip({
         {getParticipantStripMessage(participants.length, sessionStatus)}
       </span>
       <div className="meeting-participant-scroll" role="list">
-        {participants.length > 0 ? (
-          participants.map((participant) => (
+        {previewParticipants.length > 0 ? (
+          previewParticipants.map((participant) => (
             <MeetingParticipantVideoTile
               key={participant.identity}
               participant={participant}
@@ -38,6 +42,11 @@ export function MeetingParticipantStrip({
             role="status"
           />
         )}
+        {hiddenParticipantCount > 0 ? (
+          <div className="meeting-participant-overflow" role="listitem">
+            +{hiddenParticipantCount}
+          </div>
+        ) : null}
       </div>
     </section>
   );

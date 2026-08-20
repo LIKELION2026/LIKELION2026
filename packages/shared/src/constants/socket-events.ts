@@ -17,6 +17,7 @@ export const SOCKET_EVENT_NAMES = {
   OFFICE_HEARTBEAT: "office.heartbeat",
   OFFICE_JOIN: "office.join",
   OFFICE_LIFECYCLE_UPDATED: "office.lifecycle.updated",
+  OFFICE_MEETING_SUMMARY_READY: "office.meeting-summary.ready",
   OFFICE_MEMBER_JOINED: "office.member.joined",
   OFFICE_MEMBER_LEFT: "office.member.left",
   OFFICE_SNAPSHOT: "office.snapshot",

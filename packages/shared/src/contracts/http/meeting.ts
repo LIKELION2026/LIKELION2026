@@ -118,3 +118,17 @@ export interface ListMockSubtitlesResponse {
   roomName: string;
   updateStrategy: typeof SUBTITLE_UPDATE_STRATEGY;
 }
+
+export interface SubmitMeetingSummaryRequest {
+  endsAt: string;
+  everParticipantIdentities: string[];
+  roomName: string;
+  startsAt: string;
+  summaryKo: string;
+  summaryVi: string;
+}
+
+export interface SubmitMeetingSummaryResponse {
+  accepted: boolean;
+  eventId?: string;
+}

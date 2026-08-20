@@ -6,7 +6,7 @@ import type {
 export const MEETING_CHAT_TOPIC = "meeting.chat";
 export const MEETING_CHAT_CLIENT_MESSAGE_ID_ATTRIBUTE = "clientMessageId";
 export const MEETING_CHAT_MAX_TEXT_LENGTH = 500;
-export const MEETING_CHAT_HISTORY_LIMIT = 5_000;
+export const MEETING_CHAT_HISTORY_LIMIT = 100;
 
 export type MeetingChatDeliveryStatus = "sending" | "sent" | "failed";
 export type MeetingChatMessageKind = "user" | "translation";
