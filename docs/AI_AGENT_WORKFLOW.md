@@ -54,6 +54,17 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-21 - README 구현 현황 정리
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Zooffice의 서비스 소개, 현재 구현 기능, 기술 스택, 실행 방법을 첫 진입 문서인 README에 간단명료하게 정리
+- 입력 맥락: 사용자 제공 서비스 기획안, `docs/PRD.md`, 루트·Client·Server package 설정, Office/Meeting/Presence 구현 모듈
+- AI 제안 또는 산출물: 기존 README의 이전 방향 표현을 한국-베트남 협업, 상태·TODO·캘린더·회의 자막 중심의 최신 설명으로 교체하고 현재 구현된 기능, 명령어, 사용자 제공 UI 스크린샷 8장을 정리
+- 팀원 검토·수정 내용: README에 사용할 실제 UI 스크린샷은 사용자가 제공한 파일을 기준으로 반영했다.
+- 검증 결과: 문서 링크와 현재 저장소 구조를 확인했고, `git diff --check`를 통과했다. 코드 변경이 없는 README 문서 작업이라 빌드와 테스트는 실행하지 않았다.
+- 관련 Issue / PR / Discussion: 없음
+
 ### 2026-08-21 - PresenceGateway 번역 서비스 의존성 주입 복구
 
 - 담당자: 사용자 검토 예정
