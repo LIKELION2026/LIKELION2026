@@ -54,6 +54,17 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-21 - PresenceGateway 번역 서비스 의존성 주입 복구
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Systematic Debugging
+- 사용 목적: Render에서 서버 부팅 시 `PresenceGateway`의 두 번째 의존성을 해석하지 못해 배포가 중단되는 문제를 해결
+- 입력 맥락: Render Nest 부팅 로그, `PresenceModule` provider 등록, `PresenceGateway` 생성자 런타임 메타데이터
+- AI 제안 또는 산출물: 기본 생성자 값으로 생성하던 번역 서비스를 명시적 Nest 의존성 주입으로 변경하고, gateway 단위 테스트에서 주입 계약을 재현
+- 팀원 검토·수정 내용: Render 재배포 후 서버 부팅과 웹소켓 연결은 팀원이 실제 배포 환경에서 확인한다.
+- 검증 결과: shared build, server typecheck, PresenceGateway 단위 테스트 7건, server production build를 통과했다. 생성된 gateway 메타데이터에서 `PresenceService`, `OfficeChatTranslationService`가 모두 런타임 의존성으로 기록된 것을 확인했다. Render 재배포 후 서버 부팅과 웹소켓 연결은 팀원이 실제 배포 환경에서 확인한다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/Zooffice/issues/184
+
 ### 2026-08-19 - 오피스 맵 벽과 가구 충돌 영역
 
 - 담당자: 사용자 검토 예정
