@@ -1499,6 +1499,96 @@ button {
 
 @keyframes request-spinner-rotate { to { transform: rotate(360deg); } }
 
+.office-meeting-summary-alert {
+  animation:
+    office-meeting-summary-alert-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    office-meeting-summary-alert-glow 1.6s ease-in-out 0.35s infinite;
+  background-color: #fbead2;
+  background-image: radial-gradient(rgb(107 74 53 / 12%) 1px, transparent 1px);
+  background-size: 6px 6px;
+  border: 4px solid #6b4a35;
+  border-radius: 14px;
+  box-sizing: border-box;
+  display: flex;
+  font-family: Galmuri11, "Press Start 2P", Inter, Pretendard, sans-serif;
+  padding: 4px;
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  width: min(340px, calc(100vw - 40px));
+  z-index: 40;
+}
+
+.office-meeting-summary-alert-body {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  padding: 10px 6px 10px 10px;
+  text-align: left;
+}
+
+.office-meeting-summary-alert-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.office-meeting-summary-alert-text {
+  color: #4a2f1e;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.office-meeting-summary-alert-text strong {
+  color: #b34a1f;
+  font-size: 13px;
+}
+
+.office-meeting-summary-alert-text small {
+  color: #6b4a35;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.office-meeting-summary-alert-close {
+  align-self: flex-start;
+  background: #fbead2;
+  border: 2px solid #6b4a35;
+  border-radius: 8px;
+  color: #4a2f1e;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 16px;
+  height: 26px;
+  line-height: 1;
+  margin: 4px 4px 0 0;
+  width: 26px;
+}
+
+@keyframes office-meeting-summary-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes office-meeting-summary-alert-glow {
+  0%, 100% {
+    box-shadow: inset 0 0 0 3px #f0895c, 0 10px 26px rgb(28 39 53 / 30%);
+  }
+  50% {
+    box-shadow: inset 0 0 0 3px #ffb385, 0 10px 30px rgb(240 137 92 / 55%);
+  }
+}
+
 .office-summon-backdrop {
   align-items: center;
   background: rgb(18 29 45 / 34%);

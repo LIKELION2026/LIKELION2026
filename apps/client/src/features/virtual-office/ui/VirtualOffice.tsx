@@ -7,7 +7,6 @@ import type {
   OfficeSummonResolvedPayload
 } from "@likelion2026/shared";
 
-import { useRequestFeedback } from "../../../app/request-feedback";
 import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
 import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
@@ -25,6 +24,7 @@ import { OfficeHud } from "./OfficeHud";
 import { GuestOnboarding } from "./GuestOnboarding";
 import { OfficeTodoPanel } from "./OfficeTodoPanel";
 import { OfficeCalendarModal } from "./OfficeCalendarModal";
+import { OfficeMeetingSummaryAlert } from "./OfficeMeetingSummaryAlert";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
 import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
@@ -38,6 +38,7 @@ export function VirtualOffice(): JSX.Element {
   const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
   const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
     isPreparingSession,
@@ -52,7 +53,6 @@ export function VirtualOffice(): JSX.Element {
     updateAttendance,
     updateStatus
   } = useOfficeConnection();
-  const { showSuccess } = useRequestFeedback();
   const connectionState = useOfficeStore((state) => state.connectionState);
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
@@ -104,14 +104,13 @@ export function VirtualOffice(): JSX.Element {
       onSummonRequested: handleSummonRequested,
       onSummonResolved: handleSummonResolved,
       onCalendarUpdated: calendarController.refresh,
-      onMeetingSummaryReady: () => showSuccess("회의 요약이 준비되었어요."),
+      onMeetingSummaryReady: () => setIsMeetingSummaryAlertVisible(true),
       onTodosUpdated: todoController.refresh
     }),
     [
       calendarController.refresh,
       handleSummonRequested,
       handleSummonResolved,
-      showSuccess,
       todoController.refresh
     ]
   );
@@ -268,6 +267,14 @@ export function VirtualOffice(): JSX.Element {
         members={effectiveMembers}
         onClose={() => setIsCalendarOpen(false)}
         self={effectiveSelf}
+      />
+      <OfficeMeetingSummaryAlert
+        isVisible={isMeetingSummaryAlertVisible}
+        onClose={() => setIsMeetingSummaryAlertVisible(false)}
+        onOpenCalendar={() => {
+          setIsMeetingSummaryAlertVisible(false);
+          setIsCalendarOpen(true);
+        }}
       />
       <OfficePeoplePanel
         isOpen={isPeoplePanelOpen}
