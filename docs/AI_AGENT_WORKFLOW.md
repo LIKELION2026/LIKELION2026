@@ -971,3 +971,14 @@
 - 팀원 검토·수정 내용: 사용자가 회의 종료 뒤에는 회의 UI가 떠 있지 않다고 정정해, 회의 오버레이 가림 가능성보다 알림 자체의 positioning 누락과 이벤트 발행 경로를 중심으로 수정했다. 실제 브라우저에서 요약 종료 후 토스트 표시 확인은 팀원 환경에서 추가 검토가 필요하다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server exec node --test -r ts-node/register test/meeting.controller.test.ts test/presence.gateway.test.ts` 12건 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Client build의 chunk-size warning은 기존 Phaser/LiveKit 번들 크기 경고로 남아 있다. 루트에서 직접 `node --test -r ts-node/register ...`를 실행한 시도는 workspace 의존성 해석 문제로 실패해 패키지 컨텍스트로 재실행했다.
 - 관련 Issue / PR / Discussion: 별도 Issue 없음 (사용자 디버그 요청)
+
+### 2026-08-21 - 화상회의 참가자 기본 그리드 전환
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 화상회의 기본 화면에서 3명 이상 참가 시 가로 스크롤 없이 참가자 영상을 한눈에 볼 수 있게 한다.
+- 입력 맥락: 사용자 요청, `MeetingRoomOverlay`, `MeetingParticipantStrip`, `MeetingParticipantGrid`, `meeting-performance`
+- AI 제안 또는 산출물: 참가자 수별 기본 미리보기 레이아웃을 `meeting-participant-layout` 모델 함수로 분리하고, 1~2명은 기존 상단 스트립을 유지하되 3명 이상은 기본 화면에서도 grid 미리보기를 사용하도록 연결했다. 3명 grid는 2열 배치와 마지막 타일 중앙 정렬을 적용하고, 확대 grid도 같은 열 계산을 사용하게 정리했다. 7명 이상은 기존 6명 렌더 예산을 유지하고 초과 인원을 별도 `+N` 타일로 표시한다.
+- 팀원 검토·수정 내용: 사용자가 “베스트로 수정작업”을 요청해, 별도 서버 계약 변경 없이 Client 회의 오버레이만 수정하는 범위로 진행했다. 실제 3인 LiveKit 브라우저 수동 확인은 팀원 환경에서 추가 검토가 필요하다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-performance.test.ts` 4건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Client build의 chunk-size warning은 기존 Phaser/LiveKit 번들 크기 경고로 남아 있다.
+- 관련 Issue / PR / Discussion: 별도 Issue 없음 (사용자 요청)
