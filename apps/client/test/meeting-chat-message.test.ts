@@ -100,7 +100,7 @@ test("deduplicates LiveKit local echoes by client message id", () => {
   assert.equal(messages[0]?.deliveryStatus, "sent");
 });
 
-test("keeps a large one-hour meeting chat history window", () => {
+test("caps the rendered meeting chat history window", () => {
   const messages = Array.from(
     { length: MEETING_CHAT_HISTORY_LIMIT + 2 },
     (_, index) =>
