@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import type { LiveKitMeetingParticipant } from "../model/use-livekit-meeting-session";
+import { hasSameMeetingParticipantTileState } from "../model/meeting-participant-render-state";
 import { MeetingMediaTrackElement } from "./MeetingMediaTrackElement";
 
 interface MeetingParticipantVideoTileProps {
@@ -102,7 +103,13 @@ export const MeetingParticipantVideoTile = memo(
         ) : null}
       </article>
     );
-  }
+  },
+  (previousProps, nextProps) =>
+    previousProps.variant === nextProps.variant &&
+    hasSameMeetingParticipantTileState(
+      previousProps.participant,
+      nextProps.participant
+    )
 );
 
 function ParticipantStatusIcon({
