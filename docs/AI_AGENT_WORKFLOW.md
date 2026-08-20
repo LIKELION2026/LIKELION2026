@@ -54,6 +54,17 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-21 - 입장 언어 선택과 베트남어 UI 레이아웃 보완
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Systematic Debugging
+- 사용 목적: 첫 진입에서 언어 선택이 즉시 보이는 흐름을 정리하고, 베트남어의 악센트·문자 길이로 픽셀 UI가 깨지는 문제를 해결
+- 입력 맥락: 입장 UI, HUD 언어 필터, 베트남어 TODO·피플 목록 화면 캡처, `i18next` 문구와 CSS 레이아웃
+- AI 제안 또는 산출물: 언어 선택 전 로딩 단계, 언어 선택 안내문, HUD 언어 변경 제어 제거, 베트남어 전용 글꼴·패널 폭·상태 버튼·피플 목록 보정
+- 팀원 검토·수정 내용: 서비스 입장 뒤 언어 변경은 허용하지 않고, 최초 입장 단계에서만 선택하도록 확정했다.
+- 검증 결과: client typecheck와 production build를 통과했다. Vite의 500kB 번들 경고는 기존 Phaser·LiveKit 번들 경고로 남아 있다. 한국어·베트남어 실제 화면의 최종 여백은 팀원 브라우저 검토가 필요하다.
+- 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/Zooffice/issues/186
+
 ### 2026-08-19 - 오피스 맵 벽과 가구 충돌 영역
 
 - 담당자: 사용자 검토 예정

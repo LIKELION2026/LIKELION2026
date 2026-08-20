@@ -52,6 +52,7 @@ export function VirtualOffice(): JSX.Element {
   const [chatMentionTargetName, setChatMentionTargetName] = useState<string | null>(null);
   const [hasCompletedOnboardingLanguageStep, setHasCompletedOnboardingLanguageStep] =
     useState(false);
+  const [isOnboardingIntroVisible, setIsOnboardingIntroVisible] = useState(true);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
@@ -180,6 +181,14 @@ export function VirtualOffice(): JSX.Element {
     if (entryPhase === "office") {
       setHasCompletedOnboardingLanguageStep(false);
     }
+  }, [entryPhase]);
+  useEffect(() => {
+    if (entryPhase !== "onboarding") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setIsOnboardingIntroVisible(false), 700);
+    return () => window.clearTimeout(timer);
   }, [entryPhase]);
 
   const peopleContext = createPeopleContext(
@@ -431,8 +440,10 @@ export function VirtualOffice(): JSX.Element {
           defaultSourceLanguage={session?.member.preferredLanguage}
         />
       ) : null}
-      {entryPhase === "loading" ? <OfficeLoadingScreen /> : null}
-      {entryPhase === "onboarding" ? (
+      {entryPhase === "loading" || (entryPhase === "onboarding" && isOnboardingIntroVisible) ? (
+        <OfficeLoadingScreen />
+      ) : null}
+      {entryPhase === "onboarding" && !isOnboardingIntroVisible ? (
         <GuestOnboarding
           error={sessionError}
           isLanguageStepComplete={hasCompletedOnboardingLanguageStep}
