@@ -54,6 +54,17 @@
 - 관련 Issue / PR / Discussion: 링크 추가
 ```
 
+### 2026-08-21 - 오피스 초기 진입 브랜드명 교체
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 최초 진입과 로딩 화면에서 이전 명칭 `GLOBAL OFFICE`가 보이는 문제를 수정
+- 입력 맥락: 사용자 요청, `GuestOnboarding`, `OfficeLoadingScreen`, 앱 헤더의 브랜드 표시
+- AI 제안 또는 산출물: 초기 온보딩, 로딩 화면, 앱 헤더의 표시 브랜드를 `Zooffice`로 통일
+- 팀원 검토·수정 내용: 사용자 요청에 따라 dev 브랜치에서 직접 작은 문구 변경으로 처리한다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과. 앱 소스와 테스트에서 `GLOBAL OFFICE` 표시가 남지 않은 것을 검색으로 확인했다.
+- 관련 Issue / PR / Discussion: 없음
+
 ### 2026-08-21 - README 구현 현황 정리
 
 - 담당자: 사용자 검토 예정
