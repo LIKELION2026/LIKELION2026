@@ -4,7 +4,7 @@ interface KeyboardFocusTarget {
   tagName: string;
 }
 
-const TEXT_ENTRY_TAG_NAMES = new Set(["INPUT", "SELECT", "TEXTAREA"]);
+const TEXT_ENTRY_TAG_NAMES = new Set(["INPUT", "TEXTAREA"]);
 
 export function isTextEntryFocused(element: KeyboardFocusTarget | null): boolean {
   return (

@@ -12,6 +12,7 @@ test("blocks office movement while a text entry control is focused", () => {
 test("allows office movement when no text entry control is focused", () => {
   assert.equal(isTextEntryFocused(null), false);
   assert.equal(isTextEntryFocused({ tagName: "BUTTON" }), false);
+  assert.equal(isTextEntryFocused({ tagName: "SELECT" }), false);
 });
 
 test("allows office movement while an overlay button is focused", () => {

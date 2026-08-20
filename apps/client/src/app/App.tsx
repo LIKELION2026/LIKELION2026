@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
 import { OfficePage } from "../pages/office/OfficePage";
 import { CollisionEditorPage } from "../pages/collision-editor/CollisionEditorPage";
+import { AvatarLabPage } from "../pages/avatar-lab/AvatarLabPage";
 import { OfficeConnectionProvider } from "../features/virtual-office/model/office-connection-context";
 import { RequestFeedbackProvider } from "./request-feedback";
 
@@ -21,7 +22,7 @@ export function App(): JSX.Element {
 function AppRouter(): JSX.Element {
   const location = useLocation();
 
-  if (location.pathname === "/collision-editor") {
+  if (location.pathname === "/collision-editor" || location.pathname === "/avatar-lab") {
     return <AppContent />;
   }
 
@@ -37,10 +38,11 @@ function AppContent(): JSX.Element {
   const { t } = useTranslation();
   const isOfficeRoute = location.pathname === "/office";
   const isCollisionEditorRoute = location.pathname === "/collision-editor";
+  const isAvatarLabRoute = location.pathname === "/avatar-lab";
 
   return (
     <div className={isOfficeRoute ? "app-shell app-shell-office" : "app-shell"}>
-      {isOfficeRoute || isCollisionEditorRoute ? null : (
+      {isOfficeRoute || isCollisionEditorRoute || isAvatarLabRoute ? null : (
         <header className="app-header">
           <NavLink className="brand" to="/office">
             GLOBAL OFFICE
@@ -56,6 +58,7 @@ function AppContent(): JSX.Element {
           <Route element={<OfficePage />} path="/office" />
           <Route element={<MeetingLabPage />} path="/meeting-lab" />
           <Route element={<CollisionEditorPage />} path="/collision-editor" />
+          <Route element={<AvatarLabPage />} path="/avatar-lab" />
           <Route element={<Navigate replace to="/office" />} path="*" />
         </Routes>
       </main>

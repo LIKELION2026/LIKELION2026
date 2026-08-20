@@ -1,9 +1,17 @@
 import { type AttendanceStatus, type MemberStatus } from "@likelion2026/shared";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useUiLocale } from "../../../shared/i18n";
 import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/office-store";
 import { AvatarFace } from "./AvatarFace";
+
+const STATUS_ICONS: Record<MemberStatus, string> = {
+  available: "●",
+  away: "◐",
+  focused: "◆",
+  in_meeting: "✦"
+};
 
 interface OfficeHudProps {
   avatarId: string | undefined;
@@ -32,6 +40,8 @@ export function OfficeHud({
 }: OfficeHudProps): React.JSX.Element {
   const { t } = useTranslation();
   const { locale, options: uiLocaleOptions, setLocale } = useUiLocale();
+  const [isStatusPickerOpen, setIsStatusPickerOpen] = useState(false);
+  const currentStatus = selfStatus ?? "available";
 
   return (
     <div className="office-hud">
@@ -60,18 +70,43 @@ export function OfficeHud({
             ? t("officeHud.attendance.checkOut")
             : t("officeHud.attendance.checkIn")}
         </button>
-        <select
-          aria-label={t("officeHud.statusAriaLabel")}
-          className="status-control"
-          onChange={(event) => onStatusChange(event.target.value as MemberStatus)}
-          value={selfStatus ?? "available"}
-        >
-          {OFFICE_STATUS_OPTIONS.map((status) => (
-            <option key={status} value={status}>
-              {t(`memberStatus.${status}`)}
-            </option>
-          ))}
-        </select>
+        <div className="status-picker-wrap">
+          <button
+            aria-expanded={isStatusPickerOpen}
+            aria-haspopup="menu"
+            aria-label={t("officeHud.statusAriaLabel")}
+            className={`status-trigger tone-${currentStatus}`}
+            onClick={() => setIsStatusPickerOpen((current) => !current)}
+            type="button"
+          >
+            <span aria-hidden="true" className="status-trigger-icon">{STATUS_ICONS[currentStatus]}</span>
+            <span className="status-trigger-copy">
+              <small>{t("officeHud.statusAriaLabel")}</small>
+              <strong>{t(`memberStatus.${currentStatus}`)}</strong>
+            </span>
+            <span aria-hidden="true" className="status-trigger-chevron">▾</span>
+          </button>
+          {isStatusPickerOpen ? (
+            <div aria-label={t("officeHud.statusAriaLabel")} className="status-picker" role="menu">
+              {OFFICE_STATUS_OPTIONS.map((status) => (
+                <button
+                  aria-checked={status === currentStatus}
+                  className={`status-picker-option tone-${status}`}
+                  key={status}
+                  onClick={() => {
+                    onStatusChange(status);
+                    setIsStatusPickerOpen(false);
+                  }}
+                  role="menuitemradio"
+                  type="button"
+                >
+                  <span aria-hidden="true">{STATUS_ICONS[status]}</span>
+                  {t(`memberStatus.${status}`)}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
         <label className="hud-locale-control" htmlFor="office-ui-locale">
           <span>{t("officeHud.settings.uiLanguage")}</span>
           <select
