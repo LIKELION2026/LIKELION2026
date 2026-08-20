@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-19
+> 마지막 업데이트: 2026-08-20
 
 ## 목적
 
@@ -884,3 +884,14 @@
 - 팀원 검토·수정 내용: 사용자가 버그 증상과 작업 시작 방식(이슈 생성, 브랜치 생성)을 요청했다. 실제 브라우저 IME 수동 재현 확인은 아직 사람이 추가 확인해야 한다.
 - 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-chat-input.test.ts apps/client/test/meeting-chat-message.test.ts` 10건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 91건 통과, `git diff --check` 통과.
 - 관련 Issue / PR / Discussion: Issue #175
+
+### 2026-08-20 - 오피스 입장 전 UI 언어 선택 단계 분리
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, Browser Skill
+- 사용 목적: 최초 오피스 입장 흐름에서 UI 언어 선택을 가장 먼저 보여주고, 선택 전 좌측 HUD와 오피스 채팅이 뒤에 보이지 않도록 정리한다.
+- 입력 맥락: 사용자 요청, Issue #177, `GuestOnboarding`, `VirtualOffice`, UI locale 선택 흐름
+- AI 제안 또는 산출물: `GuestOnboarding`을 언어 선택 단계와 기존 입장 정보 입력 단계로 나누고, 언어 선택 단계에서는 `OfficeHud`와 `OfficeChatPanel` 렌더링을 막았다. 언어 선택 후에만 아바타 사용 가능 목록을 조회하도록 조정해 최초 단계의 작업 범위를 줄였다. 추가 피드백에 따라 최초 언어 선택 카드에서는 상단 브랜드·설명 문구를 숨기고, 저장된 선택이 있어도 선택 전 기본 표시를 한국어로 고정했으며, 문구를 `언어 선택 (Chọn ngôn ngữ)`로 바꿨다. 두 온보딩 카드 프레임이 화면 중앙에 오도록 backdrop과 카드 내부 스크롤을 조정하고, 언어 선택 카드와 버튼 크기를 키웠다.
+- 팀원 검토·수정 내용: 기존 입장 모달의 시각 스타일은 유지하고, 언어 선택 버튼을 누르면 바로 나머지 입력 단계로 넘어가도록 구현했다. 사용자가 `codex/` 없는 브랜치명을 요청해 브랜치를 `feat/177-office-entry-language-step`로 바꿨다. 실제 사용자 플로우 최종 확인은 팀원 브라우저 검토가 필요하다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/office-entry-phase.test.ts` 15건 통과, `git diff --check` 통과. 로컬 Vite `/office` 화면에서 언어 선택 전에는 `언어 선택 (Chọn ngôn ngữ)`, `한국어`, `Tiếng Việt`만 보이고 HUD/채팅/이름·국가·아바타 입력이 숨겨지는 것을 확인했다. 한국어가 기본 선택되어 있었고, 한국어 선택 후 기존 입력 폼으로 전환되며 두 카드의 중심이 뷰포트 중심에 맞는 것을 Browser Skill로 확인했다. 언어 선택 카드 확대 후 카드 620px 폭, 버튼 68px 높이, 중앙 정렬 유지를 확인했다.
+- 관련 Issue / PR / Discussion: Issue #177

@@ -25,7 +25,6 @@ export function normalizeUiLocale(value: unknown): UiLocale | null {
 }
 
 export function resolveInitialUiLocale({
-  browserLanguages = [],
   storedLocale
 }: {
   browserLanguages?: readonly string[];
@@ -36,19 +35,11 @@ export function resolveInitialUiLocale({
     return normalizedStoredLocale;
   }
 
-  for (const browserLanguage of browserLanguages) {
-    const normalizedBrowserLocale = normalizeUiLocale(browserLanguage);
-    if (normalizedBrowserLocale) {
-      return normalizedBrowserLocale;
-    }
-  }
-
   return DEFAULT_UI_LOCALE;
 }
 
 export function getInitialUiLocale(): UiLocale {
   return resolveInitialUiLocale({
-    browserLanguages: getBrowserLanguages(),
     storedLocale: readStoredUiLocale()
   });
 }
@@ -83,16 +74,6 @@ export function applyDocumentUiLocale(locale: UiLocale): void {
   }
 
   document.documentElement.lang = locale;
-}
-
-function getBrowserLanguages(): readonly string[] {
-  if (typeof navigator === "undefined") {
-    return [];
-  }
-
-  return navigator.languages.length > 0
-    ? navigator.languages
-    : [navigator.language];
 }
 
 function canUseLocalStorage(): boolean {

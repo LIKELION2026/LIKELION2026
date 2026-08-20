@@ -24,7 +24,7 @@ test("rejects unsupported UI locale values", () => {
   assert.equal(normalizeUiLocale(null), null);
 });
 
-test("restores stored UI locale before checking browser languages", () => {
+test("restores stored UI locale before applying the Korean default", () => {
   assert.equal(
     resolveInitialUiLocale({
       browserLanguages: ["ko-KR"],
@@ -34,16 +34,16 @@ test("restores stored UI locale before checking browser languages", () => {
   );
 });
 
-test("uses the browser language only as the first-visit default", () => {
+test("uses Korean as the first-visit default regardless of browser language", () => {
   assert.equal(
     resolveInitialUiLocale({
       browserLanguages: ["vi-VN", "en-US"]
     }),
-    "vi"
+    DEFAULT_UI_LOCALE
   );
 });
 
-test("falls back to Korean when stored and browser locales are unsupported", () => {
+test("falls back to Korean when the stored locale is unsupported", () => {
   assert.equal(
     resolveInitialUiLocale({
       browserLanguages: ["en-US"],
