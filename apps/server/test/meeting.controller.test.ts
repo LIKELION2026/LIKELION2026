@@ -4,7 +4,9 @@ import { test } from "node:test";
 import {
   SOCKET_EVENT_NAMES,
   SUBTITLE_UPDATE_STRATEGY,
-  type CreateMockSubtitleRequest
+  type CreateMockSubtitleRequest,
+  type OfficeCalendarUpdatedPayload,
+  type OfficeMeetingSummaryReadyPayload
 } from "@likelion2026/shared";
 import type { LiveKitWebhookService } from "../src/integrations/livekit/livekit-webhook.service";
 import type { MeetingRealtimeGateway } from "../src/modules/meeting/meeting-realtime.gateway";
@@ -16,13 +18,14 @@ class MeetingController extends MeetingControllerUnderTest {
   constructor(
     liveKitWebhookService: LiveKitWebhookService,
     meetingRealtimeGateway: MeetingRealtimeGateway,
-    meetingService: MeetingService
+    meetingService: MeetingService,
+    presenceGateway: PresenceGateway = createPresenceGatewayStub()
   ) {
     super(
       liveKitWebhookService,
       meetingRealtimeGateway,
       meetingService,
-      createPresenceGatewayStub()
+      presenceGateway
     );
   }
 }
@@ -147,6 +150,50 @@ test("getMockSubtitles delegates to the meeting service subtitle buffer", () => 
   assert.equal(response.payloads[0]?.subtitleId, "segment-1");
 });
 
+test("submitSummary publishes calendar and summary-ready office events", async () => {
+  const presenceGateway = createPresenceGatewayRecorder();
+  const controller = new MeetingController(
+    {} as LiveKitWebhookService,
+    createMeetingRealtimeGatewayStub(),
+    {
+      async submitSummary() {
+        return {
+          endsAt: "2026-08-21T00:30:00.000Z",
+          eventType: "meeting",
+          id: "event-1",
+          isAllDay: false,
+          participantMemberIds: ["member-1", "member-2"],
+          startsAt: "2026-08-21T00:00:00.000Z",
+          title: "회의 요약",
+          workspaceId: "workspace-1"
+        };
+      }
+    } as unknown as MeetingService,
+    presenceGateway
+  );
+
+  const response = await controller.submitSummary({
+    endsAt: "2026-08-21T00:30:00.000Z",
+    everParticipantIdentities: ["member-1", "member-2"],
+    roomName: "lab-likelion-20260821-summary",
+    startsAt: "2026-08-21T00:00:00.000Z",
+    summaryKo: "요약",
+    summaryVi: "Tom tat"
+  });
+
+  assert.deepEqual(response, { accepted: true, eventId: "event-1" });
+  assert.equal(presenceGateway.calendarUpdates.length, 1);
+  assert.equal(presenceGateway.calendarUpdates[0]?.teamId, "workspace-1");
+  assert.equal(presenceGateway.summaryReadyUpdates.length, 1);
+  assert.equal(presenceGateway.summaryReadyUpdates[0]?.eventId, "event-1");
+  assert.deepEqual(presenceGateway.summaryReadyUpdates[0]?.participantMemberIds, [
+    "member-1",
+    "member-2"
+  ]);
+  assert.equal(presenceGateway.summaryReadyUpdates[0]?.teamId, "workspace-1");
+  assert.ok(Date.parse(presenceGateway.summaryReadyUpdates[0]?.occurredAt ?? ""));
+});
+
 function createMeetingRealtimeGatewayStub(): MeetingRealtimeGateway & {
   publishedPayloads: Array<{ roomName: string }>;
 } {
@@ -171,4 +218,34 @@ function createPresenceGatewayStub(): PresenceGateway {
       return undefined;
     }
   } as unknown as PresenceGateway;
+}
+
+function createPresenceGatewayRecorder(): PresenceGateway & {
+  calendarUpdates: OfficeCalendarUpdatedPayload[];
+  summaryReadyUpdates: Array<
+    OfficeMeetingSummaryReadyPayload & { participantMemberIds: string[] }
+  >;
+} {
+  const calendarUpdates: OfficeCalendarUpdatedPayload[] = [];
+  const summaryReadyUpdates: Array<
+    OfficeMeetingSummaryReadyPayload & { participantMemberIds: string[] }
+  > = [];
+
+  return {
+    calendarUpdates,
+    publishCalendarUpdated(payload: OfficeCalendarUpdatedPayload) {
+      calendarUpdates.push(payload);
+    },
+    publishMeetingSummaryReady(
+      payload: OfficeMeetingSummaryReadyPayload & { participantMemberIds: string[] }
+    ) {
+      summaryReadyUpdates.push(payload);
+    },
+    summaryReadyUpdates
+  } as unknown as PresenceGateway & {
+    calendarUpdates: OfficeCalendarUpdatedPayload[];
+    summaryReadyUpdates: Array<
+      OfficeMeetingSummaryReadyPayload & { participantMemberIds: string[] }
+    >;
+  };
 }

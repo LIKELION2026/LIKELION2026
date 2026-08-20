@@ -11,7 +11,7 @@ export function OfficeLoadingScreen(): JSX.Element {
       role="status"
     >
       <div className="office-loading-mark" aria-hidden="true" />
-      <p className="office-loading-brand">GLOBAL OFFICE</p>
+      <p className="office-loading-brand">Zooffice</p>
       <p className="office-loading-message">{t("officeLoading.message")}</p>
       <span aria-hidden="true" className="office-loading-dots">
         <i />
