@@ -11,6 +11,7 @@ import { DEFAULT_UI_LOCALE, useUiLocale } from "../../../shared/i18n";
 import { RequestSpinner } from "../../../app/request-feedback";
 import { getGuestAvatarAvailability } from "../api/get-guest-avatar-availability";
 import { getAvatarSpriteDefinitions } from "../core/avatar-sprite-definition";
+import { AvatarFace } from "./AvatarFace";
 
 interface GuestOnboardingProps {
   error: string | null;
@@ -159,19 +160,21 @@ export function GuestOnboarding({
                   aria-pressed={countryCode === "KR"}
                   className={countryCode === "KR" ? "selected" : undefined}
                   disabled={isSubmitting}
-                  onClick={() => setCountryCode("KR")}
-                  type="button"
-                >
-                  {t("guestOnboarding.country.korea")}
+                onClick={() => setCountryCode("KR")}
+                type="button"
+              >
+                <span aria-hidden="true" className="guest-country-flag">🇰🇷</span>
+                {t("guestOnboarding.country.korea")}
                 </button>
                 <button
                   aria-pressed={countryCode === "VN"}
                   className={countryCode === "VN" ? "selected" : undefined}
                   disabled={isSubmitting}
-                  onClick={() => setCountryCode("VN")}
-                  type="button"
-                >
-                  {t("guestOnboarding.country.vietnam")}
+                onClick={() => setCountryCode("VN")}
+                type="button"
+              >
+                <span aria-hidden="true" className="guest-country-flag">🇻🇳</span>
+                {t("guestOnboarding.country.vietnam")}
                 </button>
               </div>
             </fieldset>
@@ -205,11 +208,9 @@ export function GuestOnboarding({
                       }}
                       type="button"
                     >
-                      <span
-                        aria-hidden="true"
-                        className="guest-avatar-preview"
-                        style={{ backgroundImage: `url(${avatar.assetPath})` }}
-                      />
+                      <span aria-hidden="true" className="guest-avatar-preview">
+                        <AvatarFace avatarId={avatar.id} size={56} />
+                      </span>
                       <span>{t(avatar.labelKey)}</span>
                       {!isAvailable ? <small>{t("guestOnboarding.avatar.inUse")}</small> : null}
                     </button>
