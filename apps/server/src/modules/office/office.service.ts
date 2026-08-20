@@ -516,21 +516,28 @@ export class OfficeService {
     guestToken: string
   ): Promise<OfficeMemberPresence> {
     const member = await this.requireMemberOwnership(memberId, guestToken);
+    const currentPresence = await this.findRealtimePresence(memberId);
     const now = new Date().toISOString();
+    const isWorking = currentPresence.attendance_status === "working";
     const presence = await this.updateRealtimePresence(memberId, {
-      attendance_status: "working",
-      checked_in_at: now,
-      checked_out_at: null,
       connection_status: "connected",
       disconnected_at: null,
-      display_mode: "active",
-      last_active_at: now,
+      display_mode: isWorking ? "active" : "sleeping",
+      ...(isWorking
+        ? {
+            last_active_at: now,
+            status_message: "근무 중"
+          }
+        : {
+            status_message: "퇴근"
+          }),
       last_heartbeat_at: now,
-      status_message: "근무 중",
       updated_at: now
     });
 
-    await this.recordAttendance(memberId, "reconnect");
+    if (isWorking) {
+      await this.recordAttendance(memberId, "reconnect");
+    }
     return toRealtimeMember(member, presence);
   }
 
@@ -958,6 +965,16 @@ export class OfficeService {
       .select("attendance_status, availability_status, checked_in_at, checked_out_at, connection_status, current_desk_id, disconnected_at, display_mode, last_active_at, last_heartbeat_at, member_id, position_x, position_y, status_message, updated_at")
       .single();
     this.throwIfError(error, "update realtime office presence");
+    return data as PresenceRow;
+  }
+
+  private async findRealtimePresence(memberId: string): Promise<PresenceRow> {
+    const { data, error } = await this.supabase
+      .from("member_presence")
+      .select("attendance_status, availability_status, checked_in_at, checked_out_at, connection_status, current_desk_id, disconnected_at, display_mode, last_active_at, last_heartbeat_at, member_id, position_x, position_y, status_message, updated_at")
+      .eq("member_id", memberId)
+      .single();
+    this.throwIfError(error, "find realtime office presence");
     return data as PresenceRow;
   }
 

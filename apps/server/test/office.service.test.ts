@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { OfficeService } from "../src/modules/office/office.service";
 
-test("connectRealtimeMember restores a reconnecting member to working and active", async () => {
+test("connectRealtimeMember preserves an explicit checkout while connecting the socket", async () => {
   const supabase = createSupabaseFake();
   const service = new OfficeService({} as never, supabase as never);
 
@@ -12,11 +12,11 @@ test("connectRealtimeMember restores a reconnecting member to working and active
     "guest_1234567890abcdef"
   );
 
-  assert.equal(member.officePresence?.attendanceStatus, "working");
+  assert.equal(member.officePresence?.attendanceStatus, "checked_out");
   assert.equal(member.officePresence?.connectionStatus, "connected");
-  assert.equal(member.officePresence?.displayMode, "active");
-  assert.equal(supabase.presenceUpdates[0]?.attendance_status, "working");
-  assert.equal(supabase.presenceUpdates[0]?.display_mode, "active");
+  assert.equal(member.officePresence?.displayMode, "sleeping");
+  assert.equal(supabase.presenceUpdates[0]?.attendance_status, undefined);
+  assert.equal(supabase.presenceUpdates[0]?.display_mode, "sleeping");
 });
 
 test("updateAttendance keeps an explicit checkout in sleeping display mode", async () => {
@@ -80,6 +80,15 @@ function createSupabaseFake() {
 
       if (table === "member_presence") {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  single: async () => ({ data: presence, error: null })
+                };
+              }
+            };
+          },
           update(updates: Record<string, unknown>) {
             presenceUpdates.push(updates);
             Object.assign(presence, updates);

@@ -11,8 +11,10 @@ import { AvatarFace } from "./AvatarFace";
 
 interface OfficeTodoPanelProps {
   avatarId: string | undefined;
+  countryCode: string | undefined;
   controller: OfficeTodoController;
   isOpen: boolean;
+  memberName: string | undefined;
   onAttendanceChange: (attendanceStatus: AttendanceStatus) => void;
   onClose: () => void;
   onStatusChange: (status: MemberStatus) => void;
@@ -40,8 +42,10 @@ const STATUS_CHOICES: Array<{
 
 export function OfficeTodoPanel({
   avatarId,
+  countryCode,
   controller,
   isOpen,
+  memberName,
   onAttendanceChange,
   onClose,
   onStatusChange,
@@ -73,6 +77,8 @@ export function OfficeTodoPanel({
             : null;
   const activeChoice = draftChoice ?? committedChoice;
   const hasPendingStatusChange = draftChoice !== null && draftChoice !== committedChoice;
+  const countryLabel = countryCode === "VN" ? "베트남" : "한국";
+  const countryFlag = countryCode === "VN" ? "🇻🇳" : "🇰🇷";
 
   const chooseStatus = (choice: StatusChoice) => {
     setDraftChoice(choice);
@@ -179,6 +185,10 @@ export function OfficeTodoPanel({
           <div className="std-avatar-frame">
             <img alt="" aria-hidden="true" className="std-avatar-frame-bg" src={`${ASSET_PATH}/avatar-circle.png`} />
             <AvatarFace avatarId={avatarId} size={120} />
+          </div>
+          <div className="std-member-info">
+            <strong>{memberName ?? "내 프로필"}</strong>
+            <span>{countryFlag} {countryLabel}</span>
           </div>
         </div>
 
