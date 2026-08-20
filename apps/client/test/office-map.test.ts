@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { OFFICE_MEETING_ZONE_SECTION_IDS } from "@likelion2026/shared";
 
 import {
   OFFICE_MAP,
@@ -30,7 +31,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 594,
       id: "main-meeting-room",
-      label: "회의실 1",
+      label: "회의실 4",
       width: 1346,
       x: 1383,
       y: 1838,
@@ -60,4 +61,17 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
       y: 337,
     },
   ]);
+});
+
+test("maps every physical meeting zone to a distinct LiveKit meeting section", () => {
+  assert.deepEqual(OFFICE_MEETING_ZONE_SECTION_IDS, {
+    "main-meeting-room": "meeting-room",
+    "meeting-zone-1": "meeting-room-1",
+    "meeting-zone-2": "meeting-room-2",
+    "meeting-zone-3": "meeting-room-3",
+  });
+  assert.equal(
+    new Set(Object.values(OFFICE_MEETING_ZONE_SECTION_IDS)).size,
+    OFFICE_MAP_MEETING_ZONES.length,
+  );
 });

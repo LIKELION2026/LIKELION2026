@@ -3,11 +3,12 @@ import type { JSX } from "react";
 import Phaser from "phaser";
 import type {
   MeetingParticipantCountry,
+  OfficeMeetingZoneId,
   OfficeSummonRequestedPayload,
   OfficeSummonResolvedPayload
 } from "@likelion2026/shared";
 
-import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
+import { createMeetingRoomSectionByOfficeZoneId } from "../../realtime-meeting/model/meeting-room-section";
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
 import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
 import { OfficeScene } from "../core/office-scene";
@@ -33,7 +34,8 @@ export function VirtualOffice(): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
-  const [isInsideMeetingRoom, setIsInsideMeetingRoom] = useState(false);
+  const [activeMeetingZoneId, setActiveMeetingZoneId] =
+    useState<OfficeMeetingZoneId | null>(null);
   const [isSceneReady, setIsSceneReady] = useState(false);
   const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
   const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
@@ -57,9 +59,13 @@ export function VirtualOffice(): JSX.Element {
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const meetingController = useMeetingSessionController();
+  const isInsideMeetingRoom = activeMeetingZoneId !== null;
   const meetingRoomSection = useMemo(
-    () => createMeetingRoomSection("meeting-room"),
-    []
+    () =>
+      activeMeetingZoneId
+        ? createMeetingRoomSectionByOfficeZoneId(activeMeetingZoneId)
+        : null,
+    [activeMeetingZoneId]
   );
   const sceneBootstrap = useMemo(() => getOfficeSceneBootstrap(self), [self]);
   const entryPhase = getOfficeEntryPhase({
@@ -123,7 +129,7 @@ export function VirtualOffice(): JSX.Element {
     effectiveSelf?.memberId
   );
   const meetingJoinRequest = useMemo(() => {
-    if (!session) {
+    if (!session || !meetingRoomSection) {
       return null;
     }
 
@@ -136,7 +142,7 @@ export function VirtualOffice(): JSX.Element {
       roomName: meetingRoomSection.roomName
     };
   }, [
-    meetingRoomSection.roomName,
+    meetingRoomSection?.roomName,
     session?.member.countryCode,
     session?.member.id,
     session?.member.name
@@ -165,7 +171,7 @@ export function VirtualOffice(): JSX.Element {
     const scene = new OfficeScene({
       initialAvatar: sceneBootstrap,
       onLocalMovement: sendMove,
-      onMeetingRoomState: setIsInsideMeetingRoom,
+      onMeetingRoomState: setActiveMeetingZoneId,
       onReady: () => setIsSceneReady(true)
     });
     sceneRef.current = scene;

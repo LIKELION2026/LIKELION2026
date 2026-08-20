@@ -20,8 +20,10 @@ from translation_pipeline.rooms import (
 )
 from translation_pipeline.subtitle import validate_room_name
 
+REPO_ROOT = Path(__file__).resolve().parents[3]
 CLIENT_SECTION_FILE = (
-    Path(__file__).resolve().parents[2]
+    REPO_ROOT
+    / "apps"
     / "client"
     / "src"
     / "features"
@@ -29,6 +31,7 @@ CLIENT_SECTION_FILE = (
     / "model"
     / "meeting-room-section.ts"
 )
+SHARED_MEETING_FILE = REPO_ROOT / "packages" / "shared" / "src" / "domain" / "meeting.ts"
 
 
 def test_the_name_matches_the_client_formula():
@@ -51,9 +54,9 @@ def test_the_default_section_is_the_meeting_room():
     ("section", "expected"),
     [
         ("meeting-room", "lab-likelion-20260817-meeting-room"),
-        ("shared-collaboration-zone", "lab-likelion-20260817-shared-collab"),
-        ("korea-team-zone", "lab-likelion-20260817-korea-team"),
-        ("vietnam-team-zone", "lab-likelion-20260817-vietnam-team"),
+        ("meeting-room-1", "lab-likelion-20260817-meeting-room-1"),
+        ("meeting-room-2", "lab-likelion-20260817-meeting-room-2"),
+        ("meeting-room-3", "lab-likelion-20260817-meeting-room-3"),
     ],
 )
 def test_every_client_section_is_supported(section, expected):
@@ -74,7 +77,9 @@ def test_a_single_digit_date_is_zero_padded():
     )
 
 
-@pytest.mark.parametrize("section", ["meeting", "office", "", "MEETING-ROOM"])
+@pytest.mark.parametrize(
+    "section", ["meeting", "office", "", "MEETING-ROOM", "korea-team-zone"]
+)
 def test_an_unknown_section_is_rejected(section):
     with pytest.raises(UnknownMeetingSectionError):
         build_lab_room_name(section)
@@ -95,10 +100,10 @@ def test_today_is_used_when_no_date_is_given():
     assert build_lab_room_name().startswith(f"lab-likelion-{expected}-")
 
 
-# --- Client와 대조 ---
+# --- Shared/Client와 대조 ---
 #
-# 구역 표를 Client에서 옮겨 적었으므로 양쪽이 어긋날 수 있다. `packages/shared`에
-# 방 이름 규칙이 없어 공유할 방법이 없다. 대신 Client 파일을 읽어 대조한다.
+# 구역 표를 Shared에서 옮겨 적었으므로 양쪽이 어긋날 수 있다. 대신 Shared 파일을
+# 읽어 대조한다. Client에는 날짜 기반 roomName 조합 공식만 남아 있으므로 함께 본다.
 # 어긋나면 자막이 안 뜬 뒤에 찾는 대신 여기서 깨진다.
 
 
@@ -112,6 +117,14 @@ def read_client_source() -> str:
     return CLIENT_SECTION_FILE.read_text(encoding="utf-8")
 
 
+def read_shared_meeting_source() -> str:
+    assert SHARED_MEETING_FILE.exists(), (
+        f"Shared 회의 계약 파일을 찾을 수 없습니다: {SHARED_MEETING_FILE}. "
+        "옮겨졌다면 이 경로도 함께 고쳐야 합니다."
+    )
+    return SHARED_MEETING_FILE.read_text(encoding="utf-8")
+
+
 def test_the_team_slug_matches_the_client():
     source = read_client_source()
 
@@ -120,20 +133,22 @@ def test_the_team_slug_matches_the_client():
     assert match.group(1) == LAB_TEAM_SLUG
 
 
-def test_the_section_slugs_match_the_client():
-    source = read_client_source()
+def test_the_section_slugs_match_the_shared_contract():
+    source = read_shared_meeting_source()
 
     # MEETING_ROOM_SECTION_METADATA의 각 항목: "<구역 id>": { ..., roomSlug: "<slug>" }
     pairs = re.findall(
-        r'"([a-z-]+)":\s*\{[^}]*?roomSlug:\s*"([a-z-]+)"', source, re.DOTALL
+        r'"([a-z0-9-]+)":\s*\{[^}]*?roomSlug:\s*"([a-z0-9-]+)"',
+        source,
+        re.DOTALL,
     )
-    assert pairs, "Client에서 roomSlug 표를 찾지 못했습니다"
+    assert pairs, "Shared에서 roomSlug 표를 찾지 못했습니다"
 
     assert dict(pairs) == SECTION_SLUGS
 
 
-def test_the_default_section_matches_the_client():
-    source = read_client_source()
+def test_the_default_section_matches_the_shared_contract():
+    source = read_shared_meeting_source()
 
     match = re.search(r'DEFAULT_MEETING_ROOM_SECTION_ID\s*=\s*"([^"]+)"', source)
     assert match is not None
