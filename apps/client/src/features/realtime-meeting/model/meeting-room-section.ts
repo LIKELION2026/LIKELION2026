@@ -1,20 +1,20 @@
-export const DEFAULT_MEETING_ROOM_SECTION_ID = "meeting-room";
+import {
+  DEFAULT_MEETING_ROOM_SECTION_ID,
+  MEETING_ROOM_SECTION_IDS,
+  MEETING_ROOM_SECTION_METADATA,
+  OFFICE_MEETING_ZONE_SECTION_IDS,
+  isMeetingRoomSectionId,
+  type MeetingRoomSectionId,
+  type OfficeMeetingZoneId,
+} from "@likelion2026/shared";
 
 const LAB_MEETING_TEAM_SLUG = "likelion";
 
-export const MEETING_ROOM_SECTION_IDS = [
-  "meeting-room",
-  "shared-collaboration-zone",
-  "korea-team-zone",
-  "vietnam-team-zone"
-] as const;
-
-export type MeetingRoomSectionId = (typeof MEETING_ROOM_SECTION_IDS)[number];
-
-interface MeetingRoomSectionMetadata {
-  label: string;
-  roomSlug: string;
-}
+export {
+  DEFAULT_MEETING_ROOM_SECTION_ID,
+  MEETING_ROOM_SECTION_IDS,
+  type MeetingRoomSectionId,
+};
 
 export interface MeetingRoomSection {
   id: MeetingRoomSectionId;
@@ -22,32 +22,16 @@ export interface MeetingRoomSection {
   roomName: string;
 }
 
-const MEETING_ROOM_SECTION_METADATA: Record<
-  MeetingRoomSectionId,
-  MeetingRoomSectionMetadata
-> = {
-  "korea-team-zone": {
-    label: "Korea Team Zone",
-    roomSlug: "korea-team"
-  },
-  "meeting-room": {
-    label: "Meeting Room",
-    roomSlug: "meeting-room"
-  },
-  "shared-collaboration-zone": {
-    label: "Shared Collaboration Zone",
-    roomSlug: "shared-collab"
-  },
-  "vietnam-team-zone": {
-    label: "Vietnam Team Zone",
-    roomSlug: "vietnam-team"
-  }
-};
-
-export function resolveMeetingRoomSection(search: string): MeetingRoomSection {
+export function resolveMeetingRoomSection(
+  search: string,
+  date = new Date()
+): MeetingRoomSection {
   const query = new URLSearchParams(search);
   const sectionId = normalizeMeetingRoomSectionId(query.get("section"));
-  return createMeetingRoomSection(sectionId ?? DEFAULT_MEETING_ROOM_SECTION_ID);
+  return createMeetingRoomSection(
+    sectionId ?? DEFAULT_MEETING_ROOM_SECTION_ID,
+    date
+  );
 }
 
 export function createMeetingRoomSection(
@@ -61,6 +45,16 @@ export function createMeetingRoomSection(
     label: metadata.label,
     roomName: createLabMeetingRoomName(metadata.roomSlug, date)
   };
+}
+
+export function createMeetingRoomSectionByOfficeZoneId(
+  zoneId: OfficeMeetingZoneId,
+  date = new Date()
+): MeetingRoomSection {
+  return createMeetingRoomSection(
+    OFFICE_MEETING_ZONE_SECTION_IDS[zoneId],
+    date
+  );
 }
 
 function createLabMeetingRoomName(roomSlug: string, date: Date): string {
@@ -83,10 +77,8 @@ function normalizeMeetingRoomSectionId(
   }
 
   const normalizedValue = value.trim().toLowerCase();
-  if (
-    MEETING_ROOM_SECTION_IDS.includes(normalizedValue as MeetingRoomSectionId)
-  ) {
-    return normalizedValue as MeetingRoomSectionId;
+  if (isMeetingRoomSectionId(normalizedValue)) {
+    return normalizedValue;
   }
 
   return undefined;
