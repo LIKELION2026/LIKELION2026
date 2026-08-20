@@ -45,10 +45,16 @@ export const resources = {
         title: "함께 일할 오피스에 입장합니다",
         description: "이름, 소속 국가, 사용할 아바타를 선택하면 개인 데스크가 배정됩니다.",
         uiLanguage: {
+          description: "사용할 언어를 선택해 주세요. 오피스 입장 후에는 변경할 수 없습니다.",
+          hint: {
+            ko: "한국어로 시작하기",
+            vi: "Tiếng Việt로 시작하기"
+          },
           legend: "언어 선택 (Chọn ngôn ngữ)",
           optionAria: "{{language}}로 언어 선택"
         },
         name: {
+          guide: "원활한 해외 협업을 위해 영어 이름을 사용해 주세요.",
           label: "이름",
           placeholder: "오피스에서 사용할 이름"
         },
@@ -572,10 +578,16 @@ export const resources = {
         title: "Vào văn phòng làm việc chung",
         description: "Chọn tên, quốc gia và avatar để nhận bàn làm việc cá nhân.",
         uiLanguage: {
+          description: "Chọn ngôn ngữ để sử dụng. Bạn không thể thay đổi sau khi vào văn phòng.",
+          hint: {
+            ko: "Bắt đầu bằng tiếng Hàn",
+            vi: "Bắt đầu bằng tiếng Việt"
+          },
           legend: "Chọn ngôn ngữ (언어 선택)",
           optionAria: "Chọn {{language}} làm ngôn ngữ hiển thị"
         },
         name: {
+          guide: "Vui lòng sử dụng tên tiếng Anh để cộng tác quốc tế thuận tiện hơn.",
           label: "Tên",
           placeholder: "Tên dùng trong văn phòng"
         },

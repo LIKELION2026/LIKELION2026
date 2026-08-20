@@ -2,7 +2,6 @@ import { type AttendanceStatus, type MemberStatus } from "@likelion2026/shared";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useUiLocale } from "../../../shared/i18n";
 import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/office-store";
 import { AvatarFace } from "./AvatarFace";
 
@@ -39,7 +38,6 @@ export function OfficeHud({
   selfStatus
 }: OfficeHudProps): React.JSX.Element {
   const { t } = useTranslation();
-  const { locale, options: uiLocaleOptions, setLocale } = useUiLocale();
   const [isStatusPickerOpen, setIsStatusPickerOpen] = useState(false);
   const currentStatus = selfStatus ?? "available";
 
@@ -107,21 +105,6 @@ export function OfficeHud({
             </div>
           ) : null}
         </div>
-        <label className="hud-locale-control" htmlFor="office-ui-locale">
-          <span>{t("officeHud.settings.uiLanguage")}</span>
-          <select
-            className="hud-locale-select"
-            id="office-ui-locale"
-            onChange={(event) => setLocale(event.target.value as typeof locale)}
-            value={locale}
-          >
-            {uiLocaleOptions.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
         <div className="hud-nav">
           <button className="office-secondary-button" onClick={onOpenPeople} type="button">
             {t("officeHud.navigation.people")}
