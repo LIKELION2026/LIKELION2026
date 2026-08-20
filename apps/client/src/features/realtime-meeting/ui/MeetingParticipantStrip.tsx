@@ -1,30 +1,53 @@
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 import { useTranslation } from "react-i18next";
 
 import type {
   LiveKitMeetingParticipant,
   LiveKitMeetingSessionStatus
 } from "../model/use-livekit-meeting-session";
+import {
+  getMeetingParticipantGridColumnCount,
+  type MeetingParticipantPreviewLayout
+} from "../model/meeting-participant-layout";
 import { selectMeetingParticipantPreviews } from "../model/meeting-performance";
 import { MeetingParticipantVideoTile } from "./MeetingParticipantVideoTile";
 
 interface MeetingParticipantStripProps {
+  layout: MeetingParticipantPreviewLayout;
   participants: LiveKitMeetingParticipant[];
   sessionStatus: LiveKitMeetingSessionStatus;
 }
 
 export function MeetingParticipantStrip({
+  layout,
   participants,
   sessionStatus
 }: MeetingParticipantStripProps): JSX.Element {
   const { t } = useTranslation();
   const previewParticipants = selectMeetingParticipantPreviews(participants);
   const hiddenParticipantCount = participants.length - previewParticipants.length;
+  const participantCountClassName = `count-${Math.min(
+    Math.max(previewParticipants.length, 1),
+    6
+  )}`;
+  const layoutStyle =
+    layout === "grid"
+      ? ({
+          "--meeting-strip-grid-columns": String(
+            getMeetingParticipantGridColumnCount(previewParticipants.length)
+          )
+        } as CSSProperties)
+      : undefined;
 
   return (
     <section
       aria-label={t("meetingParticipants.strip.ariaLabel")}
-      className="meeting-participant-strip"
+      className={[
+        "meeting-participant-strip",
+        `layout-${layout}`,
+        participantCountClassName
+      ].join(" ")}
+      style={layoutStyle}
     >
       <span className="sr-only" aria-live="polite">
         {getParticipantStripMessage(participants.length, sessionStatus, t)}

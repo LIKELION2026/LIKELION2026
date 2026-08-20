@@ -8,6 +8,7 @@ import {
   type MeetingTranslationAvailability
 } from "../model/meeting-translation-availability";
 import { useMeetingChat } from "../model/use-meeting-chat";
+import { getMeetingParticipantPreviewLayout } from "../model/meeting-participant-layout";
 import { useMeetingSubtitles } from "../model/use-meeting-subtitles";
 import type { MeetingSessionController } from "../model/use-meeting-session-controller";
 import { useMeetingTranslationPreference } from "../model/use-meeting-translation-preference";
@@ -81,6 +82,9 @@ export function MeetingRoomOverlay({
       ),
     [session.mediaTracks]
   );
+  const participantPreviewLayout = getMeetingParticipantPreviewLayout(
+    session.participants.length
+  );
 
   return (
     <div
@@ -95,6 +99,7 @@ export function MeetingRoomOverlay({
     >
       {isExpandedView ? null : (
         <MeetingParticipantStrip
+          layout={participantPreviewLayout}
           participants={session.participants}
           sessionStatus={session.status}
         />

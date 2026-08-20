@@ -5,6 +5,7 @@ import type {
   LiveKitMeetingParticipant,
   LiveKitMeetingSessionStatus
 } from "../model/use-livekit-meeting-session";
+import { getMeetingParticipantGridColumnCount } from "../model/meeting-participant-layout";
 import { MeetingParticipantVideoTile } from "./MeetingParticipantVideoTile";
 
 interface MeetingParticipantGridProps {
@@ -29,8 +30,8 @@ export function MeetingParticipantGrid({
       className={["meeting-expanded-grid", participantCountClassName].join(" ")}
       style={
         {
-          "--meeting-expanded-columns": getExpandedGridColumnCount(
-            participantCount
+          "--meeting-expanded-columns": String(
+            getMeetingParticipantGridColumnCount(participantCount)
           )
         } as CSSProperties
       }
@@ -57,18 +58,6 @@ export function MeetingParticipantGrid({
       </div>
     </section>
   );
-}
-
-function getExpandedGridColumnCount(participantCount: number): string {
-  if (participantCount <= 1) {
-    return "1";
-  }
-
-  if (participantCount === 2 || participantCount === 4) {
-    return "2";
-  }
-
-  return "3";
 }
 
 function getParticipantGridMessage(
