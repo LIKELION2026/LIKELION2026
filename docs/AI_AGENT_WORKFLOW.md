@@ -873,3 +873,14 @@
 - 팀원 검토·수정 내용: 사용자가 “나머지 작업 전부” 진행을 요청해, 코드와 문서로 처리 가능한 잔여 범위를 모두 진행했다. PR 본문 작성, PR 화면 캡처 첨부, 베트남어 원어민 문구 검토는 PR/사람 검토 단계가 필요하므로 이슈에 후속 확인 항목으로 남긴다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `node --test --experimental-strip-types apps/client/test/ui-hardcoded-korean.test.ts` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 87건 통과, `git diff --check` 통과. 브라우저에서 시작 화면 1280x720/1920x1080 한국어·베트남어 캡처를 만들고 상단 잘림 보정 후 다시 확인했다. 로컬 Server는 기동됐지만 `/office/avatars` 응답이 지연되어 실제 오피스 내부 패널 캡처는 PR 단계에서 API 환경을 갖춰 추가 확인해야 한다. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 베트남어 번역은 AI 초안이므로 실제 사용자 문구 검수는 별도 필요하다.
 - 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 화상회의 채팅 마지막 입력 누락 수정
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 화상회의 채팅에서 입력 직후 전송할 때 마지막 말이 누락되거나 사라지는 버그를 수정한다.
+- 입력 맥락: 사용자 요청, Issue #175, `MeetingChatPanel`, `meeting-chat-message`
+- AI 제안 또는 산출물: 채팅 textarea의 실제 DOM 값을 제출 시 우선 사용하도록 바꾸고, IME 조합 중 Enter 키다운은 전송으로 처리하지 않는 `shouldSubmitMeetingChatDraftKey` 모델 함수를 추가했다. 한글·베트남어 입력기 조합 완료 전 `requestSubmit()`이 실행되어 최신 조합 문자가 빠지는 흐름을 막기 위한 회귀 테스트도 추가했다.
+- 팀원 검토·수정 내용: 사용자가 버그 증상과 작업 시작 방식(이슈 생성, 브랜치 생성)을 요청했다. 실제 브라우저 IME 수동 재현 확인은 아직 사람이 추가 확인해야 한다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-chat-input.test.ts apps/client/test/meeting-chat-message.test.ts` 10건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 91건 통과, `git diff --check` 통과.
+- 관련 Issue / PR / Discussion: Issue #175

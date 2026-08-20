@@ -13,6 +13,7 @@ import {
   MEETING_CHAT_MAX_TEXT_LENGTH,
   type MeetingChatMessage
 } from "../model/meeting-chat-message";
+import { shouldSubmitMeetingChatDraftKey } from "../model/meeting-chat-input";
 import type {
   MeetingChatSendResult,
   MeetingChatStatus
@@ -41,6 +42,8 @@ export function MeetingChatPanel({
   const [draftError, setDraftError] = useState<string | undefined>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const draftInputRef = useRef<HTMLTextAreaElement>(null);
+  const isDraftComposingRef = useRef(false);
   const isAtBottomRef = useRef(true);
   const listRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(messages.length);
@@ -75,7 +78,7 @@ export function MeetingChatPanel({
 
     setIsSubmitting(true);
     setDraftError(undefined);
-    const result = await onSendMessage(draft);
+    const result = await onSendMessage(draftInputRef.current?.value ?? draft);
     setIsSubmitting(false);
 
     if (!result.ok) {
@@ -144,8 +147,16 @@ export function MeetingChatPanel({
             setDraft(event.target.value);
             setDraftError(undefined);
           }}
+          onCompositionEnd={(event) => {
+            isDraftComposingRef.current = false;
+            setDraft(event.currentTarget.value);
+          }}
+          onCompositionStart={() => {
+            isDraftComposingRef.current = true;
+          }}
           onKeyDown={handleDraftKeyDown}
           placeholder={t("meetingChat.inputPlaceholder")}
+          ref={draftInputRef}
           rows={2}
           value={draft}
         />
@@ -197,7 +208,15 @@ export function MeetingChatPanel({
   function handleDraftKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     event.stopPropagation();
 
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (
+      shouldSubmitMeetingChatDraftKey({
+        isComposing:
+          isDraftComposingRef.current || event.nativeEvent.isComposing,
+        key: event.key,
+        keyCode: event.keyCode,
+        shiftKey: event.shiftKey
+      })
+    ) {
       event.preventDefault();
       event.currentTarget.form?.requestSubmit();
     }
