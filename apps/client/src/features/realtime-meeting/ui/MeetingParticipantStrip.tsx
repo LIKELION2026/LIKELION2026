@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 import type {
   LiveKitMeetingParticipant,
@@ -16,16 +17,17 @@ export function MeetingParticipantStrip({
   participants,
   sessionStatus
 }: MeetingParticipantStripProps): JSX.Element {
+  const { t } = useTranslation();
   const previewParticipants = selectMeetingParticipantPreviews(participants);
   const hiddenParticipantCount = participants.length - previewParticipants.length;
 
   return (
     <section
-      aria-label="회의 참가자 영상"
+      aria-label={t("meetingParticipants.strip.ariaLabel")}
       className="meeting-participant-strip"
     >
       <span className="sr-only" aria-live="polite">
-        {getParticipantStripMessage(participants.length, sessionStatus)}
+        {getParticipantStripMessage(participants.length, sessionStatus, t)}
       </span>
       <div className="meeting-participant-scroll" role="list">
         {previewParticipants.length > 0 ? (
@@ -37,7 +39,7 @@ export function MeetingParticipantStrip({
           ))
         ) : (
           <div
-            aria-label="회의 참가자 정보를 준비하고 있습니다."
+            aria-label={t("meetingParticipants.emptyAriaLabel")}
             className="meeting-participant-empty"
             role="status"
           />
@@ -54,19 +56,20 @@ export function MeetingParticipantStrip({
 
 function getParticipantStripMessage(
   participantCount: number,
-  status: LiveKitMeetingSessionStatus
+  status: LiveKitMeetingSessionStatus,
+  t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (status === "connecting" || status === "publishing") {
-    return "연결 중";
+    return t("meetingParticipants.strip.connecting");
   }
 
   if (status === "reconnecting") {
-    return "재연결 중";
+    return t("meetingParticipants.strip.reconnecting");
   }
 
   if (participantCount === 0) {
-    return "참가자 없음";
+    return t("meetingParticipants.strip.empty");
   }
 
-  return `${participantCount}명 참가 중`;
+  return t("meetingParticipants.strip.ready", { count: participantCount });
 }

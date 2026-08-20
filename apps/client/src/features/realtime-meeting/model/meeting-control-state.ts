@@ -7,9 +7,9 @@ export interface MeetingControlStateInput {
 
 export interface MeetingControlButtonState {
   disabled: boolean;
-  label: string;
+  labelKey: string;
   pressed: boolean;
-  statusText: string;
+  statusKey: string;
 }
 
 export function createMicrophoneControlState({
@@ -20,9 +20,15 @@ export function createMicrophoneControlState({
 }: MeetingControlStateInput): MeetingControlButtonState {
   return {
     disabled: !canControlMedia || isLeaving || isUpdating,
-    label: isUpdating ? "소리 변경 중" : isEnabled ? "소리 끄기" : "소리 켜기",
+    labelKey: isUpdating
+      ? "meetingControls.microphone.updating"
+      : isEnabled
+        ? "meetingControls.microphone.disable"
+        : "meetingControls.microphone.enable",
     pressed: isEnabled,
-    statusText: isEnabled ? "마이크 켜짐" : "마이크 꺼짐"
+    statusKey: isEnabled
+      ? "meetingControls.microphone.enabled"
+      : "meetingControls.microphone.disabled"
   };
 }
 
@@ -34,9 +40,15 @@ export function createCameraControlState({
 }: MeetingControlStateInput): MeetingControlButtonState {
   return {
     disabled: !canControlMedia || isLeaving || isUpdating,
-    label: isUpdating ? "영상 변경 중" : isEnabled ? "영상 끄기" : "영상 켜기",
+    labelKey: isUpdating
+      ? "meetingControls.camera.updating"
+      : isEnabled
+        ? "meetingControls.camera.disable"
+        : "meetingControls.camera.enable",
     pressed: isEnabled,
-    statusText: isEnabled ? "카메라 켜짐" : "카메라 꺼짐"
+    statusKey: isEnabled
+      ? "meetingControls.camera.enabled"
+      : "meetingControls.camera.disabled"
   };
 }
 
@@ -45,9 +57,13 @@ export function createExpandViewControlState(
 ): MeetingControlButtonState {
   return {
     disabled: false,
-    label: isExpanded ? "화면 줄이기" : "화면 키우기",
+    labelKey: isExpanded
+      ? "meetingControls.expandedView.collapse"
+      : "meetingControls.expandedView.expand",
     pressed: isExpanded,
-    statusText: isExpanded ? "확대 화면 켜짐" : "일반 화면"
+    statusKey: isExpanded
+      ? "meetingControls.expandedView.expanded"
+      : "meetingControls.expandedView.normal"
   };
 }
 
@@ -58,16 +74,16 @@ export function createTranslationControlState(
 ): MeetingControlButtonState {
   return {
     disabled: isPending || isUnavailable,
-    label: isPending
-      ? "AI 번역 변경 중"
+    labelKey: isPending
+      ? "meetingControls.translation.updating"
       : isEnabled
-        ? "AI 번역 OFF"
-        : "AI 번역 ON",
+        ? "meetingControls.translation.disable"
+        : "meetingControls.translation.enable",
     pressed: isEnabled,
-    statusText: isUnavailable
-      ? "회의 연결 후 AI 번역 설정 가능"
+    statusKey: isUnavailable
+      ? "meetingControls.translation.unavailable"
       : isEnabled
-        ? "번역 켜짐"
-        : "번역 꺼짐"
+        ? "meetingControls.translation.enabled"
+        : "meetingControls.translation.disabled"
   };
 }

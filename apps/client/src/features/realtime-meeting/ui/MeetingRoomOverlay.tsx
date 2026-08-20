@@ -1,6 +1,7 @@
 import { useMemo, useState, type JSX } from "react";
 import { Track } from "livekit-client";
 import type { LanguageCode, SubtitleCreatedPayload } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
 import {
   createMeetingTranslationAvailability,
@@ -26,6 +27,7 @@ export function MeetingRoomOverlay({
   controller,
   defaultSourceLanguage
 }: MeetingRoomOverlayProps): JSX.Element {
+  const { t } = useTranslation();
   const { session } = controller;
   const [isExpandedView, setIsExpandedView] = useState(false);
   const canControlMedia =
@@ -82,7 +84,7 @@ export function MeetingRoomOverlay({
 
   return (
     <div
-      aria-label="인게임 회의 오버레이"
+      aria-label={t("meetingRoomOverlay.ariaLabel")}
       className={[
         "meeting-room-overlay",
         isExpandedView ? "expanded" : ""
@@ -104,7 +106,7 @@ export function MeetingRoomOverlay({
         />
       ) : null}
       <aside
-        aria-label="회의 채팅 패널"
+        aria-label={t("meetingRoomOverlay.chatPanelAriaLabel")}
         className="meeting-room-side-panel"
       >
         <MeetingChatPanel
@@ -175,14 +177,16 @@ function MeetingTranslationAvailabilityCaption({
 }: {
   availability: MeetingTranslationAvailability;
 }): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <section
-      aria-label="AI 번역 상태"
+      aria-label={t("meetingRoomOverlay.translationStatusAriaLabel")}
       aria-live="polite"
       className={`meeting-live-translation-caption status ${availability.status}`}
     >
-      <span>{availability.title}</span>
-      <p>{availability.description}</p>
+      <span>{t(availability.titleKey)}</span>
+      <p>{availability.errorMessage ?? t(availability.descriptionKey)}</p>
     </section>
   );
 }
@@ -192,9 +196,11 @@ function MeetingLiveTranslationCaption({
 }: {
   subtitle: SubtitleCreatedPayload;
 }): JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <section
-      aria-label="실시간 AI 번역"
+      aria-label={t("meetingRoomOverlay.liveTranslationAriaLabel")}
       aria-live="polite"
       className={`meeting-live-translation-caption ${
         subtitle.isFinal ? "final" : "partial"

@@ -1,4 +1,5 @@
 import type { CSSProperties, JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 import type {
   LiveKitMeetingParticipant,
@@ -15,6 +16,7 @@ export function MeetingParticipantGrid({
   participants,
   sessionStatus
 }: MeetingParticipantGridProps): JSX.Element {
+  const { t } = useTranslation();
   const participantCount = participants.length;
   const participantCountClassName = `count-${Math.min(
     Math.max(participantCount, 1),
@@ -23,7 +25,7 @@ export function MeetingParticipantGrid({
 
   return (
     <section
-      aria-label="확대된 회의 참가자 영상"
+      aria-label={t("meetingParticipants.expandedAriaLabel")}
       className={["meeting-expanded-grid", participantCountClassName].join(" ")}
       style={
         {
@@ -34,7 +36,7 @@ export function MeetingParticipantGrid({
       }
     >
       <span className="sr-only" aria-live="polite">
-        {getParticipantGridMessage(participants.length, sessionStatus)}
+        {getParticipantGridMessage(participants.length, sessionStatus, t)}
       </span>
       <div className="meeting-expanded-grid-content" role="list">
         {participants.length > 0 ? (
@@ -47,7 +49,7 @@ export function MeetingParticipantGrid({
           ))
         ) : (
           <div
-            aria-label="회의 참가자 정보를 준비하고 있습니다."
+            aria-label={t("meetingParticipants.emptyAriaLabel")}
             className="meeting-participant-empty expanded"
             role="status"
           />
@@ -71,19 +73,20 @@ function getExpandedGridColumnCount(participantCount: number): string {
 
 function getParticipantGridMessage(
   participantCount: number,
-  status: LiveKitMeetingSessionStatus
+  status: LiveKitMeetingSessionStatus,
+  t: (key: string, options?: Record<string, unknown>) => string
 ): string {
   if (status === "connecting" || status === "publishing") {
-    return "확대 화면 연결 중";
+    return t("meetingParticipants.grid.connecting");
   }
 
   if (status === "reconnecting") {
-    return "확대 화면 재연결 중";
+    return t("meetingParticipants.grid.reconnecting");
   }
 
   if (participantCount === 0) {
-    return "확대 화면 참가자 없음";
+    return t("meetingParticipants.grid.empty");
   }
 
-  return `확대 화면에서 ${participantCount}명 참가 중`;
+  return t("meetingParticipants.grid.ready", { count: participantCount });
 }

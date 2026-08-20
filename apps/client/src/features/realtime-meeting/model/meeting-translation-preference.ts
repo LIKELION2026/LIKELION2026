@@ -55,7 +55,7 @@ export function validateMeetingTranslationPreferenceDraft(
     !isMeetingTranslationLanguageCode(draft.targetLanguage)
   ) {
     return {
-      message: "지원하는 번역 언어는 한국어와 베트남어입니다.",
+      message: "meetingTranslation.validation.unsupportedLanguage",
       ok: false,
       reason: "unsupported-language"
     };
@@ -63,7 +63,7 @@ export function validateMeetingTranslationPreferenceDraft(
 
   if (draft.sourceLanguage === draft.targetLanguage) {
     return {
-      message: "나의 언어와 상대방에게 보여줄 언어는 서로 달라야 합니다.",
+      message: "meetingTranslation.validation.sameLanguage",
       ok: false,
       reason: "same-language"
     };

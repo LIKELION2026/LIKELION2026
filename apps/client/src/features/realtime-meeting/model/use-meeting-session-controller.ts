@@ -46,7 +46,7 @@ export interface MeetingSessionController {
 
 const CHECKING_DEVICE_PREFLIGHT_STATE: MeetingDevicePreflightState = {
   ...INITIAL_MEETING_DEVICE_PREFLIGHT_STATE,
-  message: "카메라와 마이크 권한을 확인하고 있습니다.",
+  messageKey: "meetingDevicePreflight.message.checking",
   status: "checking"
 };
 
@@ -164,7 +164,7 @@ export function useMeetingSessionController(): MeetingSessionController {
 
         setDevicePreflight(preflightResult);
         if (preflightResult.status !== "ready") {
-          setErrorMessage(preflightResult.message);
+          setErrorMessage(preflightResult.messageKey);
           dispatchStatus("fail");
           return null;
         }
@@ -263,5 +263,5 @@ function isAbortError(error: unknown): boolean {
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "회의 연결을 준비하지 못했습니다.";
+    : "meetingErrors.connectionPrepareFailed";
 }

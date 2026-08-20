@@ -1,5 +1,6 @@
 import type { JSX } from "react";
 import { Track } from "livekit-client";
+import { useTranslation } from "react-i18next";
 
 import type {
   LiveKitMeetingMediaTrack,
@@ -25,6 +26,8 @@ export function MeetingMediaStage({
   session,
   videoTracks
 }: MeetingMediaStageProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   if (session.status === "idle" || session.status === "failed") {
     return null;
   }
@@ -39,10 +42,10 @@ export function MeetingMediaStage({
               <div className="meeting-media-overlay">
                 <strong>
                   {mediaTrack.participantName}
-                  {mediaTrack.isLocal ? " (나)" : ""}
+                  {mediaTrack.isLocal ? t("meetingMedia.localSuffix") : ""}
                 </strong>
                 <span>
-                  {mediaTrack.isMuted ? "카메라 꺼짐" : mediaTrack.source}
+                  {mediaTrack.isMuted ? t("meetingMedia.cameraDisabled") : mediaTrack.source}
                 </span>
               </div>
             </article>
@@ -50,7 +53,7 @@ export function MeetingMediaStage({
         </div>
       ) : (
         <div className="meeting-media-empty">
-          아직 표시할 카메라 영상이 없습니다.
+          {t("meetingMedia.empty")}
         </div>
       )}
       <MeetingAudioSinks remoteAudioTracks={remoteAudioTracks} />
@@ -61,7 +64,9 @@ export function MeetingMediaStage({
           onClick={onMicrophoneToggle}
           type="button"
         >
-          {session.isMicrophoneEnabled ? "마이크 끄기" : "마이크 켜기"}
+          {session.isMicrophoneEnabled
+            ? t("meetingMedia.microphoneDisable")
+            : t("meetingMedia.microphoneEnable")}
         </button>
         <button
           className="secondary-button"
@@ -69,7 +74,9 @@ export function MeetingMediaStage({
           onClick={onCameraToggle}
           type="button"
         >
-          {session.isCameraEnabled ? "카메라 끄기" : "카메라 켜기"}
+          {session.isCameraEnabled
+            ? t("meetingMedia.cameraDisable")
+            : t("meetingMedia.cameraEnable")}
         </button>
       </div>
     </div>

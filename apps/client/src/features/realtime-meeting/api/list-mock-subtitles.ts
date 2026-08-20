@@ -17,7 +17,7 @@ export async function listMockSubtitles(
       ? body.message.join(", ")
       : body?.message;
 
-    throw new Error(message ?? "자막 목록을 불러오지 못했습니다.");
+    throw new Error(message ?? "meetingErrors.subtitlesLoadFailed");
   }
 
   return (await response.json()) as ListMockSubtitlesResponse;

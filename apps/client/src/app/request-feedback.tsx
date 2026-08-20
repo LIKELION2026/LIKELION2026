@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { JSX, ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 type FeedbackTone = "error" | "success";
 
@@ -17,6 +18,7 @@ interface RequestFeedbackContextValue {
 const RequestFeedbackContext = createContext<RequestFeedbackContextValue | null>(null);
 
 export function RequestFeedbackProvider({ children }: { children: ReactNode }): JSX.Element {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<FeedbackMessage[]>([]);
   const showMessage = useCallback((text: string, tone: FeedbackTone) => {
     const id = Date.now() + Math.random();
@@ -27,10 +29,16 @@ export function RequestFeedbackProvider({ children }: { children: ReactNode }): 
   }, []);
   const value = useMemo<RequestFeedbackContextValue>(
     () => ({
-      showError: (error, fallback) => showMessage(getRequestErrorMessage(error, fallback), "error"),
+      showError: (error, fallback) =>
+        showMessage(
+          getRequestErrorMessage(error, fallback, {
+            network: t("common.errors.network")
+          }),
+          "error"
+        ),
       showSuccess: (message) => showMessage(message, "success")
     }),
-    [showMessage]
+    [showMessage, t]
   );
 
   return (
@@ -56,15 +64,31 @@ export function useRequestFeedback(): RequestFeedbackContextValue {
 }
 
 export function RequestSpinner(): JSX.Element {
-  return <span aria-label="요청 처리 중" className="request-spinner" role="status" />;
+  const { t } = useTranslation();
+  return (
+    <span
+      aria-label={t("common.requestProcessing")}
+      className="request-spinner"
+      role="status"
+    />
+  );
 }
 
-export function getRequestErrorMessage(error: unknown, fallback: string): string {
+export function getRequestErrorMessage(
+  error: unknown,
+  fallback: string,
+  messages: { network: string } = {
+    network: "common.errors.network"
+  }
+): string {
   if (!(error instanceof Error) || !error.message.trim()) {
     return fallback;
   }
   if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-    return "네트워크 연결을 확인한 뒤 다시 시도해 주세요.";
+    return messages.network;
+  }
+  if (/^[a-z][\w-]*(?:\.[\w-]+)+$/.test(error.message)) {
+    return fallback;
   }
   return error.message;
 }

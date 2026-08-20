@@ -1,17 +1,35 @@
 import {
-  MEMBER_STATUS_LABELS,
   type CalendarMemberStatus,
   type MemberStatus,
   type OfficeMemberPresence
 } from "@likelion2026/shared";
 
-const CALENDAR_STATUS_LABELS: Record<CalendarMemberStatus["availabilityStatus"], string> = {
-  absent: "부재",
-  available: "협업 가능",
-  focus: "집중 작업",
-  meeting: "회의 중",
-  remote_work: "재택",
-  vacation: "휴가"
+export type CalendarPresenceTranslationKey =
+  | `calendarPresence.${CalendarMemberStatus["availabilityStatus"]}`
+  | "calendarPresence.ghost"
+  | "calendarPresence.sleeping"
+  | `memberStatus.${MemberStatus}`;
+
+const CALENDAR_STATUS_TRANSLATION_KEYS: Record<
+  CalendarMemberStatus["availabilityStatus"],
+  `calendarPresence.${CalendarMemberStatus["availabilityStatus"]}`
+> = {
+  absent: "calendarPresence.absent",
+  available: "calendarPresence.available",
+  focus: "calendarPresence.focus",
+  meeting: "calendarPresence.meeting",
+  remote_work: "calendarPresence.remote_work",
+  vacation: "calendarPresence.vacation"
+};
+
+const MEMBER_STATUS_TRANSLATION_KEYS: Record<
+  MemberStatus,
+  `memberStatus.${MemberStatus}`
+> = {
+  available: "memberStatus.available",
+  away: "memberStatus.away",
+  focused: "memberStatus.focused",
+  in_meeting: "memberStatus.in_meeting"
 };
 
 export function applyCalendarPresence(
@@ -26,30 +44,33 @@ export function applyCalendarPresence(
     return member;
   }
 
+  const { statusMessage: _statusMessage, ...officePresence } = member.officePresence;
+
   return {
     ...member,
     officePresence: {
-      ...member.officePresence,
+      ...officePresence,
       availabilityStatus: calendarStatus.availabilityStatus,
-      displayMode: calendarStatus.displayMode,
-      statusMessage: CALENDAR_STATUS_LABELS[calendarStatus.availabilityStatus]
+      displayMode: calendarStatus.displayMode
     },
     status: toMemberStatus(calendarStatus.availabilityStatus)
   };
 }
 
-export function getCalendarPresenceLabel(member: OfficeMemberPresence): string {
+export function getCalendarPresenceTranslationKey(
+  member: OfficeMemberPresence
+): CalendarPresenceTranslationKey {
   const presence = member.officePresence;
   if (!presence) {
-    return MEMBER_STATUS_LABELS[member.status];
+    return MEMBER_STATUS_TRANSLATION_KEYS[member.status];
   }
   if (presence.displayMode === "sleeping") {
-    return "퇴근";
+    return "calendarPresence.sleeping";
   }
   if (presence.connectionStatus === "disconnected" && presence.displayMode === "ghost") {
-    return "연결 해제";
+    return "calendarPresence.ghost";
   }
-  return CALENDAR_STATUS_LABELS[presence.availabilityStatus] ?? MEMBER_STATUS_LABELS[member.status];
+  return CALENDAR_STATUS_TRANSLATION_KEYS[presence.availabilityStatus] ?? MEMBER_STATUS_TRANSLATION_KEYS[member.status];
 }
 
 export function getCalendarPresenceTone(member: OfficeMemberPresence): string {

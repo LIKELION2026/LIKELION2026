@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 import Phaser from "phaser";
+import { useTranslation } from "react-i18next";
 import type {
   MeetingParticipantCountry,
   OfficeMeetingZoneId,
@@ -31,6 +32,7 @@ import { OfficeSummonModal } from "./OfficeSummonModal";
 import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
 
 export function VirtualOffice(): JSX.Element {
+  const { i18n, t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
@@ -214,7 +216,7 @@ export function VirtualOffice(): JSX.Element {
     }
 
     scene.syncRemoteMembers(effectiveMembers, self?.memberId);
-  }, [effectiveMembers, isSceneReady, self?.memberId]);
+  }, [effectiveMembers, i18n.resolvedLanguage, isSceneReady, self?.memberId]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -242,7 +244,7 @@ export function VirtualOffice(): JSX.Element {
       ]
         .filter(Boolean)
         .join(" ")}
-      aria-label="가상 오피스"
+      aria-label={t("office.ariaLabel")}
     >
       <div className="office-canvas" ref={containerRef} />
       <OfficeHud

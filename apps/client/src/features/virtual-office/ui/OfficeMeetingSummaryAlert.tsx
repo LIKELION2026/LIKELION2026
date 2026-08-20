@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 const AUTO_DISMISS_MS = 6_000;
 
@@ -14,6 +15,8 @@ export function OfficeMeetingSummaryAlert({
   onClose,
   onOpenCalendar
 }: OfficeMeetingSummaryAlertProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   useEffect(() => {
     if (!isVisible) {
       return;
@@ -30,19 +33,19 @@ export function OfficeMeetingSummaryAlert({
   return (
     <div aria-live="polite" className="office-meeting-summary-alert" role="status">
       <button
-        aria-label="회의 요약 보러 가기"
+        aria-label={t("officeMeetingSummaryAlert.open")}
         className="office-meeting-summary-alert-body"
         onClick={onOpenCalendar}
         type="button"
       >
         <span aria-hidden="true" className="office-meeting-summary-alert-icon">📅</span>
         <span className="office-meeting-summary-alert-text">
-          <strong>회의 요약 도착!</strong>
-          <small>공유 캘린더에서 확인해 보세요</small>
+          <strong>{t("officeMeetingSummaryAlert.title")}</strong>
+          <small>{t("officeMeetingSummaryAlert.description")}</small>
         </span>
       </button>
       <button
-        aria-label="알림 닫기"
+        aria-label={t("officeMeetingSummaryAlert.close")}
         className="office-meeting-summary-alert-close"
         onClick={onClose}
         type="button"

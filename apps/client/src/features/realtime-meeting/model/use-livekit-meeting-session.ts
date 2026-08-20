@@ -224,7 +224,7 @@ export function useLiveKitMeetingSession(): {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : "LiveKit 회의방 연결에 실패했습니다.";
+            : "meetingErrors.liveKitConnectionFailed";
         setSession({
           ...INITIAL_SESSION_STATE,
           errorMessage,
@@ -262,7 +262,7 @@ export function useLiveKitMeetingSession(): {
         syncSessionFromRoom(
           room,
           "connected",
-          error instanceof Error ? error.message : "카메라 상태를 바꾸지 못했습니다."
+          error instanceof Error ? error.message : "meetingErrors.cameraToggleFailed"
         );
       }
     },
@@ -291,7 +291,7 @@ export function useLiveKitMeetingSession(): {
           "connected",
           error instanceof Error
             ? error.message
-            : "마이크 상태를 바꾸지 못했습니다."
+            : "meetingErrors.microphoneToggleFailed"
         );
       }
     },
@@ -448,7 +448,7 @@ function createMediaTrackFromPublication(
 }
 
 function getParticipantName(participant: Participant, isLocal: boolean): string {
-  return participant.name ?? participant.identity ?? (isLocal ? "나" : "참가자");
+  return participant.name ?? participant.identity ?? (isLocal ? "local" : "participant");
 }
 
 function isRenderableTrackKind(

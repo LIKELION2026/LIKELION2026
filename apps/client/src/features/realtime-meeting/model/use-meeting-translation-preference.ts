@@ -68,7 +68,7 @@ export function useMeetingTranslationPreference({
       }
 
       if (!canUpdateLiveKitAttributes || !room) {
-        setErrorMessage("회의 연결이 완료된 뒤 AI 번역을 켤 수 있습니다.");
+        setErrorMessage("meetingTranslation.errors.unavailableUntilConnected");
         return false;
       }
 
@@ -88,7 +88,7 @@ export function useMeetingTranslationPreference({
         setErrorMessage(
           error instanceof Error
             ? error.message
-            : "AI 번역 설정을 저장하지 못했습니다."
+            : "meetingTranslation.errors.saveFailed"
         );
         return false;
       } finally {
@@ -117,7 +117,7 @@ export function useMeetingTranslationPreference({
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "AI 번역을 끄지 못했습니다."
+          : "meetingTranslation.errors.turnOffFailed"
       );
       return false;
     } finally {
