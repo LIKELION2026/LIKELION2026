@@ -56,15 +56,15 @@ test("serializes collision, meeting, and desk settings into their source constan
     areas: [{ height: 80, id: "sample", width: 120, x: 40, y: 60 }],
     desks: [{ label: "Korea desk 1", positionX: 80, positionY: 100, zone: "korea-zone" }],
     meetingZones: [
-      { height: 240, id: "meeting-zone-1", label: "회의실 1", width: 360, x: 1000, y: 1600 },
-      { height: 220, id: "meeting-zone-2", label: "회의실 2", width: 320, x: 1800, y: 1800 },
+      { height: 240, id: "meeting-zone-1", labelKey: "officeMap.meetingZones.meetingRoom1", width: 360, x: 1000, y: 1600 },
+      { height: 220, id: "meeting-zone-2", labelKey: "officeMap.meetingZones.meetingRoom2", width: 320, x: 1800, y: 1800 },
     ],
   });
 
   assert.match(result, /OFFICE_COLLISION_AREAS/);
   assert.match(result, /OFFICE_DEFAULT_DESKS/);
   assert.match(result, /OFFICE_MEETING_ZONES/);
-  assert.match(result, /회의실 2/);
+  assert.match(result, /officeMap\.meetingZones\.meetingRoom2/);
   assert.match(result, /id: "sample"/);
   assert.match(result, /width: 120/);
 });
@@ -73,7 +73,7 @@ test("constrains meeting zones and initial desks to the office world", () => {
   const meetingZone = constrainMeetingZone({
     height: 400,
     id: "meeting-zone-1",
-    label: "회의실 1",
+    labelKey: "officeMap.meetingZones.meetingRoom1",
     width: 600,
     x: 3800,
     y: 2700,

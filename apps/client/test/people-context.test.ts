@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { OfficeMemberPresence, PublicOfficeTodo } from "@likelion2026/shared";
 
-import { createPeopleContext } from "../src/features/virtual-office/model/people-context";
+import { createPeopleContext } from "../src/features/virtual-office/model/people-context.ts";
 
 const minji: OfficeMemberPresence = {
   avatar: { animation: "idle", direction: "down", x: 192, y: 264 },

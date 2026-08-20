@@ -9,6 +9,11 @@ import {
   type TrackPublication
 } from "livekit-client";
 
+import {
+  MEETING_CAMERA_CAPTURE_OPTIONS,
+  MEETING_CAMERA_PUBLISH_OPTIONS
+} from "./meeting-performance";
+
 export type LiveKitMeetingSessionStatus =
   | "idle"
   | "connecting"
@@ -136,8 +141,10 @@ export function useLiveKitMeetingSession(): {
       await disconnect();
 
       const room = new Room({
-        adaptiveStream: false,
-        dynacast: true
+        adaptiveStream: true,
+        dynacast: true,
+        publishDefaults: MEETING_CAMERA_PUBLISH_OPTIONS,
+        videoCaptureDefaults: MEETING_CAMERA_CAPTURE_OPTIONS
       });
       roomRef.current = room;
       sessionMetaRef.current = {
@@ -201,7 +208,14 @@ export function useLiveKitMeetingSession(): {
       try {
         await room.connect(tokenResponse.serverUrl, tokenResponse.token);
         syncSessionFromRoom(room, "publishing");
-        await room.localParticipant.enableCameraAndMicrophone();
+        await Promise.all([
+          room.localParticipant.setCameraEnabled(
+            true,
+            MEETING_CAMERA_CAPTURE_OPTIONS,
+            MEETING_CAMERA_PUBLISH_OPTIONS
+          ),
+          room.localParticipant.setMicrophoneEnabled(true)
+        ]);
         syncSessionFromRoom(room, "connected");
       } catch (error) {
         room.removeAllListeners();
@@ -210,7 +224,7 @@ export function useLiveKitMeetingSession(): {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : "LiveKit 회의방 연결에 실패했습니다.";
+            : "meetingErrors.liveKitConnectionFailed";
         setSession({
           ...INITIAL_SESSION_STATE,
           errorMessage,
@@ -238,13 +252,17 @@ export function useLiveKitMeetingSession(): {
       }));
 
       try {
-        await room.localParticipant.setCameraEnabled(enabled);
+        await room.localParticipant.setCameraEnabled(
+          enabled,
+          enabled ? MEETING_CAMERA_CAPTURE_OPTIONS : undefined,
+          enabled ? MEETING_CAMERA_PUBLISH_OPTIONS : undefined
+        );
         syncSessionFromRoom(room, "connected");
       } catch (error) {
         syncSessionFromRoom(
           room,
           "connected",
-          error instanceof Error ? error.message : "카메라 상태를 바꾸지 못했습니다."
+          error instanceof Error ? error.message : "meetingErrors.cameraToggleFailed"
         );
       }
     },
@@ -273,7 +291,7 @@ export function useLiveKitMeetingSession(): {
           "connected",
           error instanceof Error
             ? error.message
-            : "마이크 상태를 바꾸지 못했습니다."
+            : "meetingErrors.microphoneToggleFailed"
         );
       }
     },
@@ -411,6 +429,10 @@ function createMediaTrackFromPublication(
     return undefined;
   }
 
+  if (publication.isMuted) {
+    return undefined;
+  }
+
   return {
     id: `${isLocal ? "local" : "remote"}:${participant.identity}:${
       publication.trackSid
@@ -426,7 +448,7 @@ function createMediaTrackFromPublication(
 }
 
 function getParticipantName(participant: Participant, isLocal: boolean): string {
-  return participant.name ?? participant.identity ?? (isLocal ? "나" : "참가자");
+  return participant.name ?? participant.identity ?? (isLocal ? "local" : "participant");
 }
 
 function isRenderableTrackKind(

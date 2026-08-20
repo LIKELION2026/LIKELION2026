@@ -18,9 +18,9 @@ test("microphone control mirrors enabled, disabled, and updating states", () => 
     }),
     {
       disabled: false,
-      label: "소리 끄기",
+      labelKey: "meetingControls.microphone.disable",
       pressed: true,
-      statusText: "마이크 켜짐"
+      statusKey: "meetingControls.microphone.enabled"
     }
   );
 
@@ -33,9 +33,9 @@ test("microphone control mirrors enabled, disabled, and updating states", () => 
     }),
     {
       disabled: true,
-      label: "소리 변경 중",
+      labelKey: "meetingControls.microphone.updating",
       pressed: false,
-      statusText: "마이크 꺼짐"
+      statusKey: "meetingControls.microphone.disabled"
     }
   );
 });
@@ -50,9 +50,9 @@ test("camera control disables while leaving the meeting room", () => {
     }),
     {
       disabled: true,
-      label: "영상 켜기",
+      labelKey: "meetingControls.camera.enable",
       pressed: false,
-      statusText: "카메라 꺼짐"
+      statusKey: "meetingControls.camera.disabled"
     }
   );
 });
@@ -60,45 +60,45 @@ test("camera control disables while leaving the meeting room", () => {
 test("expand view control toggles the in-overlay grid mode", () => {
   assert.deepEqual(createExpandViewControlState(false), {
     disabled: false,
-    label: "화면 키우기",
+    labelKey: "meetingControls.expandedView.expand",
     pressed: false,
-    statusText: "일반 화면"
+    statusKey: "meetingControls.expandedView.normal"
   });
 
   assert.deepEqual(createExpandViewControlState(true), {
     disabled: false,
-    label: "화면 줄이기",
+    labelKey: "meetingControls.expandedView.collapse",
     pressed: true,
-    statusText: "확대 화면 켜짐"
+    statusKey: "meetingControls.expandedView.expanded"
   });
 });
 
 test("translation control exposes a future integration-friendly on/off state", () => {
   assert.deepEqual(createTranslationControlState(false), {
     disabled: false,
-    label: "AI 번역 ON",
+    labelKey: "meetingControls.translation.enable",
     pressed: false,
-    statusText: "번역 꺼짐"
+    statusKey: "meetingControls.translation.disabled"
   });
 
   assert.deepEqual(createTranslationControlState(true), {
     disabled: false,
-    label: "AI 번역 OFF",
+    labelKey: "meetingControls.translation.disable",
     pressed: true,
-    statusText: "번역 켜짐"
+    statusKey: "meetingControls.translation.enabled"
   });
 
   assert.deepEqual(createTranslationControlState(false, false, true), {
     disabled: true,
-    label: "AI 번역 ON",
+    labelKey: "meetingControls.translation.enable",
     pressed: false,
-    statusText: "회의 연결 후 AI 번역 설정 가능"
+    statusKey: "meetingControls.translation.unavailable"
   });
 
   assert.deepEqual(createTranslationControlState(true, true), {
     disabled: true,
-    label: "AI 번역 변경 중",
+    labelKey: "meetingControls.translation.updating",
     pressed: true,
-    statusText: "번역 켜짐"
+    statusKey: "meetingControls.translation.enabled"
   });
 });

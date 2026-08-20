@@ -17,5 +17,7 @@ export function createPeopleContext(
       member,
       publicTodos: publicTodos.filter((todo) => todo.memberId === member.memberId)
     }))
-    .sort((left, right) => left.member.displayName.localeCompare(right.member.displayName));
+    .sort((left, right) =>
+      left.member.displayName.localeCompare(right.member.displayName, "en")
+    );
 }

@@ -287,7 +287,7 @@ cd C:\LIKELION2026\apps\translation-pipeline
 | `--name` | 자막에 표시할 이름. 생략하면 참가자 ID를 쓴다 |
 | `--language vi` | 베트남어로 말하고 한국어를 받는다 |
 | `--room` | 회의방 이름을 직접 지정한다. 생략하면 오늘 날짜로 만든다 |
-| `--section korea-team-zone` | 회의 구역을 고른다. `--room`을 줬으면 무시한다 |
+| `--section meeting-room-1` | 회의 구역을 고른다. `--room`을 줬으면 무시한다 |
 | `--publish` | Server로 자막을 발행한다 |
 | `--server` | Server 주소. 기본값은 `http://localhost:4000` |
 | `--max-staleness` | 이 시간을 넘겨 도착한 번역은 버린다(ms) |
@@ -315,17 +315,16 @@ Client가 이 이름을 `new Date()`로 만들기 때문에, 손으로 넣으면
 | `--section` | 만들어지는 이름 |
 | --- | --- |
 | `meeting-room` (기본) | `lab-likelion-<오늘>-meeting-room` |
-| `shared-collaboration-zone` | `lab-likelion-<오늘>-shared-collab` |
-| `korea-team-zone` | `lab-likelion-<오늘>-korea-team` |
-| `vietnam-team-zone` | `lab-likelion-<오늘>-vietnam-team` |
+| `meeting-room-1` | `lab-likelion-<오늘>-meeting-room-1` |
+| `meeting-room-2` | `lab-likelion-<오늘>-meeting-room-2` |
+| `meeting-room-3` | `lab-likelion-<오늘>-meeting-room-3` |
 
 날짜는 로컬 기준이다. Client의 `new Date()`가 로컬이라 UTC로 만들면 자정
 부근에 하루가 어긋난다.
 
-구역 표는 Client의 `meeting-room-section.ts`를 옮겨 적은 것이다.
-`packages/shared`에 방 이름 규칙이 없어 지금은 공유할 방법이 없다.
-
-대신 테스트가 그 파일을 읽어 팀 slug, 구역 표, 기본 구역, 이름 형식을 대조한다.
+구역 표는 Shared의 `meeting.ts`를 옮겨 적은 것이다. Python 런타임이 TypeScript
+패키지를 직접 import하지 못하므로, 테스트가 Shared와 Client 파일을 읽어 팀 slug,
+구역 표, 기본 구역, 이름 형식을 대조한다.
 Client가 바뀌면 자막이 안 뜬 뒤에 찾는 대신 `pytest`에서 깨진다. 파일이 옮겨진
 경우도 실패로 처리한다. 건너뛰면 이 테스트가 아무것도 지키지 않는다.
 

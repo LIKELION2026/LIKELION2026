@@ -19,7 +19,7 @@ export interface OfficeDeskConfiguration {
 export interface OfficeMeetingZoneConfiguration {
   height: number;
   id: string;
-  label: string;
+  labelKey: string;
   width: number;
   x: number;
   y: number;
@@ -45,7 +45,7 @@ export function createMeetingZone(index: number): OfficeMeetingZoneConfiguration
   return {
     height: 360,
     id: `meeting-zone-${index + 1}`,
-    label: `회의실 ${index + 1}`,
+    labelKey: `officeMap.meetingZones.meetingRoom${index + 1}`,
     width: 560,
     x: 1760 + offset,
     y: 1980 + offset,
@@ -207,7 +207,7 @@ export function serializeOfficeConfiguration({
     "export const OFFICE_MEETING_ZONES = [",
     ...meetingZones.map(
       (zone) =>
-        `  { height: ${zone.height}, id: "${zone.id}", label: "${zone.label}", width: ${zone.width}, x: ${zone.x}, y: ${zone.y} },`,
+        `  { height: ${zone.height}, id: "${zone.id}", labelKey: "${zone.labelKey}", width: ${zone.width}, x: ${zone.x}, y: ${zone.y} },`,
     ),
     "] as const;",
     "",

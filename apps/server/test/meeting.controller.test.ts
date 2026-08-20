@@ -8,8 +8,24 @@ import {
 } from "@likelion2026/shared";
 import type { LiveKitWebhookService } from "../src/integrations/livekit/livekit-webhook.service";
 import type { MeetingRealtimeGateway } from "../src/modules/meeting/meeting-realtime.gateway";
-import { MeetingController } from "../src/modules/meeting/meeting.controller";
+import { MeetingController as MeetingControllerUnderTest } from "../src/modules/meeting/meeting.controller";
 import type { MeetingService } from "../src/modules/meeting/meeting.service";
+import type { PresenceGateway } from "../src/modules/presence/presence.gateway";
+
+class MeetingController extends MeetingControllerUnderTest {
+  constructor(
+    liveKitWebhookService: LiveKitWebhookService,
+    meetingRealtimeGateway: MeetingRealtimeGateway,
+    meetingService: MeetingService
+  ) {
+    super(
+      liveKitWebhookService,
+      meetingRealtimeGateway,
+      meetingService,
+      createPresenceGatewayStub()
+    );
+  }
+}
 
 test("getRoomState delegates to the meeting service state lookup", () => {
   const roomName = "lab-likelion-20260816-state";
@@ -144,4 +160,15 @@ function createMeetingRealtimeGatewayStub(): MeetingRealtimeGateway & {
   } as MeetingRealtimeGateway & {
     publishedPayloads: Array<{ roomName: string }>;
   };
+}
+
+function createPresenceGatewayStub(): PresenceGateway {
+  return {
+    publishCalendarUpdated() {
+      return undefined;
+    },
+    publishMeetingSummaryReady() {
+      return undefined;
+    }
+  } as unknown as PresenceGateway;
 }

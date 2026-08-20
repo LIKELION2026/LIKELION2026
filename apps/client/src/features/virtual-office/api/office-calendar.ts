@@ -7,6 +7,13 @@ import type {
 
 import { SERVER_URL } from "../../../shared/config/environment";
 
+export class OfficeCalendarRequestError extends Error {
+  constructor() {
+    super("officeCalendar.requestFailed");
+    this.name = "OfficeCalendarRequestError";
+  }
+}
+
 export async function createOfficeCalendarEvent(
   memberId: string,
   request: CreateOfficeCalendarEventRequest
@@ -58,6 +65,6 @@ async function requestCalendar<T>(path: string, init?: RequestInit): Promise<T> 
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers }
   });
-  if (!response.ok) throw new Error("공유 일정을 불러오지 못했습니다.");
+  if (!response.ok) throw new OfficeCalendarRequestError();
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
 }

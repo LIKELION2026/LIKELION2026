@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { OFFICE_MEETING_ZONE_SECTION_IDS } from "@likelion2026/shared";
 
 import {
   OFFICE_MAP,
@@ -30,7 +31,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 594,
       id: "main-meeting-room",
-      label: "회의실 1",
+      labelKey: "officeMap.meetingZones.mainMeetingRoom",
       width: 1346,
       x: 1383,
       y: 1838,
@@ -38,7 +39,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 373,
       id: "meeting-zone-1",
-      label: "회의실 1",
+      labelKey: "officeMap.meetingZones.meetingRoom1",
       width: 806,
       x: 1064,
       y: 334,
@@ -46,7 +47,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 357,
       id: "meeting-zone-2",
-      label: "회의실 2",
+      labelKey: "officeMap.meetingZones.meetingRoom2",
       width: 448,
       x: 1964,
       y: 325,
@@ -54,10 +55,23 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 349,
       id: "meeting-zone-3",
-      label: "회의실 3",
+      labelKey: "officeMap.meetingZones.meetingRoom3",
       width: 541,
       x: 2483,
       y: 337,
     },
   ]);
+});
+
+test("maps every physical meeting zone to a distinct LiveKit meeting section", () => {
+  assert.deepEqual(OFFICE_MEETING_ZONE_SECTION_IDS, {
+    "main-meeting-room": "meeting-room",
+    "meeting-zone-1": "meeting-room-1",
+    "meeting-zone-2": "meeting-room-2",
+    "meeting-zone-3": "meeting-room-3",
+  });
+  assert.equal(
+    new Set(Object.values(OFFICE_MEETING_ZONE_SECTION_IDS)).size,
+    OFFICE_MAP_MEETING_ZONES.length,
+  );
 });

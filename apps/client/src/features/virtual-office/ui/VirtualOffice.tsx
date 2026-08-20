@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX } from "react";
 import Phaser from "phaser";
+import { useTranslation } from "react-i18next";
 import type {
   MeetingParticipantCountry,
+  OfficeChatMessagePayload,
+  OfficeMeetingZoneId,
   OfficeSummonRequestedPayload,
   OfficeSummonResolvedPayload
 } from "@likelion2026/shared";
 
-import { createMeetingRoomSection } from "../../realtime-meeting/model/meeting-room-section";
+import { createMeetingRoomSectionByOfficeZoneId } from "../../realtime-meeting/model/meeting-room-section";
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
 import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
 import { OfficeScene } from "../core/office-scene";
@@ -28,16 +31,25 @@ import { OfficeMeetingSummaryAlert } from "./OfficeMeetingSummaryAlert";
 import { OfficePeoplePanel } from "./OfficePeoplePanel";
 import { OfficeSummonModal } from "./OfficeSummonModal";
 import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
+import { OfficeAvatarActions } from "./OfficeAvatarActions";
+import { OfficeChatPanel } from "./OfficeChatPanel";
 
 export function VirtualOffice(): JSX.Element {
+  const { i18n, t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const sceneRef = useRef<OfficeScene | null>(null);
-  const [isInsideMeetingRoom, setIsInsideMeetingRoom] = useState(false);
+  const [activeMeetingZoneId, setActiveMeetingZoneId] =
+    useState<OfficeMeetingZoneId | null>(null);
   const [isSceneReady, setIsSceneReady] = useState(false);
   const [isPeoplePanelOpen, setIsPeoplePanelOpen] = useState(false);
   const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<OfficeChatMessagePayload[]>([]);
+  const [chatMentionTargetName, setChatMentionTargetName] = useState<string | null>(null);
+  const [hasCompletedOnboardingLanguageStep, setHasCompletedOnboardingLanguageStep] =
+    useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
   const {
@@ -46,6 +58,7 @@ export function VirtualOffice(): JSX.Element {
     prepareSession,
     registerSocketCallbacks,
     respondToSummon,
+    sendChatMessage,
     sendMove,
     sendSummonRequest,
     session,
@@ -57,9 +70,13 @@ export function VirtualOffice(): JSX.Element {
   const members = useOfficeStore((state) => state.members);
   const self = useOfficeStore((state) => state.self);
   const meetingController = useMeetingSessionController();
+  const isInsideMeetingRoom = activeMeetingZoneId !== null;
   const meetingRoomSection = useMemo(
-    () => createMeetingRoomSection("meeting-room"),
-    []
+    () =>
+      activeMeetingZoneId
+        ? createMeetingRoomSectionByOfficeZoneId(activeMeetingZoneId)
+        : null,
+    [activeMeetingZoneId]
   );
   const sceneBootstrap = useMemo(() => getOfficeSceneBootstrap(self), [self]);
   const entryPhase = getOfficeEntryPhase({
@@ -68,6 +85,8 @@ export function VirtualOffice(): JSX.Element {
     isRestoringStoredSession,
     isSceneReady
   });
+  const isOnboardingLanguageStepVisible =
+    entryPhase === "onboarding" && !hasCompletedOnboardingLanguageStep;
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -80,6 +99,10 @@ export function VirtualOffice(): JSX.Element {
   );
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
+  }, []);
+  const handleChatMessage = useCallback((message: OfficeChatMessagePayload) => {
+    setChatMessages((current) => [...current, message].slice(-30));
+    sceneRef.current?.showChatBubble(message.memberId, message.text);
   }, []);
   const handleSummonResolved = useCallback(
     (resolution: OfficeSummonResolvedPayload) => {
@@ -105,10 +128,12 @@ export function VirtualOffice(): JSX.Element {
       onSummonResolved: handleSummonResolved,
       onCalendarUpdated: calendarController.refresh,
       onMeetingSummaryReady: () => setIsMeetingSummaryAlertVisible(true),
-      onTodosUpdated: todoController.refresh
+      onTodosUpdated: todoController.refresh,
+      onChatMessage: handleChatMessage
     }),
     [
       calendarController.refresh,
+      handleChatMessage,
       handleSummonRequested,
       handleSummonResolved,
       todoController.refresh
@@ -117,13 +142,23 @@ export function VirtualOffice(): JSX.Element {
 
   useEffect(() => registerSocketCallbacks(socketCallbacks), [registerSocketCallbacks, socketCallbacks]);
   useMeetingOfficePresence(meetingController.session.status);
+  useEffect(() => {
+    if (entryPhase === "office") {
+      setHasCompletedOnboardingLanguageStep(false);
+    }
+  }, [entryPhase]);
+
   const peopleContext = createPeopleContext(
     effectiveMembers,
     todoController.publicTodos,
     effectiveSelf?.memberId
   );
+  const selectedPersonContext = useMemo(
+    () => peopleContext.find((context) => context.member.memberId === selectedMemberId) ?? null,
+    [peopleContext, selectedMemberId]
+  );
   const meetingJoinRequest = useMemo(() => {
-    if (!session) {
+    if (!session || !meetingRoomSection) {
       return null;
     }
 
@@ -136,7 +171,7 @@ export function VirtualOffice(): JSX.Element {
       roomName: meetingRoomSection.roomName
     };
   }, [
-    meetingRoomSection.roomName,
+    meetingRoomSection?.roomName,
     session?.member.countryCode,
     session?.member.id,
     session?.member.name
@@ -165,7 +200,8 @@ export function VirtualOffice(): JSX.Element {
     const scene = new OfficeScene({
       initialAvatar: sceneBootstrap,
       onLocalMovement: sendMove,
-      onMeetingRoomState: setIsInsideMeetingRoom,
+      onMeetingRoomState: setActiveMeetingZoneId,
+      onRemoteAvatarSelected: setSelectedMemberId,
       onReady: () => setIsSceneReady(true)
     });
     sceneRef.current = scene;
@@ -208,7 +244,15 @@ export function VirtualOffice(): JSX.Element {
     }
 
     scene.syncRemoteMembers(effectiveMembers, self?.memberId);
-  }, [effectiveMembers, isSceneReady, self?.memberId]);
+  }, [effectiveMembers, i18n.resolvedLanguage, isSceneReady, self?.memberId]);
+
+  useEffect(() => {
+    if (!effectiveSelf || !isSceneReady) {
+      return;
+    }
+
+    sceneRef.current?.setLocalPresence(effectiveSelf);
+  }, [effectiveSelf, isSceneReady]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -236,21 +280,23 @@ export function VirtualOffice(): JSX.Element {
       ]
         .filter(Boolean)
         .join(" ")}
-      aria-label="가상 오피스"
+      aria-label={t("office.ariaLabel")}
     >
       <div className="office-canvas" ref={containerRef} />
-      <OfficeHud
-        avatarId={session?.member.avatarId}
-        connectionState={connectionState}
-        memberCount={effectiveMembers.length}
-        onAttendanceChange={updateAttendance}
-        onOpenCalendar={() => setIsCalendarOpen(true)}
-        onOpenPeople={() => setIsPeoplePanelOpen(true)}
-        onOpenTodo={() => setIsTodoPanelOpen(true)}
-        onStatusChange={updateStatus}
-        selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
-        selfStatus={effectiveSelf?.status}
-      />
+      {!isOnboardingLanguageStepVisible ? (
+        <OfficeHud
+          avatarId={session?.member.avatarId}
+          connectionState={connectionState}
+          memberCount={effectiveMembers.length}
+          onAttendanceChange={updateAttendance}
+          onOpenCalendar={() => setIsCalendarOpen(true)}
+          onOpenPeople={() => setIsPeoplePanelOpen(true)}
+          onOpenTodo={() => setIsTodoPanelOpen(true)}
+          onStatusChange={updateStatus}
+          selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
+          selfStatus={effectiveSelf?.status}
+        />
+      ) : null}
       <OfficeTodoPanel
         avatarId={session?.member.avatarId}
         controller={todoController}
@@ -287,6 +333,28 @@ export function VirtualOffice(): JSX.Element {
         todoError={todoController.error}
         todoIsLoading={todoController.isLoading}
       />
+      <OfficeAvatarActions
+        context={selectedPersonContext}
+        onClose={() => setSelectedMemberId(null)}
+        onFocusMember={(context) => {
+          sceneRef.current?.moveLocalAvatarNear(context.member.avatar.x, context.member.avatar.y);
+          setSelectedMemberId(null);
+        }}
+        onMessageMember={(context) => {
+          setChatMentionTargetName(context.member.displayName);
+          setSelectedMemberId(null);
+        }}
+        onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
+      />
+      {!isOnboardingLanguageStepVisible ? (
+        <OfficeChatPanel
+          isConnected={connectionState === "connected"}
+          mentionTargetName={chatMentionTargetName}
+          messages={chatMessages}
+          onMentionConsumed={() => setChatMentionTargetName(null)}
+          onSend={sendChatMessage}
+        />
+      ) : null}
       <OfficeSummonModal
         onRespond={(decision) => {
           if (pendingSummon) {
@@ -305,7 +373,9 @@ export function VirtualOffice(): JSX.Element {
       {entryPhase === "onboarding" ? (
         <GuestOnboarding
           error={sessionError}
+          isLanguageStepComplete={hasCompletedOnboardingLanguageStep}
           isSubmitting={isPreparingSession}
+          onLanguageStepComplete={() => setHasCompletedOnboardingLanguageStep(true)}
           onSubmit={prepareSession}
         />
       ) : null}

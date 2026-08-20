@@ -4,7 +4,7 @@ import type { CalendarMemberStatus, OfficeMemberPresence } from "@likelion2026/s
 
 import {
   applyCalendarPresence,
-  getCalendarPresenceLabel
+  getCalendarPresenceTranslationKey
 } from "../src/features/virtual-office/model/calendar-presence.ts";
 
 const member: OfficeMemberPresence = {
@@ -31,7 +31,8 @@ test("applies a current vacation schedule over the stored presence", () => {
 
   assert.equal(result.status, "away");
   assert.equal(result.officePresence?.displayMode, "vacation");
-  assert.equal(getCalendarPresenceLabel(result), "휴가");
+  assert.equal(result.officePresence?.statusMessage, undefined);
+  assert.equal(getCalendarPresenceTranslationKey(result), "calendarPresence.vacation");
 });
 
 test("keeps the stored presence after a calendar schedule has ended", () => {
@@ -40,7 +41,7 @@ test("keeps the stored presence after a calendar schedule has ended", () => {
   ], new Date("2026-08-18T12:00:00.000Z"));
 
   assert.equal(result, member);
-  assert.equal(getCalendarPresenceLabel(result), "협업 가능");
+  assert.equal(getCalendarPresenceTranslationKey(result), "calendarPresence.available");
 });
 
 function createCalendarStatus(

@@ -1,9 +1,11 @@
-import { type TodoStatus } from "@likelion2026/shared";
 import { useState } from "react";
+import type { ComponentType, SVGProps } from "react";
+import { DoorOpen, Home, Moon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { PeopleContextMember } from "../model/people-context";
 import {
-  getCalendarPresenceLabel,
+  getCalendarPresenceTranslationKey,
   getCalendarPresenceTone
 } from "../model/calendar-presence";
 
@@ -19,27 +21,17 @@ interface OfficePeoplePanelProps {
 
 const ASSET_PATH = "/assets/people";
 
-const COUNTRY_LABELS = {
-  KR: "한국",
-  VN: "베트남"
-} as const;
-
 const COUNTRY_FLAGS = {
   KR: "🇰🇷",
   VN: "🇻🇳"
 } as const;
 
-const TONE_BADGE_IMAGE: Partial<Record<string, string>> = {
-  away: `${ASSET_PATH}/badge-away.png`,
-  remote_work: `${ASSET_PATH}/badge-remote-work.png`,
-  sleeping: `${ASSET_PATH}/badge-sleeping.png`
-};
+type StatusBadgeIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
-const TODO_STATUS_LABELS: Record<TodoStatus, string> = {
-  blocked: "도움 필요",
-  done: "완료",
-  in_progress: "진행 중",
-  planned: "예정"
+const TONE_BADGE_ICONS: Partial<Record<string, StatusBadgeIcon>> = {
+  away: DoorOpen,
+  remote_work: Home,
+  sleeping: Moon
 };
 
 export function OfficePeoplePanel({
@@ -51,6 +43,7 @@ export function OfficePeoplePanel({
   todoError,
   todoIsLoading
 }: OfficePeoplePanelProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const selectedContext =
     members.find((context) => context.member.memberId === selectedMemberId) ?? members[0];
@@ -60,17 +53,17 @@ export function OfficePeoplePanel({
   }
 
   return (
-    <aside aria-label="피플 목록" className="people-panel">
-      <button aria-label="피플 목록 닫기" className="people-close-button" onClick={onClose} type="button">
+    <aside aria-label={t("officePeoplePanel.ariaLabel")} className="people-panel">
+      <button aria-label={t("officePeoplePanel.close")} className="people-close-button" onClick={onClose} type="button">
         <img alt="" src={`${ASSET_PATH}/close-button.png`} />
       </button>
       <div className="people-panel-content">
         <div className="people-panel-header">
-          <p className="office-panel-eyebrow">TEAM</p>
-          <h2>피플 목록</h2>
+          <p className="office-panel-eyebrow">{t("officePeoplePanel.teamEyebrow")}</p>
+          <h2>{t("officePeoplePanel.title")}</h2>
         </div>
         {members.length === 0 ? (
-          <p className="office-panel-message">현재 오피스에 표시할 팀원이 없습니다.</p>
+          <p className="office-panel-message">{t("officePeoplePanel.empty")}</p>
         ) : (
           <ul className="people-row-list">
             {members.map((context) => (
@@ -87,7 +80,7 @@ export function OfficePeoplePanel({
                   </span>
                   <span className="people-row-name">
                     {context.member.displayName}
-                    {context.isSelf ? " (나)" : ""}
+                    {context.isSelf ? t("common.selfSuffix") : ""}
                   </span>
                   <StatusBadge member={context.member} />
                 </button>
@@ -110,17 +103,18 @@ export function OfficePeoplePanel({
 }
 
 function StatusBadge({ member }: { member: PeopleContextMember["member"] }): React.JSX.Element {
+  const { t } = useTranslation();
   const tone = getCalendarPresenceTone(member);
-  const label = getCalendarPresenceLabel(member);
-  const image = TONE_BADGE_IMAGE[tone];
-
-  if (image) {
-    return <img alt={label} className="people-status-badge-img" src={image} />;
-  }
+  const label = t(getCalendarPresenceTranslationKey(member));
+  const Icon = TONE_BADGE_ICONS[tone];
 
   return (
     <span className={`people-status-badge tone-${tone}`}>
-      <span aria-hidden="true" className="people-status-dot" />
+      {Icon ? (
+        <Icon aria-hidden="true" className="people-status-icon" />
+      ) : (
+        <span aria-hidden="true" className="people-status-dot" />
+      )}
       {label}
     </span>
   );
@@ -141,6 +135,7 @@ function MemberProfile({
   todoError,
   todoIsLoading
 }: MemberProfileProps): React.JSX.Element {
+  const { t } = useTranslation();
   const { member, publicTodos } = context;
 
   return (
@@ -149,35 +144,46 @@ function MemberProfile({
         <div>
           <h3>
             {COUNTRY_FLAGS[member.language === "vi" ? "VN" : "KR"]} {member.displayName}
-            {context.isSelf ? " (나)" : ""}
+            {context.isSelf ? t("common.selfSuffix") : ""}
           </h3>
-          <p>{COUNTRY_LABELS[member.language === "vi" ? "VN" : "KR"]}</p>
+          <p>
+            {t(
+              member.language === "vi"
+                ? "officePeoplePanel.country.vietnam"
+                : "officePeoplePanel.country.korea"
+            )}
+          </p>
         </div>
         <StatusBadge member={member} />
       </div>
       <div className="people-detail-actions">
         <button className="office-secondary-button" onClick={() => onFocusMember(context)} type="button">
-          찾아가기
+          {t("officePeoplePanel.focus")}
         </button>
         {!context.isSelf ? (
           <button className="office-secondary-button" onClick={() => onRequestSummon(context)} type="button">
-            불러오기
+            {t("officePeoplePanel.summon")}
           </button>
         ) : null}
       </div>
-      <section aria-label={`${member.displayName}의 공개 TODO`} className="people-detail-todos">
-        <p className="office-panel-eyebrow">공개한 오늘의 업무</p>
-        {todoIsLoading ? <p className="office-panel-message">TODO 정보를 불러오는 중입니다.</p> : null}
-        {todoError ? <p className="office-panel-error">TODO 정보를 불러오지 못했습니다.</p> : null}
+      <section
+        aria-label={t("officePeoplePanel.profileTodoAriaLabel", {
+          name: member.displayName
+        })}
+        className="people-detail-todos"
+      >
+        <p className="office-panel-eyebrow">{t("officePeoplePanel.publicTodoTitle")}</p>
+        {todoIsLoading ? <p className="office-panel-message">{t("officePeoplePanel.todoLoading")}</p> : null}
+        {todoError ? <p className="office-panel-error">{t("officePeoplePanel.todoLoadError")}</p> : null}
         {!todoIsLoading && !todoError && publicTodos.length === 0 ? (
-          <p className="office-panel-message">공개한 오늘의 업무가 없습니다.</p>
+          <p className="office-panel-message">{t("officePeoplePanel.publicTodoEmpty")}</p>
         ) : null}
         {!todoIsLoading && !todoError && publicTodos.length > 0 ? (
           <ul>
             {publicTodos.map((todo) => (
               <li key={todo.id}>
                 <span>{todo.title}</span>
-                <span className={`office-todo-status ${todo.status}`}>{TODO_STATUS_LABELS[todo.status]}</span>
+                <span className={`office-todo-status ${todo.status}`}>{t(`todoStatus.${todo.status}`)}</span>
               </li>
             ))}
           </ul>

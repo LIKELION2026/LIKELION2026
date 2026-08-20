@@ -1,24 +1,33 @@
 import Phaser from "phaser";
 import {
+  type AttendanceStatus,
   type LocalMovementCommand,
+  type OfficeMeetingZoneId,
   type OfficeMemberPresence,
   type PresenceMovePayload,
 } from "@likelion2026/shared";
 
 import {
   DEFAULT_AVATAR_ID,
+  getAvatarFrameSource,
   getAvatarFrameIndex,
-  getRequiredAvatarFrameIndices,
   getAvatarSpriteDefinition,
   getAvatarSpriteDefinitions,
   shouldFlipAvatarSprite,
   type AvatarSpriteDefinition,
 } from "./avatar-sprite-definition";
+import { getAvatarOverlayOffsets } from "./avatar-overlay-layout";
 import { removeNearTransparentPixels } from "./avatar-pixel-normalizer";
 import {
-  getCalendarPresenceLabel,
+  applyAvatarFrameCrop,
+  getAvatarSpriteLayoutForVariant,
+} from "./avatar-sprite-layout";
+import {
+  getCalendarPresenceTranslationKey,
+  getCalendarPresenceTone,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
+import { i18n } from "../../../shared/i18n";
 import {
   getNearestWalkableOfficePosition,
   isOfficeCollisionDebugEnabled,
@@ -47,20 +56,41 @@ const AVATAR_MOVE_SPEED = 460;
 const AVATAR_DIRECTIONS = ["down", "left", "right", "up"] as const;
 const NEARBY_AVATAR_OFFSET = 72;
 const AVATAR_POSITION_MARGIN = 48;
+const AVATAR_STATUS_BUBBLE_HEIGHT = 38;
+const AVATAR_STATUS_BUBBLE_MIN_WIDTH = 116;
+const AVATAR_CHAT_BUBBLE_MIN_HEIGHT = 48;
+const AVATAR_CHAT_BUBBLE_MIN_WIDTH = 170;
+const AVATAR_LABEL_FONT_FAMILY = "Arial, Apple SD Gothic Neo, Noto Sans KR, sans-serif";
 
 interface OfficeSceneCallbacks {
   initialAvatar: OfficeSceneBootstrap;
   onLocalMovement: (payload: LocalMovementCommand) => void;
-  onMeetingRoomState: (isInside: boolean) => void;
+  onMeetingRoomState: (zoneId: OfficeMeetingZoneId | null) => void;
+  onRemoteAvatarSelected: (memberId: string) => void;
   onReady: () => void;
 }
 
 interface RemoteAvatar {
   avatarId: string;
+  chatBubble: AvatarChatBubble;
+  chatTimer?: Phaser.Time.TimerEvent;
   container: Phaser.GameObjects.Container;
   label: Phaser.GameObjects.Text;
+  statusBubble: AvatarStatusBubble;
   positionSamples: RemotePositionSample[];
   sprite: Phaser.GameObjects.Sprite;
+}
+
+interface AvatarStatusBubble {
+  background: Phaser.GameObjects.Rectangle;
+  label: Phaser.GameObjects.Text;
+  tail: Phaser.GameObjects.Triangle;
+}
+
+interface AvatarChatBubble {
+  background: Phaser.GameObjects.Rectangle;
+  label: Phaser.GameObjects.Text;
+  tail: Phaser.GameObjects.Triangle;
 }
 
 interface RemotePositionSample {
@@ -79,9 +109,14 @@ export class OfficeScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
   private isFollowingLocalAvatar = true;
-  private inMeetingRoom = false;
+  private isLocalWorking = true;
+  private activeMeetingZoneId: OfficeMeetingZoneId | null = null;
   private isSitting = false;
   private localAvatarId: string = DEFAULT_AVATAR_ID;
+  private localChatBubble?: AvatarChatBubble;
+  private localChatTimer?: Phaser.Time.TimerEvent;
+  private localNameLabel?: Phaser.GameObjects.Text;
+  private localStatusBubble?: AvatarStatusBubble;
   private player!: Phaser.Physics.Arcade.Sprite;
   private playerBody!: Phaser.Physics.Arcade.Body;
   private readonly remoteAvatars = new Map<string, RemoteAvatar>();
@@ -183,6 +218,55 @@ export class OfficeScene extends Phaser.Scene {
     );
   }
 
+  setLocalPresence(member: OfficeMemberPresence): void {
+    if (!this.player) {
+      return;
+    }
+
+    this.localNameLabel?.setText(member.displayName);
+    this.updateAvatarStatusBubble(this.localStatusBubble, member);
+    this.setLocalAttendance(member.officePresence?.attendanceStatus);
+  }
+
+  private setLocalAttendance(attendanceStatus: AttendanceStatus | undefined): void {
+    const isWorking = attendanceStatus !== "checked_out";
+    if (this.isLocalWorking === isWorking) {
+      return;
+    }
+
+    this.isLocalWorking = isWorking;
+    this.isSitting = false;
+    this.resetMovementKeys();
+  }
+
+  showChatBubble(memberId: string, text: string): void {
+    const remoteAvatar = this.remoteAvatars.get(memberId);
+    if (remoteAvatar) {
+      this.setRemoteAvatarIdentityVisible(remoteAvatar, false);
+      this.showChatBubbleForAvatar(
+        remoteAvatar.chatBubble,
+        text,
+        remoteAvatar.chatTimer,
+        (timer) => {
+          remoteAvatar.chatTimer = timer;
+        },
+        () => this.setRemoteAvatarIdentityVisible(remoteAvatar, true),
+      );
+      return;
+    }
+
+    this.setLocalAvatarIdentityVisible(false);
+    this.showChatBubbleForAvatar(
+      this.localChatBubble,
+      text,
+      this.localChatTimer,
+      (timer) => {
+        this.localChatTimer = timer;
+      },
+      () => this.setLocalAvatarIdentityVisible(true),
+    );
+  }
+
   focusMember(x: number, y: number): void {
     this.isFollowingLocalAvatar = false;
     this.cameras.main.stopFollow();
@@ -278,13 +362,46 @@ export class OfficeScene extends Phaser.Scene {
       getAvatarIdleFrame(this.localAvatarId, initialAvatar.direction),
     );
     this.player
-      .setScale(getAvatarSpriteDefinition(this.localAvatarId).scale)
+      .setScale(
+        getAvatarSpriteLayoutForVariant(
+          this.localAvatarId,
+          "idle",
+          initialAvatar.direction,
+        ).scale,
+      )
       .setOrigin(0.5, 0.82)
       .setDepth(3);
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body;
     this.playerBody.setCollideWorldBounds(true);
     this.playerBody.setSize(96, 64);
     this.playerBody.setOffset(80, 164);
+    const overlayOffsets = getAvatarOverlayOffsets(this.localAvatarId);
+    this.localNameLabel = this.add
+      .text(initialAvatar.x, initialAvatar.y + overlayOffsets.nameY, "나", {
+        align: "center",
+        color: "#4a2f1e",
+        backgroundColor: "#fff7e9",
+        fontFamily: AVATAR_LABEL_FONT_FAMILY,
+        fontSize: "16px",
+        fontStyle: "bold",
+        padding: { x: 7, y: 3 },
+        stroke: "#fff7e9",
+        strokeThickness: 2
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(5);
+    this.localStatusBubble = this.createAvatarStatusBubble(
+      initialAvatar.x,
+      initialAvatar.y + overlayOffsets.statusY,
+      "● 협업 가능",
+      getAvatarStatusStyle("available"),
+      5,
+    );
+    this.localChatBubble = this.createAvatarChatBubble(
+      initialAvatar.x,
+      initialAvatar.y + overlayOffsets.chatY,
+      6,
+    );
     this.playAvatarAnimation(
       this.player,
       this.localAvatarId,
@@ -404,6 +521,25 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private updateLocalMovement(): void {
+    const overlayOffsets = getAvatarOverlayOffsets(this.localAvatarId);
+    this.localNameLabel?.setPosition(this.player.x, this.player.y + overlayOffsets.nameY);
+    this.setAvatarStatusBubblePosition(
+      this.localStatusBubble,
+      this.player.x,
+      this.player.y + overlayOffsets.statusY,
+    );
+    this.setAvatarChatBubblePosition(
+      this.localChatBubble,
+      this.player.x,
+      this.player.y + overlayOffsets.chatY,
+    );
+    if (!this.isLocalWorking) {
+      this.playerBody.setVelocity(0, 0);
+      this.isSitting = false;
+      this.playAvatarAnimation(this.player, this.localAvatarId, this.direction, "idle");
+      return;
+    }
+
     if (isTextEntryFocused(document.activeElement)) {
       this.playerBody.setVelocity(0, 0);
       this.playAvatarAnimation(
@@ -502,20 +638,29 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private updateMeetingRoomState(): void {
-    const isInside = OFFICE_MAP_MEETING_ZONES.some(
+    if (!this.isLocalWorking) {
+      if (this.activeMeetingZoneId !== null) {
+        this.activeMeetingZoneId = null;
+        this.callbacks.onMeetingRoomState(null);
+      }
+      return;
+    }
+
+    const meetingZone = OFFICE_MAP_MEETING_ZONES.find(
       (zone) =>
         this.player.x >= zone.x &&
         this.player.x <= zone.x + zone.width &&
         this.player.y >= zone.y &&
         this.player.y <= zone.y + zone.height,
     );
+    const nextMeetingZoneId = meetingZone?.id ?? null;
 
-    if (isInside === this.inMeetingRoom) {
+    if (nextMeetingZoneId === this.activeMeetingZoneId) {
       return;
     }
 
-    this.inMeetingRoom = isInside;
-    this.callbacks.onMeetingRoomState(isInside);
+    this.activeMeetingZoneId = nextMeetingZoneId;
+    this.callbacks.onMeetingRoomState(nextMeetingZoneId);
   }
 
   private updateRemoteAvatars(): void {
@@ -569,11 +714,13 @@ export class OfficeScene extends Phaser.Scene {
         member.avatar.direction,
         member.avatar.animation,
       );
-      existing.label.setText(getRemoteLabel(member));
+      existing.label.setText(member.displayName);
+      this.updateAvatarStatusBubble(existing.statusBubble, member);
       existing.container.setAlpha(getRemoteAvatarAlpha(member));
       return;
     }
 
+    const overlayOffsets = getAvatarOverlayOffsets(member.avatarId);
     const sprite = this.add
       .sprite(
         0,
@@ -590,19 +737,46 @@ export class OfficeScene extends Phaser.Scene {
         ),
       );
     const label = this.add
-      .text(0, -38, getRemoteLabel(member), {
+      .text(0, overlayOffsets.nameY, member.displayName, {
         align: "center",
-        backgroundColor: "#172235cc",
-        color: "#ffffff",
-        fontFamily: "sans-serif",
-        fontSize: "12px",
-        padding: { x: 5, y: 3 },
+        color: "#4a2f1e",
+        backgroundColor: "#fff7e9",
+        fontFamily: AVATAR_LABEL_FONT_FAMILY,
+        fontSize: "16px",
+        fontStyle: "bold",
+        padding: { x: 7, y: 3 },
+        stroke: "#fff7e9",
+        strokeThickness: 2
       })
       .setOrigin(0.5, 1);
+    const statusBubble = this.createAvatarStatusBubble(
+      0,
+      overlayOffsets.statusY,
+      getAvatarStatusText(member),
+      getAvatarStatusStyle(getCalendarPresenceTone(member)),
+    );
+    const chatBubble = this.createAvatarChatBubble(0, overlayOffsets.chatY);
     const container = this.add.container(member.avatar.x, member.avatar.y, [
       sprite,
       label,
+      statusBubble.background,
+      statusBubble.tail,
+      statusBubble.label,
+      chatBubble.background,
+      chatBubble.tail,
+      chatBubble.label,
     ]);
+    container
+      .setSize(128, 168)
+      .setInteractive({ cursor: "pointer", useHandCursor: true })
+      .on(Phaser.Input.Events.GAMEOBJECT_POINTER_UP, (pointer: Phaser.Input.Pointer) => {
+        // Phaser can receive a window-level pointer-up after a DOM panel click.
+        // Only the game canvas is allowed to open a teammate interaction panel.
+        if (pointer.event.target !== this.game.canvas) {
+          return;
+        }
+        this.callbacks.onRemoteAvatarSelected(member.memberId);
+      });
     container.setAlpha(getRemoteAvatarAlpha(member));
     this.playAvatarAnimation(
       sprite,
@@ -613,6 +787,7 @@ export class OfficeScene extends Phaser.Scene {
 
     this.remoteAvatars.set(member.memberId, {
       avatarId: member.avatarId,
+      chatBubble,
       container,
       label,
       positionSamples: [
@@ -623,6 +798,7 @@ export class OfficeScene extends Phaser.Scene {
         },
       ],
       sprite,
+      statusBubble,
     });
   }
 
@@ -651,30 +827,47 @@ export class OfficeScene extends Phaser.Scene {
         .get(definition.sitTextureKey)
         .getSourceImage() as HTMLCanvasElement | HTMLImageElement;
 
-      this.createAvatarFramesFromSource(
-        definition,
-        definition.textureKey,
-        walkSourceImage,
-        getRequiredAvatarFrameIndices(definition),
-      );
-      this.createAvatarFramesFromSource(
-        definition,
-        definition.sitTextureKey,
-        sitSourceImage,
-        getRequiredAvatarFrameIndices(definition, "sit"),
-      );
+      AVATAR_DIRECTIONS.forEach((direction) => {
+        this.createAvatarFramesFromSource(
+          definition,
+          walkSourceImage,
+          "idle",
+          direction,
+          [definition.idleFrameByDirection[direction]],
+        );
+        this.createAvatarFramesFromSource(
+          definition,
+          walkSourceImage,
+          "walk",
+          direction,
+          definition.walkFramesByDirection[direction],
+        );
+        this.createAvatarFramesFromSource(
+          definition,
+          sitSourceImage,
+          "sit",
+          direction,
+          [definition.sitFramesByDirection[direction][0]!],
+        );
+      });
     });
   }
 
   private createAvatarFramesFromSource(
     definition: AvatarSpriteDefinition,
-    textureKey: string,
     sourceImage: HTMLCanvasElement | HTMLImageElement,
+    animation: PresenceMovePayload["animation"],
+    direction: PresenceMovePayload["direction"],
     requiredFrames: readonly number[],
   ): void {
+    const layout = getAvatarSpriteLayoutForVariant(
+      definition.id,
+      animation,
+      direction,
+    );
     requiredFrames.forEach((frame) => {
-      const source = definition.frameSources[frame]!;
-      const frameKey = getAvatarFrameKey(definition, frame, textureKey);
+      const source = getAvatarFrameSource(frame, layout.sourceFrame);
+      const frameKey = getAvatarFrameKey(definition, frame, animation, direction);
       if (this.textures.exists(frameKey)) {
         return;
       }
@@ -707,7 +900,12 @@ export class OfficeScene extends Phaser.Scene {
         source.height,
       );
       const normalizedImageData = new ImageData(
-        removeNearTransparentPixels(imageData.data),
+        applyAvatarFrameCrop(
+          removeNearTransparentPixels(imageData.data),
+          imageData.width,
+          imageData.height,
+          layout.frameCrop,
+        ),
         imageData.width,
         imageData.height,
       );
@@ -715,7 +913,7 @@ export class OfficeScene extends Phaser.Scene {
       const xOffset = Math.round(
         source.width / 2 - (bounds.left + bounds.width / 2),
       );
-      const yOffset = definition.footBaseline - bounds.bottom;
+      const yOffset = layout.footBaseline - bounds.bottom;
 
       texture.context.clearRect(0, 0, source.width, source.height);
       texture.context.putImageData(normalizedImageData, xOffset, yOffset);
@@ -732,7 +930,7 @@ export class OfficeScene extends Phaser.Scene {
             frameRate: 9,
             frames: definition.walkFramesByDirection[direction].map(
               (frame) => ({
-                key: getAvatarFrameKey(definition, frame),
+                key: getAvatarFrameKey(definition, frame, "walk", direction),
               }),
             ),
             key: walkKey,
@@ -759,7 +957,8 @@ export class OfficeScene extends Phaser.Scene {
                 key: getAvatarFrameKey(
                   definition,
                   definition.sitFramesByDirection[direction][0]!,
-                  definition.sitTextureKey,
+                  "sit",
+                  direction,
                 ),
               },
             ],
@@ -778,7 +977,9 @@ export class OfficeScene extends Phaser.Scene {
     animation: PresenceMovePayload["animation"],
   ): void {
     const definition = getAvatarSpriteDefinition(avatarId);
-    sprite.setScale(definition.scale);
+    sprite.setScale(
+      getAvatarSpriteLayoutForVariant(avatarId, animation, direction).scale,
+    );
     sprite.setFlipX(shouldFlipAvatarSprite(avatarId, direction, animation));
     sprite.anims.play(
       getAvatarAnimationKey(definition, direction, animation),
@@ -795,6 +996,230 @@ export class OfficeScene extends Phaser.Scene {
     this.wasd.left.reset();
     this.wasd.right.reset();
     this.wasd.up.reset();
+  }
+
+  private showChatBubbleForAvatar(
+    bubble: AvatarChatBubble | undefined,
+    text: string,
+    previousTimer: Phaser.Time.TimerEvent | undefined,
+    setTimer: (timer: Phaser.Time.TimerEvent | undefined) => void,
+    onHide: () => void,
+  ): void {
+    if (!bubble) {
+      return;
+    }
+
+    previousTimer?.remove(false);
+    bubble.label.setText(text);
+    this.resizeAvatarChatBubble(bubble);
+    this.setAvatarChatBubbleVisible(bubble, true);
+    setTimer(this.time.delayedCall(4_000, () => {
+      this.setAvatarChatBubbleVisible(bubble, false);
+      setTimer(undefined);
+      onHide();
+    }));
+  }
+
+  private setLocalAvatarIdentityVisible(visible: boolean): void {
+    this.localNameLabel?.setVisible(visible);
+    this.setAvatarStatusBubbleVisible(this.localStatusBubble, visible);
+  }
+
+  private setRemoteAvatarIdentityVisible(
+    avatar: RemoteAvatar,
+    visible: boolean,
+  ): void {
+    avatar.label.setVisible(visible);
+    this.setAvatarStatusBubbleVisible(avatar.statusBubble, visible);
+  }
+
+  private setAvatarStatusBubbleVisible(
+    bubble: AvatarStatusBubble | undefined,
+    visible: boolean,
+  ): void {
+    if (!bubble) {
+      return;
+    }
+
+    bubble.background.setVisible(visible);
+    bubble.label.setVisible(visible);
+    bubble.tail.setVisible(visible);
+  }
+
+  private createAvatarChatBubble(
+    x: number,
+    y: number,
+    depth = 0,
+  ): AvatarChatBubble {
+    const background = this.add
+      .rectangle(
+        x,
+        y,
+        AVATAR_CHAT_BUBBLE_MIN_WIDTH,
+        AVATAR_CHAT_BUBBLE_MIN_HEIGHT,
+        0xfff7e9,
+      )
+      .setStrokeStyle(3, 0x6b4a35)
+      .setDepth(depth)
+      .setVisible(false);
+    const tail = this.add
+      .triangle(
+        x,
+        y + AVATAR_CHAT_BUBBLE_MIN_HEIGHT / 2 - 1,
+        0,
+        0,
+        18,
+        0,
+        9,
+        9,
+        0xfff7e9,
+      )
+      .setOrigin(0.5, 0)
+      .setStrokeStyle(2, 0x6b4a35)
+      .setDepth(depth)
+      .setVisible(false);
+    const label = this.add
+      .text(x, y, "", {
+        align: "center",
+        color: "#4a2f1e",
+        fontFamily: AVATAR_LABEL_FONT_FAMILY,
+        fontSize: "18px",
+        fontStyle: "bold",
+        wordWrap: { width: 220 },
+      })
+      .setOrigin(0.5)
+      .setDepth(depth + 1)
+      .setVisible(false);
+    return { background, label, tail };
+  }
+
+  private setAvatarChatBubblePosition(
+    bubble: AvatarChatBubble | undefined,
+    x: number,
+    y: number,
+  ): void {
+    if (!bubble) {
+      return;
+    }
+
+    bubble.background.setPosition(x, y);
+    bubble.label.setPosition(x, y);
+    bubble.tail.setPosition(x, y + bubble.background.height / 2 - 1);
+  }
+
+  private resizeAvatarChatBubble(bubble: AvatarChatBubble): void {
+    const width = Math.max(
+      AVATAR_CHAT_BUBBLE_MIN_WIDTH,
+      Math.ceil(bubble.label.width) + 34,
+    );
+    const height = Math.max(
+      AVATAR_CHAT_BUBBLE_MIN_HEIGHT,
+      Math.ceil(bubble.label.height) + 24,
+    );
+    bubble.background.setSize(width, height);
+    this.setAvatarChatBubblePosition(
+      bubble,
+      bubble.background.x,
+      bubble.background.y,
+    );
+  }
+
+  private setAvatarChatBubbleVisible(
+    bubble: AvatarChatBubble,
+    visible: boolean,
+  ): void {
+    bubble.background.setVisible(visible);
+    bubble.label.setVisible(visible);
+    bubble.tail.setVisible(visible);
+  }
+
+  private createAvatarStatusBubble(
+    x: number,
+    y: number,
+    text: string,
+    style: ReturnType<typeof getAvatarStatusStyle>,
+    depth = 0,
+  ): AvatarStatusBubble {
+    const fillColor = Phaser.Display.Color.HexStringToColor(
+      style.backgroundColor,
+    ).color;
+    const background = this.add
+      .rectangle(
+        x,
+        y,
+        AVATAR_STATUS_BUBBLE_MIN_WIDTH,
+        AVATAR_STATUS_BUBBLE_HEIGHT,
+        fillColor,
+      )
+      .setStrokeStyle(3, 0x6b4a35)
+      .setDepth(depth);
+    const tail = this.add
+      .triangle(x, y + AVATAR_STATUS_BUBBLE_HEIGHT / 2 - 1, 0, 0, 16, 0, 8, 8, fillColor)
+      .setOrigin(0.5, 0)
+      .setStrokeStyle(2, 0x6b4a35)
+      .setDepth(depth);
+    const label = this.add
+      .text(x, y, text, {
+        align: "center",
+        color: style.color,
+        fontFamily: AVATAR_LABEL_FONT_FAMILY,
+        fontSize: "20px",
+        fontStyle: "bold",
+      })
+      .setOrigin(0.5)
+      .setDepth(depth + 1);
+    const bubble = { background, label, tail };
+    this.resizeAvatarStatusBubble(bubble, style);
+    return bubble;
+  }
+
+  private setAvatarStatusBubblePosition(
+    bubble: AvatarStatusBubble | undefined,
+    x: number,
+    y: number,
+  ): void {
+    if (!bubble) {
+      return;
+    }
+
+    bubble.background.setPosition(x, y);
+    bubble.label.setPosition(x, y);
+    bubble.tail.setPosition(x, y + AVATAR_STATUS_BUBBLE_HEIGHT / 2 - 1);
+  }
+
+  private updateAvatarStatusBubble(
+    bubble: AvatarStatusBubble | undefined,
+    member: OfficeMemberPresence,
+  ): void {
+    if (!bubble) {
+      return;
+    }
+
+    const style = getAvatarStatusStyle(getCalendarPresenceTone(member));
+    bubble.label.setText(getAvatarStatusText(member)).setColor(style.color);
+    this.resizeAvatarStatusBubble(bubble, style);
+  }
+
+  private resizeAvatarStatusBubble(
+    bubble: AvatarStatusBubble,
+    style: ReturnType<typeof getAvatarStatusStyle>,
+  ): void {
+    const fillColor = Phaser.Display.Color.HexStringToColor(
+      style.backgroundColor,
+    ).color;
+    const width = Math.max(
+      AVATAR_STATUS_BUBBLE_MIN_WIDTH,
+      Math.ceil(bubble.label.width) + 28,
+    );
+
+    bubble.background.setSize(width, AVATAR_STATUS_BUBBLE_HEIGHT);
+    bubble.background.setFillStyle(fillColor).setStrokeStyle(3, 0x6b4a35);
+    bubble.tail.setFillStyle(fillColor).setStrokeStyle(2, 0x6b4a35);
+    this.setAvatarStatusBubblePosition(
+      bubble,
+      bubble.background.x,
+      bubble.background.y,
+    );
   }
 }
 
@@ -832,15 +1257,18 @@ function getAvatarIdleFrame(
   return getAvatarFrameKey(
     definition,
     getAvatarFrameIndex(definition, direction, "idle"),
+    "idle",
+    direction,
   );
 }
 
 function getAvatarFrameKey(
   definition: AvatarSpriteDefinition,
   frame: number,
-  textureKey = definition.textureKey,
+  animation: PresenceMovePayload["animation"],
+  direction: PresenceMovePayload["direction"],
 ): string {
-  return `${textureKey}-${definition.id}-frame-${frame}`;
+  return `office-avatar-${definition.id}-${animation}-${direction}-frame-${frame}`;
 }
 
 function getAvatarAnimationKey(
@@ -851,8 +1279,30 @@ function getAvatarAnimationKey(
   return `${definition.id}-${animation}-${direction}`;
 }
 
-function getRemoteLabel(member: OfficeMemberPresence): string {
-  return `${member.displayName}\n${getCalendarPresenceLabel(member)}`;
+function getAvatarStatusStyle(tone: string): {
+  backgroundColor: string;
+  color: string;
+} {
+  if (tone === "meeting" || tone === "in_meeting") {
+    return { backgroundColor: "#e3d7ff", color: "#563b91" };
+  }
+  if (tone === "focus" || tone === "focused") {
+    return { backgroundColor: "#ffe1b6", color: "#7a4a18" };
+  }
+  if (tone === "vacation" || tone === "absent" || tone === "away") {
+    return { backgroundColor: "#f1d6d0", color: "#8a3e32" };
+  }
+  if (tone === "remote_work") {
+    return { backgroundColor: "#d7edf1", color: "#2c6270" };
+  }
+  if (tone === "sleeping" || tone === "ghost") {
+    return { backgroundColor: "#ded8d1", color: "#685f56" };
+  }
+  return { backgroundColor: "#d7efd3", color: "#315e32" };
+}
+
+function getAvatarStatusText(member: OfficeMemberPresence): string {
+  return `● ${i18n.t(getCalendarPresenceTranslationKey(member))}`;
 }
 
 function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {

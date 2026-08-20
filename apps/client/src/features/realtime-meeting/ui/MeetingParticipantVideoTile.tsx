@@ -8,8 +8,10 @@ import {
   VideoOff,
   type LucideIcon
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import type { LiveKitMeetingParticipant } from "../model/use-livekit-meeting-session";
+import { hasSameMeetingParticipantTileState } from "../model/meeting-participant-render-state";
 import { MeetingMediaTrackElement } from "./MeetingMediaTrackElement";
 
 interface MeetingParticipantVideoTileProps {
@@ -17,28 +19,23 @@ interface MeetingParticipantVideoTileProps {
   variant?: "strip" | "expanded";
 }
 
-const CONNECTION_QUALITY_LABELS: Record<ConnectionQuality, string> = {
-  excellent: "연결 매우 좋음",
-  good: "연결 좋음",
-  lost: "연결 끊김",
-  poor: "연결 불안정",
-  unknown: "연결 확인 중"
-};
-
 export const MeetingParticipantVideoTile = memo(
   function MeetingParticipantVideoTile({
     participant,
     variant = "strip"
   }: MeetingParticipantVideoTileProps): JSX.Element {
-    const cameraStatus = getCameraStatus(participant);
+    const { t } = useTranslation();
+    const cameraStatus = t(getCameraStatusKey(participant));
     const microphoneStatus = participant.isMicrophoneEnabled
-      ? "마이크 켜짐"
-      : "마이크 꺼짐";
+      ? t("meetingParticipants.microphone.enabled")
+      : t("meetingParticipants.microphone.disabled");
     const displayName = participant.isLocal
-      ? `나 · ${participant.participantName}`
+      ? t("meetingParticipants.localPrefix", {
+          name: participant.participantName
+        })
       : participant.participantName;
     const connectionStatus =
-      CONNECTION_QUALITY_LABELS[participant.connectionQuality];
+      t(`meetingParticipants.connectionQuality.${participant.connectionQuality}`);
     const MicrophoneIcon = participant.isMicrophoneEnabled ? Mic : MicOff;
     const CameraIcon = participant.isCameraEnabled ? Video : VideoOff;
 
@@ -102,7 +99,13 @@ export const MeetingParticipantVideoTile = memo(
         ) : null}
       </article>
     );
-  }
+  },
+  (previousProps, nextProps) =>
+    previousProps.variant === nextProps.variant &&
+    hasSameMeetingParticipantTileState(
+      previousProps.participant,
+      nextProps.participant
+    )
 );
 
 function ParticipantStatusIcon({
@@ -120,16 +123,16 @@ function ParticipantStatusIcon({
   );
 }
 
-function getCameraStatus(participant: LiveKitMeetingParticipant): string {
+function getCameraStatusKey(participant: LiveKitMeetingParticipant): string {
   if (!participant.isCameraEnabled) {
-    return "카메라 꺼짐";
+    return "meetingParticipants.video.disabled";
   }
 
   if (!participant.videoTrack) {
-    return "영상 준비 중";
+    return "meetingParticipants.video.preparing";
   }
 
-  return "영상 켜짐";
+  return "meetingParticipants.video.enabled";
 }
 
 function getConnectionTone(quality: ConnectionQuality): "good" | "bad" {

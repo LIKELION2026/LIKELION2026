@@ -8,7 +8,7 @@ export type MeetingDevicePreflightStatus =
 
 export interface MeetingDevicePreflightState {
   audioInputCount: number;
-  message: string;
+  messageKey: string;
   status: MeetingDevicePreflightStatus;
   videoInputCount: number;
 }
@@ -16,7 +16,7 @@ export interface MeetingDevicePreflightState {
 export const INITIAL_MEETING_DEVICE_PREFLIGHT_STATE: MeetingDevicePreflightState =
   {
     audioInputCount: 0,
-    message: "카메라와 마이크를 확인하기 전입니다.",
+    messageKey: "meetingDevicePreflight.message.idle",
     status: "idle",
     videoInputCount: 0
   };
@@ -25,7 +25,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
   if (!window.isSecureContext) {
     return {
       audioInputCount: 0,
-      message: "보안 연결이 아니어서 카메라와 마이크 권한을 요청할 수 없습니다.",
+      messageKey: "meetingDevicePreflight.message.securityUnavailable",
       status: "security-unavailable",
       videoInputCount: 0
     };
@@ -34,7 +34,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
   if (!navigator.mediaDevices?.getUserMedia || !navigator.mediaDevices.enumerateDevices) {
     return {
       audioInputCount: 0,
-      message: "이 브라우저에서는 카메라와 마이크 장치를 확인할 수 없습니다.",
+      messageKey: "meetingDevicePreflight.message.notSupported",
       status: "device-unavailable",
       videoInputCount: 0
     };
@@ -55,7 +55,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
     if (audioInputCount === 0 || videoInputCount === 0) {
       return {
         audioInputCount,
-        message: "사용 가능한 카메라 또는 마이크 장치를 찾지 못했습니다.",
+        messageKey: "meetingDevicePreflight.message.deviceUnavailable",
         status: "device-unavailable",
         videoInputCount
       };
@@ -63,7 +63,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
 
     return {
       audioInputCount,
-      message: "카메라와 마이크를 사용할 수 있습니다.",
+      messageKey: "meetingDevicePreflight.message.ready",
       status: "ready",
       videoInputCount
     };
@@ -71,7 +71,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
     if (isSecurityContextError(error)) {
       return {
         audioInputCount: 0,
-        message: "보안 연결이 아니어서 카메라와 마이크 권한을 요청할 수 없습니다.",
+        messageKey: "meetingDevicePreflight.message.securityUnavailable",
         status: "security-unavailable",
         videoInputCount: 0
       };
@@ -80,7 +80,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
     if (isPermissionDeniedError(error)) {
       return {
         audioInputCount: 0,
-        message: "브라우저에서 카메라 또는 마이크 권한이 거부되었습니다.",
+        messageKey: "meetingDevicePreflight.message.permissionDenied",
         status: "permission-denied",
         videoInputCount: 0
       };
@@ -88,7 +88,7 @@ export async function checkMeetingDevicePreflight(): Promise<MeetingDevicePrefli
 
     return {
       audioInputCount: 0,
-      message: "사용 가능한 카메라 또는 마이크 장치를 찾지 못했습니다.",
+      messageKey: "meetingDevicePreflight.message.deviceUnavailable",
       status: "device-unavailable",
       videoInputCount: 0
     };

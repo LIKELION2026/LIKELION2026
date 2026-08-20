@@ -10,6 +10,7 @@ import { io, type Socket } from "socket.io-client";
 import { SERVER_URL } from "../../../shared/config/environment";
 import { listMockSubtitles } from "../api/list-mock-subtitles";
 import { filterMeetingSubtitlesAfterActivation } from "./meeting-subtitle-activation";
+import { upsertMeetingSubtitlePayloads } from "./meeting-subtitle-buffer";
 
 export type MeetingSubtitleStatus =
   | "idle"
@@ -124,7 +125,7 @@ export function useMeetingSubtitles(
 
       setStateIfMounted((currentState) => ({
         ...currentState,
-        subtitles: upsertSubtitlePayloads(
+        subtitles: upsertMeetingSubtitlePayloads(
           currentState.subtitles,
           filterMeetingSubtitlesAfterActivation([payload], activatedAt)
         )
@@ -183,13 +184,13 @@ async function loadInitialSubtitles(
     const response = await listMockSubtitles(roomName);
 
     if (response.updateStrategy !== SUBTITLE_UPDATE_STRATEGY) {
-      throw new Error("지원하지 않는 자막 업데이트 방식입니다.");
+      throw new Error("meetingErrors.unsupportedSubtitleUpdate");
     }
 
     setStateIfMounted((currentState) => ({
       ...currentState,
       errorMessage: undefined,
-      subtitles: upsertSubtitlePayloads(
+      subtitles: upsertMeetingSubtitlePayloads(
         currentState.subtitles,
         filterMeetingSubtitlesAfterActivation(response.payloads, activatedAt)
       )
@@ -200,56 +201,9 @@ async function loadInitialSubtitles(
       errorMessage:
         error instanceof Error
           ? error.message
-          : "자막 목록을 불러오지 못했습니다.",
+          : "meetingErrors.subtitlesLoadFailed",
       status:
         currentState.status === "subscribed" ? currentState.status : "failed"
     }));
   }
-}
-
-function upsertSubtitlePayloads(
-  currentSubtitles: SubtitleCreatedPayload[],
-  incomingSubtitles: SubtitleCreatedPayload[]
-): SubtitleCreatedPayload[] {
-  const subtitleById = new Map(
-    currentSubtitles.map((subtitle) => [subtitle.subtitleId, subtitle])
-  );
-  let didChange = false;
-
-  incomingSubtitles.forEach((subtitle) => {
-    const existingSubtitle = subtitleById.get(subtitle.subtitleId);
-
-    if (existingSubtitle && existingSubtitle.revision > subtitle.revision) {
-      return;
-    }
-
-    subtitleById.set(subtitle.subtitleId, subtitle);
-    didChange = true;
-  });
-
-  if (!didChange) {
-    return currentSubtitles;
-  }
-
-  return [...subtitleById.values()].sort(compareSubtitlePayloads);
-}
-
-function compareSubtitlePayloads(
-  left: SubtitleCreatedPayload,
-  right: SubtitleCreatedPayload
-): number {
-  const occurredAtDifference =
-    toTimestamp(left.occurredAt) - toTimestamp(right.occurredAt);
-
-  if (occurredAtDifference !== 0) {
-    return occurredAtDifference;
-  }
-
-  return left.subtitleId.localeCompare(right.subtitleId);
-}
-
-function toTimestamp(value: string): number {
-  const timestamp = Date.parse(value);
-
-  return Number.isNaN(timestamp) ? 0 : timestamp;
 }

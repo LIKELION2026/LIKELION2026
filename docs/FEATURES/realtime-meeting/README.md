@@ -4,11 +4,11 @@
 >
 > 작성일: 2026-08-15
 >
-> 마지막 업데이트: 2026-08-19
+> 마지막 업데이트: 2026-08-20
 >
 > 상태: 구현 진행
 >
-> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6, https://github.com/LIKELION2026/LIKELION2026/issues/133, https://github.com/LIKELION2026/LIKELION2026/issues/134
+> 관련 Issue / PR / Discussion: https://github.com/LIKELION2026/LIKELION2026/issues/6, https://github.com/LIKELION2026/LIKELION2026/issues/133, https://github.com/LIKELION2026/LIKELION2026/issues/134, https://github.com/LIKELION2026/LIKELION2026/issues/135
 
 ## 해결하려는 문제
 
@@ -78,13 +78,14 @@ sequenceDiagram
 - 로컬 메시지는 즉시 `sending` 상태로 표시하고, LiveKit stream id 또는 local echo가 도착하면 `sent` 상태로 병합한다.
 - 전송 실패 메시지는 사라지지 않고, 사용자가 재시도하거나 삭제할 수 있다.
 - 세션 채팅은 현재 회의 참가자에게만 전달되는 비영속 메시지다. DB 저장과 이전 회의 내역 복원은 후속 범위로 둔다.
-- UI 메모리 보호 상한은 최근 5,000개 메시지다. 1시간 회의에서 일반 채팅과 AI 번역 메시지가 함께 들어오는 상황을 고려해, 기존 100개 제한보다 크게 잡는다.
+- UI 메모리 보호 상한은 최근 100개 메시지다. 일반 채팅과 AI 번역 메시지가 같은 타임라인에 들어오므로 장시간 회의 원본을 Client 메모리에 계속 쌓지 않고, 화면 렌더링은 최근 항목만 유지한다. 장기 기록 보존은 DB 저장 또는 transcript 저장 기능에서 별도로 다룬다.
 - AI 번역 메시지는 일반 사용자 메시지로 위장하지 않고 `translation` kind와 `AI 번역` 라벨로 구분한다. 번역 ON 상태에서만 자막 Socket을 구독하고, 켠 시각(`activatedAt`) 이후 payload만 채팅 타임라인에 병합한다. 원문은 별도 `sourceText`로 보존한다.
 - 재연결 중에는 이번 MVP에서 입력을 비활성화한다. 로컬 대기열 전송은 후속 안정화 범위로 둔다.
 
 ## AI 번역 ON/OFF 정책
 
 - AI 번역은 기본 ON이다.
+- 회의 번역 언어 설정은 UI 표시 언어와 별도 상태다. UI 언어를 한국어/베트남어로 바꿔도 `sourceLanguage`, `targetLanguage`, LiveKit participant attributes는 자동 변경하지 않는다.
 - OFF 상태에서 하단 `Globe` 버튼을 눌러 다시 ON으로 바꾸면 언어 설정 모달을 먼저 띄운다.
 - MVP 지원 언어는 `ko`, `vi`만 허용한다.
 - UI 옵션은 `KR`, `VI`로 표시하고, 내부 언어 코드는 각각 `ko`, `vi`를 사용한다.
@@ -132,6 +133,16 @@ Client에는 공개 가능한 LiveKit 서버 URL만 전달한다. `LIVEKIT_API_S
 | 회의 종료 | 퇴장 후 카메라·마이크 트랙과 룸 연결이 정리된다. |
 
 테스트 룸 이름은 `lab-<team-member>-<date>` 형식을 사용해 데모·개발 룸과 구분한다.
+
+## 성능 정책
+
+- 6명 P0 회의를 기준으로 카메라 송출 상한은 720p/15fps로 둔다.
+- LiveKit `adaptiveStream`과 `dynacast`를 함께 켜서 보이지 않는 remote video와 소비되지 않는 simulcast layer의 네트워크·CPU 사용을 줄인다.
+- 기본 화면의 상단 참가자 strip은 최대 6명만 렌더한다. 6명을 넘는 경우 local participant와 speaking participant를 우선 보여 주고 나머지는 overflow로 표시한다.
+- 화면 키우기 모드에서는 상단 strip을 렌더하지 않고 grid만 렌더한다. 같은 LiveKit video track이 strip과 grid에 동시에 attach되는 상황을 피하기 위한 정책이다.
+- 카메라 또는 마이크가 꺼진 참가자는 placeholder/status만 표시하고 media element를 만들지 않는다.
+- 자막 payload는 같은 `subtitleId`의 더 높은 `revision`으로 교체하며 최근 100개만 화면에 유지한다.
+- 상세 측정 절차와 6인 수동 검증표는 [Realtime Meeting Performance](./PERFORMANCE.md)에 기록한다.
 
 ## 완료 기준
 

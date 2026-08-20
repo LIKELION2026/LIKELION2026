@@ -101,6 +101,14 @@ export function saveDevelopmentProfile(
   return savedProfile;
 }
 
+export function getGuestLanguageByCountryCode(
+  countryCode: CountryCode
+): LanguageCode {
+  return MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY[
+    countryCodeToParticipantCountry(countryCode)
+  ];
+}
+
 function toDevelopmentIdentity(profile: DevelopmentProfile): DevelopmentIdentity {
   const countryCode = participantCountryToCountryCode(profile.participantCountry);
 
@@ -180,7 +188,7 @@ function normalizeGuestProfile(
     ...(avatarId ? { avatarId } : {}),
     countryCode,
     displayName,
-    language: getLanguageByCountryCode(countryCode)
+    language: getGuestLanguageByCountryCode(countryCode)
   };
 }
 
@@ -192,7 +200,7 @@ function developmentProfileToGuestProfile(
   return {
     countryCode,
     displayName: profile.displayName,
-    language: getLanguageByCountryCode(countryCode)
+    language: getGuestLanguageByCountryCode(countryCode)
   };
 }
 
@@ -200,7 +208,7 @@ function getDefaultGuestProfile(): GuestProfile {
   return {
     countryCode: DEFAULT_COUNTRY_CODE,
     displayName: DEFAULT_DISPLAY_NAME,
-    language: getLanguageByCountryCode(DEFAULT_COUNTRY_CODE)
+    language: getGuestLanguageByCountryCode(DEFAULT_COUNTRY_CODE)
   };
 }
 
@@ -248,12 +256,6 @@ function participantCountryToCountryCode(
   participantCountry: MeetingParticipantCountry
 ): CountryCode {
   return participantCountry === "vn" ? "VN" : "KR";
-}
-
-function getLanguageByCountryCode(countryCode: CountryCode): LanguageCode {
-  return MEETING_PARTICIPANT_LANGUAGE_BY_COUNTRY[
-    countryCodeToParticipantCountry(countryCode)
-  ];
 }
 
 function getParticipantCountryFromLanguage(

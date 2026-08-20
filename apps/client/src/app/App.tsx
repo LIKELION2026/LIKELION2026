@@ -1,5 +1,6 @@
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 import { MeetingLabPage } from "../pages/meeting-lab/MeetingLabPage";
 import { OfficePage } from "../pages/office/OfficePage";
@@ -33,6 +34,7 @@ function AppRouter(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const location = useLocation();
+  const { t } = useTranslation();
   const isOfficeRoute = location.pathname === "/office";
   const isCollisionEditorRoute = location.pathname === "/collision-editor";
 
@@ -43,7 +45,7 @@ function AppContent(): JSX.Element {
           <NavLink className="brand" to="/office">
             GLOBAL OFFICE
           </NavLink>
-          <nav aria-label="주요 메뉴" className="app-navigation">
+          <nav aria-label={t("app.navigationAriaLabel")} className="app-navigation">
             <NavLink to="/office">Office</NavLink>
             <NavLink to="/meeting-lab">Meeting Lab</NavLink>
           </nav>

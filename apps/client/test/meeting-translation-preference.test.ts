@@ -46,7 +46,7 @@ test("validates source and target languages before enabling translation", () => 
       targetLanguage: "ko"
     }),
     {
-      message: "나의 언어와 상대방에게 보여줄 언어는 서로 달라야 합니다.",
+      message: "meetingTranslation.validation.sameLanguage",
       ok: false,
       reason: "same-language"
     }

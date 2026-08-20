@@ -2,7 +2,7 @@
 
 > 작성자: Project Team
 >
-> 마지막 업데이트: 2026-08-19
+> 마지막 업데이트: 2026-08-20
 
 ## 목적
 
@@ -800,3 +800,98 @@
 - 팀원 검토·수정 내용: 사용자가 요청한 네 가지 화면 개선을 하나의 범위로 확정했다. `1.00`은 저장소 전체의 문자열·숫자 포맷·영상 UI를 검색했지만 앱에서 생성하는 코드가 없어 브라우저 영상 속도 확장 프로그램이 주입한 표시로 추정했다. 이후 사용자가 `-`, `+` 버튼으로 `0.9~1.1`이 바뀐다고 재현 정보를 제공해, 회의 영상 영역에 한정해 해당 주입 UI를 숨기는 방식으로 변경했다.
 - 검증 결과: 관련 Client Node 테스트 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. 추가 사이드바 레이아웃 조정 뒤 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 영상 속도 컨트롤 숨김과 확대 전 타일 크기 조정 뒤에도 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 빌드의 chunk-size warning은 기존과 같은 비차단 경고다. Browser Skill 런타임 연결 오류로 실제 회의 화면 수동 확인은 수행하지 못했으며, 두 브라우저 영상·음성 송수신은 사람이 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #156
+
+### 2026-08-19 - 오피스 아바타 상호작용과 공용 채팅 초안
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 상대 아바타에서 상태·공개 TODO·찾아가기·불러오기·메시지 진입점을 제공하고, 같은 오피스 참여자가 볼 수 있는 짧은 공용 채팅과 말풍선을 추가한다.
+- 입력 맥락: Issue #160, `docs/PRD.md` F1·F2·F4, 기존 TODO Socket 갱신 구조와 협업 보드 디자인 토큰
+- AI 제안 또는 산출물: Shared Socket 계약에 `office.chat.send`와 `office.chat.message`를 추가하고, Server가 연결된 팀 방에만 메시지를 중계하도록 구성했다. Client는 선택된 상대 아바타의 공개 TODO와 빠른 액션을 표시하고, 채팅 메시지를 공용 패널·발화자 말풍선에 동기화하도록 구현했다.
+- 팀원 검토·수정 내용: 아바타 규격 보정은 별도 브랜치에 보존하고, UI·상호작용 개선만 `origin/dev`에서 분리해 작업하도록 사용자가 범위를 확정했다. 1:1 영구 메시지 대신 해커톤 MVP 범위에 맞는 공용 채팅 멘션 진입점으로 제한했다. 이후 상태 라벨이 아바타 몸을 가린다는 피드백에 따라 이름과 상태를 분리하고, 상태는 머리 위 픽셀 태그로 조정했다.
+- 검증 결과: 작업 중 Shared/Client/Server 타입 검사를 시도했다. 현재 `origin/dev`의 회의 번역 Client 코드가 Shared 빌드 결과와 불일치해 기존 번역 타입 오류로 전체 Client 타입 검사가 막혀 있으며, 채팅 UI의 실제 두 브라우저 수동 검증은 후속으로 진행한다.
+- 관련 Issue / PR / Discussion: Issue #160
+
+### 2026-08-20 - 게임형 입장 및 아바타 선택 화면 토큰 정비
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 일반 폼처럼 보이던 이름·국가·아바타 선택 화면을 TODO 상태 패널과 같은 게임형 UI 언어로 정리한다.
+- 입력 맥락: 사용자 제공 입장 화면 캡처, `GuestOnboarding`, `OfficeTodoPanel`, `apps/client/src/app/styles.css`의 기존 픽셀 프레임·도트 질감·버튼 그림자 토큰
+- AI 제안 또는 산출물: 입장 모달과 국가·아바타 선택 카드에 갈색 픽셀 프레임, 점 질감 배경, 눌림 그림자, 선택·사용 중 상태를 반영했다. 4×3 데스크톱 배치와 모바일 3열 축소 규칙은 유지했다.
+- 팀원 검토·수정 내용: 사용자 요청에 따라 아바타 에셋 규격 보정은 이 작업 범위에서 제외하고 UI 토큰 적용만 진행했다.
+- 검증 결과: CSS 변경 후 `git diff --check`로 공백 오류를 확인한다. 실제 브라우저 시각 검수는 팀원이 로컬 화면에서 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #160
+
+### 2026-08-20 - 6인 회의 성능 최적화 1차와 측정 절차 문서화
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 지도, LiveKit RTC, 채팅, AI 번역 자막이 동시에 동작하는 Meeting Room의 6인 P0 성능 리스크를 줄이고, 수동 부하 검증 절차를 고정한다.
+- 입력 맥락: Issue #135, 의존 Issue #131~#134 결과물, `useLiveKitMeetingSession`, `MeetingParticipantVideoTile`, `useMeetingSubtitles`, `meeting-chat-message`, Translation Agent room runner
+- AI 제안 또는 산출물: LiveKit `adaptiveStream: true` 복구, 720p/15fps camera capture/publish 정책, 기본 화면 participant strip 6명 렌더 예산, expanded view의 strip/grid 중복 video attach 제거, camera/mic OFF publication media element 제외, participant tile memo 비교 함수, 채팅/자막 화면 보관 100개 상한, subtitleId+revision 기반 자막 교체 모델, Translation Agent detach task await 보강, `PERFORMANCE.md` 측정 절차 문서화
+- 팀원 검토·수정 내용: 사용자가 #135 기준 새 브랜치를 요청했고, 브랜치명은 `codex/` 없이 만들어야 한다고 지시했다. 실제 6인 Chrome 부하 측정은 현재 작업 환경에서 수행하지 못하므로 문서에 `미측정`으로 남기고 수동 측정 항목을 분리했다.
+- 검증 결과: 작업 중 관련 Client Node 테스트, Client typecheck, translation-pipeline pytest를 실행해 확인한다. 6명/5분 수동 부하 검증과 DevTools/LiveKit stats 캡처는 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #135
+
+### 2026-08-20 - 물리 회의실별 LiveKit roomName 분리
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 맵의 상단 회의룸 3개와 하단 회의룸 1개가 모두 같은 LiveKit 방으로 연결되는 문제를 고쳐, 물리 회의실별로 독립 회의를 열 수 있게 한다.
+- 입력 맥락: 사용자 요청, Issue #170, `OFFICE_MEETING_ZONES`, `VirtualOffice`, `OfficeScene`, `meeting-room-section.ts`, Translation Pipeline `rooms.py`
+- AI 제안 또는 산출물: Shared에 `MEETING_ROOM_SECTION_IDS`와 `OFFICE_MEETING_ZONE_SECTION_IDS` 계약을 추가하고, Phaser Scene이 boolean 대신 실제 회의 zone id를 React에 전달하도록 바꿨다. Client는 zone id별로 `lab-likelion-<날짜>-meeting-room(-1/-2/-3)` roomName을 만들고, Translation Pipeline도 같은 섹션 slug를 인식하도록 갱신했다.
+- 팀원 검토·수정 내용: 사용자가 LiveKit Cloud 설정 여부를 물었고, 방은 Cloud에서 미리 만드는 대신 토큰의 roomName으로 분리하는 방향을 확인했다. 사용자가 `codex/`로 시작하지 않는 브랜치와 GitHub Issue 생성을 요청해 `feat/meeting-room-zones` 브랜치와 Issue #170을 만들고 작업했다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-room-section.test.ts apps/client/test/office-map.test.ts apps/client/test/meeting-session-join-request.test.ts` 9건 통과, `uv run --cache-dir .uv-cache --with pytest python -m pytest tests/test_rooms.py` 32건 통과, `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과. 실제 LiveKit Cloud에서 다른 물리 회의실 간 음성·영상 분리는 팀원 브라우저 2개 이상으로 추가 확인해야 한다.
+- 관련 Issue / PR / Discussion: Issue #170
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 1차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 한국어로 고정된 시작 화면과 오피스 HUD에 베트남어 UI 전환 기반을 추가하고, UI 언어를 국가·참가자 언어·회의 번역 설정과 분리한다.
+- 입력 맥락: Issue #172, `GuestOnboarding`, `OfficeHud`, `development-identity`, `meeting-translation-preference`
+- AI 제안 또는 산출물: `i18next`/`react-i18next` 초기화, `virtual-office.ui-locale` 저장·복원, 브라우저 언어 기반 최초 기본값, `<html lang>` 동기화, 온보딩 언어 선택, HUD 언어 선택, UI 로케일 순수 함수 테스트 초안을 추가한다. 베트남어 문구는 AI 초안이며 원어민 검토 전까지 임시 번역으로 둔다.
+- 팀원 검토·수정 내용: 사용자가 구현 TODO 중 1~3번까지만 진행하도록 범위를 제한했다. 전체 Client 문구 이전, Shared 표시 라벨 제거, 글자 포함 이미지 교체는 후속 범위로 남긴다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/meeting-translation-preference.test.ts` 13건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 베트남어 자연스러움과 실제 브라우저 화면 캡처는 팀원 또는 원어민 검토가 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 2차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Shared/domain의 표시용 한국어 라벨과 한국어가 박힌 UI 이미지를 제거해, Client가 현재 UI locale 기준으로 상태와 패널 문구를 표시하게 한다.
+- 입력 맥락: Issue #172의 구현 TODO 4~5, `MEMBER_STATUS_LABELS`, `calendar-presence`, `OFFICE_MEETING_ZONES`, `OfficeTodoPanel`, `OfficePeoplePanel`
+- AI 제안 또는 산출물: Shared의 `MEMBER_STATUS_LABELS` 제거, 회의 구역 `labelKey` 전환, calendar presence 번역 key 반환, Phaser 아바타 상태 라벨의 i18n 적용, 상태/TODO 패널과 피플 배지의 텍스트 포함 PNG 제거 및 DOM 텍스트+Lucide 아이콘 대체, 텍스트 포함 PNG 10개 삭제.
+- 팀원 검토·수정 내용: 사용자가 구현 TODO 4~5 진행을 요청했다. 이미지 점검 중 이슈에 명시된 `panel-title.png`, `button-office.png` 외에도 같은 패턴의 상태 버튼·저장 버튼·피플 배지 이미지가 한국어 텍스트를 포함해 함께 제거했다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `node --test --experimental-strip-types apps/client/test/calendar-presence.test.ts apps/client/test/office-map.test.ts apps/client/test/office-collision-editor.test.ts apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/meeting-translation-preference.test.ts` 26건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 실제 브라우저에서 두 언어 레이아웃 캡처와 베트남어 문구 자연스러움 검토는 추가로 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 3차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #172의 남은 Client 시스템 문구, 회의 UI, 캘린더, 충돌 편집기, Meeting Lab, 오류 key 경계를 모두 UI locale 기반으로 전환하고 자동 회귀 검증을 보강한다.
+- 입력 맥락: Issue #172의 구현 TODO 3, 6, 7, `resources.ts`, `OfficeCalendarModal`, `OfficeCollisionEditor`, `MeetingRoomOverlay`, `MeetingLabPage`, `MeetingChatPanel`, `MeetingSubtitlePanel`
+- AI 제안 또는 산출물: 한국어·베트남어 리소스 트리를 전체 화면 범위로 확장하고, 아바타/피플/불러오기/회의 요약/공유 캘린더/회의 제어/채팅/자막/AI 번역/Meeting Lab/충돌 편집 UI의 화면 문구와 접근성 문구를 `t()` 경계로 이전했다. model/API 계층의 한국어 오류 문자열은 번역 key 또는 request error code로 바꾸고 최종 UI에서 번역하게 정리했다. 날짜·시간 표시는 `useUiLocale`과 `formatDateTime`을 통해 현재 UI 언어의 `Intl.DateTimeFormat`으로 표시한다. Client 소스의 한국어 하드코딩을 자동 점검하는 테스트와 ko/vi 리소스 구조 동등성 테스트도 추가했다. 브라우저 캡처 중 1280x720에서 온보딩 모달 상단이 잘리는 문제를 발견해 backdrop을 세로 스크롤 가능하게 보정했다.
+- 팀원 검토·수정 내용: 사용자가 “나머지 작업 전부” 진행을 요청해, 코드와 문서로 처리 가능한 잔여 범위를 모두 진행했다. PR 본문 작성, PR 화면 캡처 첨부, 베트남어 원어민 문구 검토는 PR/사람 검토 단계가 필요하므로 이슈에 후속 확인 항목으로 남긴다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `node --test --experimental-strip-types apps/client/test/ui-hardcoded-korean.test.ts` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 87건 통과, `git diff --check` 통과. 브라우저에서 시작 화면 1280x720/1920x1080 한국어·베트남어 캡처를 만들고 상단 잘림 보정 후 다시 확인했다. 로컬 Server는 기동됐지만 `/office/avatars` 응답이 지연되어 실제 오피스 내부 패널 캡처는 PR 단계에서 API 환경을 갖춰 추가 확인해야 한다. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 베트남어 번역은 AI 초안이므로 실제 사용자 문구 검수는 별도 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 화상회의 채팅 마지막 입력 누락 수정
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 화상회의 채팅에서 입력 직후 전송할 때 마지막 말이 누락되거나 사라지는 버그를 수정한다.
+- 입력 맥락: 사용자 요청, Issue #175, `MeetingChatPanel`, `meeting-chat-message`
+- AI 제안 또는 산출물: 채팅 textarea의 실제 DOM 값을 제출 시 우선 사용하도록 바꾸고, IME 조합 중 Enter 키다운은 전송으로 처리하지 않는 `shouldSubmitMeetingChatDraftKey` 모델 함수를 추가했다. 한글·베트남어 입력기 조합 완료 전 `requestSubmit()`이 실행되어 최신 조합 문자가 빠지는 흐름을 막기 위한 회귀 테스트도 추가했다.
+- 팀원 검토·수정 내용: 사용자가 버그 증상과 작업 시작 방식(이슈 생성, 브랜치 생성)을 요청했다. 실제 브라우저 IME 수동 재현 확인은 아직 사람이 추가 확인해야 한다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-chat-input.test.ts apps/client/test/meeting-chat-message.test.ts` 10건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 91건 통과, `git diff --check` 통과.
+- 관련 Issue / PR / Discussion: Issue #175
+
+### 2026-08-20 - 오피스 입장 전 UI 언어 선택 단계 분리
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill, Browser Skill
+- 사용 목적: 최초 오피스 입장 흐름에서 UI 언어 선택을 가장 먼저 보여주고, 선택 전 좌측 HUD와 오피스 채팅이 뒤에 보이지 않도록 정리한다.
+- 입력 맥락: 사용자 요청, Issue #177, `GuestOnboarding`, `VirtualOffice`, UI locale 선택 흐름
+- AI 제안 또는 산출물: `GuestOnboarding`을 언어 선택 단계와 기존 입장 정보 입력 단계로 나누고, 언어 선택 단계에서는 `OfficeHud`와 `OfficeChatPanel` 렌더링을 막았다. 언어 선택 후에만 아바타 사용 가능 목록을 조회하도록 조정해 최초 단계의 작업 범위를 줄였다. 추가 피드백에 따라 최초 언어 선택 카드에서는 상단 브랜드·설명 문구를 숨기고, 저장된 선택이 있어도 선택 전 기본 표시를 한국어로 고정했으며, 문구를 `언어 선택 (Chọn ngôn ngữ)`로 바꿨다. 두 온보딩 카드 프레임이 화면 중앙에 오도록 backdrop과 카드 내부 스크롤을 조정하고, 언어 선택 카드와 버튼 크기를 키웠다.
+- 팀원 검토·수정 내용: 기존 입장 모달의 시각 스타일은 유지하고, 언어 선택 버튼을 누르면 바로 나머지 입력 단계로 넘어가도록 구현했다. 사용자가 `codex/` 없는 브랜치명을 요청해 브랜치를 `feat/177-office-entry-language-step`로 바꿨다. 실제 사용자 플로우 최종 확인은 팀원 브라우저 검토가 필요하다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/office-entry-phase.test.ts` 15건 통과, `git diff --check` 통과. 로컬 Vite `/office` 화면에서 언어 선택 전에는 `언어 선택 (Chọn ngôn ngữ)`, `한국어`, `Tiếng Việt`만 보이고 HUD/채팅/이름·국가·아바타 입력이 숨겨지는 것을 확인했다. 한국어가 기본 선택되어 있었고, 한국어 선택 후 기존 입력 폼으로 전환되며 두 카드의 중심이 뷰포트 중심에 맞는 것을 Browser Skill로 확인했다. 언어 선택 카드 확대 후 카드 620px 폭, 버튼 68px 높이, 중앙 정렬 유지를 확인했다.
+- 관련 Issue / PR / Discussion: Issue #177

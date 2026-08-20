@@ -6,7 +6,7 @@ import type {
 export const MEETING_CHAT_TOPIC = "meeting.chat";
 export const MEETING_CHAT_CLIENT_MESSAGE_ID_ATTRIBUTE = "clientMessageId";
 export const MEETING_CHAT_MAX_TEXT_LENGTH = 500;
-export const MEETING_CHAT_HISTORY_LIMIT = 5_000;
+export const MEETING_CHAT_HISTORY_LIMIT = 100;
 
 export type MeetingChatDeliveryStatus = "sending" | "sent" | "failed";
 export type MeetingChatMessageKind = "user" | "translation";
@@ -61,7 +61,7 @@ export function validateMeetingChatText(
 
   if (!text) {
     return {
-      message: "메시지를 입력해 주세요.",
+      message: "meetingChat.validation.empty",
       ok: false,
       reason: "empty"
     };
@@ -69,7 +69,7 @@ export function validateMeetingChatText(
 
   if (text.length > MEETING_CHAT_MAX_TEXT_LENGTH) {
     return {
-      message: `채팅은 ${MEETING_CHAT_MAX_TEXT_LENGTH}자까지 보낼 수 있습니다.`,
+      message: "meetingChat.validation.tooLong",
       ok: false,
       reason: "too-long"
     };

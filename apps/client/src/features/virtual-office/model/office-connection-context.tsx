@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { JSX, PropsWithChildren } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   AttendanceStatus,
   GuestOfficeSessionResponse,
@@ -15,7 +16,11 @@ import {
   saveGuestProfile,
   type GuestProfile
 } from "../../../shared/lib/development-identity";
-import { createOrRestoreOfficeSession } from "../api/create-office-session";
+import {
+  createOrRestoreOfficeSession,
+  getOfficeSessionErrorReason,
+  type OfficeSessionErrorReason
+} from "../api/create-office-session";
 import { useOfficeSocket, type OfficeSocketCallbacks } from "./use-office-socket";
 
 interface OfficeConnectionContextValue {
@@ -24,6 +29,7 @@ interface OfficeConnectionContextValue {
   prepareSession: (profile: GuestProfile) => Promise<void>;
   registerSocketCallbacks: (callbacks: OfficeSocketCallbacks) => () => void;
   respondToSummon: (requestId: string, decision: "accepted" | "declined") => void;
+  sendChatMessage: (text: string) => boolean;
   sendMove: (payload: LocalMovementCommand) => void;
   sendSummonRequest: (targetMemberId: string) => boolean;
   session: GuestOfficeSessionResponse | null;
@@ -35,18 +41,21 @@ interface OfficeConnectionContextValue {
 const OfficeConnectionContext = createContext<OfficeConnectionContextValue | null>(null);
 
 export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.Element {
+  const { t } = useTranslation();
   const { showError } = useRequestFeedback();
   const [session, setSession] = useState<GuestOfficeSessionResponse | null>(null);
   const [isPreparingSession, setIsPreparingSession] = useState(false);
   const [isRestoringStoredSession, setIsRestoringStoredSession] = useState(
     () => getStoredGuestProfile() !== null
   );
-  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionErrorReason, setSessionErrorReason] =
+    useState<OfficeSessionErrorReason | null>(null);
   const callbacksRef = useRef<OfficeSocketCallbacks>({});
   const didRestoreStoredProfile = useRef(false);
   const socketCallbacks = useMemo<OfficeSocketCallbacks>(
     () => ({
       onCalendarUpdated: () => callbacksRef.current.onCalendarUpdated?.(),
+      onChatMessage: (payload) => callbacksRef.current.onChatMessage?.(payload),
       onMeetingSummaryReady: (payload) =>
         callbacksRef.current.onMeetingSummaryReady?.(payload),
       onSummonRequested: (payload) => callbacksRef.current.onSummonRequested?.(payload),
@@ -57,6 +66,7 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
   );
   const {
     respondToSummon,
+    sendChatMessage,
     sendMove,
     sendSummonRequest,
     updateAttendance,
@@ -65,20 +75,21 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
 
   const prepareSession = useCallback(async (profile: GuestProfile) => {
     setIsPreparingSession(true);
-    setSessionError(null);
+    setSessionErrorReason(null);
     try {
       const nextSession = await createOrRestoreOfficeSession(profile);
       saveGuestProfile(profile);
       setSession(nextSession);
     } catch (error) {
       setSession(null);
-      const message = error instanceof Error ? error.message : "오피스 세션을 준비하지 못했습니다.";
-      setSessionError(message);
-      showError(error, "오피스 세션을 준비하지 못했습니다. 다시 시도해 주세요.");
+      const reason = getOfficeSessionErrorReason(error);
+      const message = t(`officeSession.errors.${reason}`);
+      setSessionErrorReason(reason);
+      showError(new Error(message), t("officeSession.errors.prepareFailedRetry"));
     } finally {
       setIsPreparingSession(false);
     }
-  }, [showError]);
+  }, [showError, t]);
 
   useEffect(() => {
     if (didRestoreStoredProfile.current) {
@@ -111,10 +122,13 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,
+      sendChatMessage,
       sendMove,
       sendSummonRequest,
       session,
-      sessionError,
+      sessionError: sessionErrorReason
+        ? t(`officeSession.errors.${sessionErrorReason}`)
+        : null,
       updateAttendance,
       updateStatus
     }),
@@ -124,10 +138,12 @@ export function OfficeConnectionProvider({ children }: PropsWithChildren): JSX.E
       prepareSession,
       registerSocketCallbacks,
       respondToSummon,
+      sendChatMessage,
       sendMove,
       sendSummonRequest,
       session,
-      sessionError,
+      sessionErrorReason,
+      t,
       updateAttendance,
       updateStatus
     ]

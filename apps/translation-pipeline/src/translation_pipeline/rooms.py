@@ -6,10 +6,10 @@ Client는 방 이름을 오늘 날짜로 만든다. 파이프라인이 그 이�
 
 그래서 같은 공식을 여기에도 둔다.
 
-    apps/client/src/features/realtime-meeting/model/meeting-room-section.ts
+    packages/shared/src/domain/meeting.ts
 
-slug 표는 위 파일을 옮겨 적은 것이라 양쪽이 어긋날 수 있다. `packages/shared`에
-방 이름 규칙이 없어 지금은 공유할 방법이 없다.
+slug 표는 위 파일을 옮겨 적은 것이라 양쪽이 어긋날 수 있다. Python 런타임이
+TypeScript 패키지를 직접 import하지 못해서 테스트로 shared 선언과 대조한다.
 """
 
 import re
@@ -20,12 +20,12 @@ from .errors import TranslationPipelineError
 # Client의 LAB_MEETING_TEAM_SLUG와 같아야 한다.
 LAB_TEAM_SLUG = "likelion"
 
-# Client의 MEETING_ROOM_SECTION_METADATA에서 roomSlug만 옮긴 것이다.
+# Shared의 MEETING_ROOM_SECTION_METADATA에서 roomSlug만 옮긴 것이다.
 SECTION_SLUGS: dict[str, str] = {
     "meeting-room": "meeting-room",
-    "shared-collaboration-zone": "shared-collab",
-    "korea-team-zone": "korea-team",
-    "vietnam-team-zone": "vietnam-team",
+    "meeting-room-1": "meeting-room-1",
+    "meeting-room-2": "meeting-room-2",
+    "meeting-room-3": "meeting-room-3",
 }
 
 DEFAULT_SECTION = "meeting-room"
