@@ -820,3 +820,36 @@
 - 팀원 검토·수정 내용: 사용자가 LiveKit Cloud 설정 여부를 물었고, 방은 Cloud에서 미리 만드는 대신 토큰의 roomName으로 분리하는 방향을 확인했다. 사용자가 `codex/`로 시작하지 않는 브랜치와 GitHub Issue 생성을 요청해 `feat/meeting-room-zones` 브랜치와 Issue #170을 만들고 작업했다.
 - 검증 결과: `node --test --experimental-strip-types apps/client/test/meeting-room-section.test.ts apps/client/test/office-map.test.ts apps/client/test/meeting-session-join-request.test.ts` 9건 통과, `uv run --cache-dir .uv-cache --with pytest python -m pytest tests/test_rooms.py` 32건 통과, `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과. 실제 LiveKit Cloud에서 다른 물리 회의실 간 음성·영상 분리는 팀원 브라우저 2개 이상으로 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #170
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 1차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 한국어로 고정된 시작 화면과 오피스 HUD에 베트남어 UI 전환 기반을 추가하고, UI 언어를 국가·참가자 언어·회의 번역 설정과 분리한다.
+- 입력 맥락: Issue #172, `GuestOnboarding`, `OfficeHud`, `development-identity`, `meeting-translation-preference`
+- AI 제안 또는 산출물: `i18next`/`react-i18next` 초기화, `virtual-office.ui-locale` 저장·복원, 브라우저 언어 기반 최초 기본값, `<html lang>` 동기화, 온보딩 언어 선택, HUD 언어 선택, UI 로케일 순수 함수 테스트 초안을 추가한다. 베트남어 문구는 AI 초안이며 원어민 검토 전까지 임시 번역으로 둔다.
+- 팀원 검토·수정 내용: 사용자가 구현 TODO 중 1~3번까지만 진행하도록 범위를 제한했다. 전체 Client 문구 이전, Shared 표시 라벨 제거, 글자 포함 이미지 교체는 후속 범위로 남긴다.
+- 검증 결과: `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/meeting-translation-preference.test.ts` 13건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 베트남어 자연스러움과 실제 브라우저 화면 캡처는 팀원 또는 원어민 검토가 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 2차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Shared/domain의 표시용 한국어 라벨과 한국어가 박힌 UI 이미지를 제거해, Client가 현재 UI locale 기준으로 상태와 패널 문구를 표시하게 한다.
+- 입력 맥락: Issue #172의 구현 TODO 4~5, `MEMBER_STATUS_LABELS`, `calendar-presence`, `OFFICE_MEETING_ZONES`, `OfficeTodoPanel`, `OfficePeoplePanel`
+- AI 제안 또는 산출물: Shared의 `MEMBER_STATUS_LABELS` 제거, 회의 구역 `labelKey` 전환, calendar presence 번역 key 반환, Phaser 아바타 상태 라벨의 i18n 적용, 상태/TODO 패널과 피플 배지의 텍스트 포함 PNG 제거 및 DOM 텍스트+Lucide 아이콘 대체, 텍스트 포함 PNG 10개 삭제.
+- 팀원 검토·수정 내용: 사용자가 구현 TODO 4~5 진행을 요청했다. 이미지 점검 중 이슈에 명시된 `panel-title.png`, `button-office.png` 외에도 같은 패턴의 상태 버튼·저장 버튼·피플 배지 이미지가 한국어 텍스트를 포함해 함께 제거했다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `node --test --experimental-strip-types apps/client/test/calendar-presence.test.ts apps/client/test/office-map.test.ts apps/client/test/office-collision-editor.test.ts apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/meeting-translation-preference.test.ts` 26건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 실제 브라우저에서 두 언어 레이아웃 캡처와 베트남어 문구 자연스러움 검토는 추가로 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172
+
+### 2026-08-20 - 한국어·베트남어 UI 로케일 기반 구현 3차
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: Issue #172의 남은 Client 시스템 문구, 회의 UI, 캘린더, 충돌 편집기, Meeting Lab, 오류 key 경계를 모두 UI locale 기반으로 전환하고 자동 회귀 검증을 보강한다.
+- 입력 맥락: Issue #172의 구현 TODO 3, 6, 7, `resources.ts`, `OfficeCalendarModal`, `OfficeCollisionEditor`, `MeetingRoomOverlay`, `MeetingLabPage`, `MeetingChatPanel`, `MeetingSubtitlePanel`
+- AI 제안 또는 산출물: 한국어·베트남어 리소스 트리를 전체 화면 범위로 확장하고, 아바타/피플/불러오기/회의 요약/공유 캘린더/회의 제어/채팅/자막/AI 번역/Meeting Lab/충돌 편집 UI의 화면 문구와 접근성 문구를 `t()` 경계로 이전했다. model/API 계층의 한국어 오류 문자열은 번역 key 또는 request error code로 바꾸고 최종 UI에서 번역하게 정리했다. 날짜·시간 표시는 `useUiLocale`과 `formatDateTime`을 통해 현재 UI 언어의 `Intl.DateTimeFormat`으로 표시한다. Client 소스의 한국어 하드코딩을 자동 점검하는 테스트와 ko/vi 리소스 구조 동등성 테스트도 추가했다. 브라우저 캡처 중 1280x720에서 온보딩 모달 상단이 잘리는 문제를 발견해 backdrop을 세로 스크롤 가능하게 보정했다.
+- 팀원 검토·수정 내용: 사용자가 “나머지 작업 전부” 진행을 요청해, 코드와 문서로 처리 가능한 잔여 범위를 모두 진행했다. PR 본문 작성, PR 화면 캡처 첨부, 베트남어 원어민 문구 검토는 PR/사람 검토 단계가 필요하므로 이슈에 후속 확인 항목으로 남긴다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `node --test --experimental-strip-types apps/client/test/ui-hardcoded-korean.test.ts` 통과, `node --test --experimental-strip-types apps/client/test/*.test.ts` 87건 통과, `git diff --check` 통과. 브라우저에서 시작 화면 1280x720/1920x1080 한국어·베트남어 캡처를 만들고 상단 잘림 보정 후 다시 확인했다. 로컬 Server는 기동됐지만 `/office/avatars` 응답이 지연되어 실제 오피스 내부 패널 캡처는 PR 단계에서 API 환경을 갖춰 추가 확인해야 한다. Vite chunk-size warning은 기존 Phaser/LiveKit 기반 번들 크기 경고로 남아 있다. 베트남어 번역은 AI 초안이므로 실제 사용자 문구 검수는 별도 필요하다.
+- 관련 Issue / PR / Discussion: Issue #172

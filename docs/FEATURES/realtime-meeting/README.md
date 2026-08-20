@@ -85,6 +85,7 @@ sequenceDiagram
 ## AI 번역 ON/OFF 정책
 
 - AI 번역은 기본 ON이다.
+- 회의 번역 언어 설정은 UI 표시 언어와 별도 상태다. UI 언어를 한국어/베트남어로 바꿔도 `sourceLanguage`, `targetLanguage`, LiveKit participant attributes는 자동 변경하지 않는다.
 - OFF 상태에서 하단 `Globe` 버튼을 눌러 다시 ON으로 바꾸면 언어 설정 모달을 먼저 띄운다.
 - MVP 지원 언어는 `ko`, `vi`만 허용한다.
 - UI 옵션은 `KR`, `VI`로 표시하고, 내부 언어 코드는 각각 `ko`, `vi`를 사용한다.
