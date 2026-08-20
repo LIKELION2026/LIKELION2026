@@ -189,7 +189,8 @@ pnpm smoke:livekit-webhook
 | <img src="docs/assets/readme/office-chat.png" alt="오피스 대화 화면" width="360"> |
 
 ## 주요 문서
-
+- [Figma 디자인 시안](https://www.figma.com/design/XNMBF9IXkhkotGr6EoiW4J/LIKELION2026?node-id=0-1&t=YCqArq9kmUsJeycy-1)
+- [Notion 팀 워크스페이스](https://rainbow-board-5a0.notion.site/3a63fc0908698096be0aca667596e18e)
 - [PRD](docs/PRD.md)
 - [프로젝트 구조](docs/STRUCTURE.md)
 - [작업 규칙](docs/CONVENTIONS.md)
