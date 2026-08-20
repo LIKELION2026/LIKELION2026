@@ -31,12 +31,16 @@ test("publishTodosUpdated emits an office todo update to the workspace room", ()
   ]);
 });
 
-test("handleOfficeChatSend relays a trimmed message only to the sender workspace", () => {
+test("handleOfficeChatSend relays a trimmed message only to the sender workspace", async () => {
   const gateway = new PresenceGateway({
     getConnection: (socketId: string) =>
       socketId === "socket-sender"
         ? {
-            member: { displayName: "민지", memberId: "member-sender" },
+            member: {
+              displayName: "민지",
+              language: "ko",
+              memberId: "member-sender"
+            },
             teamId: "workspace-1"
           }
         : null
@@ -44,28 +48,82 @@ test("handleOfficeChatSend relays a trimmed message only to the sender workspace
   const server = createFakeServer();
   setGatewayServer(gateway, server);
 
-  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "  안녕하세요  " });
+  await gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), {
+    text: "  안녕하세요  "
+  });
 
   assert.equal(server.sent[0]?.eventName, SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE);
   assert.equal(server.sent[0]?.roomName, "office:workspace-1");
   const payload = server.sent[0]?.payload as OfficeChatMessagePayload;
   assert.equal(payload.displayName, "민지");
   assert.equal(payload.memberId, "member-sender");
+  assert.equal(payload.sourceLanguage, "ko");
   assert.equal(payload.text, "안녕하세요");
+  assert.deepEqual(payload.translations, { vi: "Xin chào." });
 });
 
-test("handleOfficeChatSend rejects blank and oversized messages", () => {
+test("handleOfficeChatSend attaches Korean translations for Vietnamese office chat", async () => {
   const gateway = new PresenceGateway({
     getConnection: () => ({
-      member: { displayName: "민지", memberId: "member-sender" },
+      member: {
+        displayName: "Linh",
+        language: "vi",
+        memberId: "member-sender"
+      },
       teamId: "workspace-1"
     })
   } as never);
   const server = createFakeServer();
   setGatewayServer(gateway, server);
 
-  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "   " });
-  gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), { text: "a".repeat(161) });
+  await gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), {
+    text: "Xin chào"
+  });
+
+  const payload = server.sent[0]?.payload as OfficeChatMessagePayload;
+  assert.equal(payload.sourceLanguage, "vi");
+  assert.deepEqual(payload.translations, { ko: "안녕하세요." });
+});
+
+test("handleOfficeChatSend detects Vietnamese text even when the sender selected Korean", async () => {
+  const gateway = new PresenceGateway({
+    getConnection: () => ({
+      member: {
+        displayName: "민지",
+        language: "ko",
+        memberId: "member-sender"
+      },
+      teamId: "workspace-1"
+    })
+  } as never);
+  const server = createFakeServer();
+  setGatewayServer(gateway, server);
+
+  await gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), {
+    text: "Cảm ơn"
+  });
+
+  const payload = server.sent[0]?.payload as OfficeChatMessagePayload;
+  assert.equal(payload.sourceLanguage, "vi");
+  assert.deepEqual(payload.translations, { ko: "감사합니다." });
+});
+
+test("handleOfficeChatSend rejects blank and oversized messages", async () => {
+  const gateway = new PresenceGateway({
+    getConnection: () => ({
+      member: { displayName: "민지", language: "ko", memberId: "member-sender" },
+      teamId: "workspace-1"
+    })
+  } as never);
+  const server = createFakeServer();
+  setGatewayServer(gateway, server);
+
+  await gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), {
+    text: "   "
+  });
+  await gateway.handleOfficeChatSend(asSocket({ id: "socket-sender" }), {
+    text: "a".repeat(161)
+  });
 
   assert.equal(server.sent.length, 0);
 });

@@ -27,6 +27,7 @@ import {
 import { randomUUID } from "node:crypto";
 import type { Server, Socket } from "socket.io";
 
+import { OfficeChatTranslationService } from "./office-chat-translation.service";
 import { PresenceService } from "./presence.service";
 
 const SUMMON_REQUEST_TTL_MS = 30_000;
@@ -54,7 +55,10 @@ export class PresenceGateway implements OnGatewayDisconnect {
   private server!: Server;
   private readonly summonRequests = new Map<string, PendingSummonRequest>();
 
-  constructor(private readonly presenceService: PresenceService) {}
+  constructor(
+    private readonly presenceService: PresenceService,
+    private readonly officeChatTranslationService = new OfficeChatTranslationService()
+  ) {}
 
   @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUEST)
   handleOfficeSummonRequest(
@@ -145,10 +149,10 @@ export class PresenceGateway implements OnGatewayDisconnect {
   }
 
   @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_CHAT_SEND)
-  handleOfficeChatSend(
+  async handleOfficeChatSend(
     @ConnectedSocket() client: Socket,
     @MessageBody() payload: unknown
-  ): void {
+  ): Promise<void> {
     if (!isOfficeChatSendPayload(payload)) {
       return;
     }
@@ -158,12 +162,20 @@ export class PresenceGateway implements OnGatewayDisconnect {
       return;
     }
 
+    const text = payload.text.trim();
+    const translation = await this.officeChatTranslationService.createTranslations(
+      text,
+      sender.member.language
+    );
+
     this.server.to(getTeamRoom(sender.teamId)).emit(SOCKET_EVENT_NAMES.OFFICE_CHAT_MESSAGE, {
       displayName: sender.member.displayName,
       memberId: sender.member.memberId,
       occurredAt: new Date().toISOString(),
+      sourceLanguage: translation.sourceLanguage,
       teamId: sender.teamId,
-      text: payload.text.trim()
+      text,
+      translations: translation.translations
     });
   }
 

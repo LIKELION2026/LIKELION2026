@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent, JSX } from "react";
-import type { OfficeChatMessagePayload } from "@likelion2026/shared";
+import type { LanguageCode, OfficeChatMessagePayload } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
+
+import { createOfficeChatDisplayMessage } from "../model/office-chat-message";
 
 interface OfficeChatPanelProps {
   isConnected: boolean;
@@ -9,6 +12,7 @@ interface OfficeChatPanelProps {
   messages: OfficeChatMessagePayload[];
   onMentionConsumed: () => void;
   onSend: (text: string) => boolean;
+  viewerLanguage?: LanguageCode;
 }
 
 export function OfficeChatPanel({
@@ -17,8 +21,10 @@ export function OfficeChatPanel({
   mentionTargetName,
   messages,
   onMentionConsumed,
-  onSend
+  onSend,
+  viewerLanguage
 }: OfficeChatPanelProps): JSX.Element {
+  const { t } = useTranslation();
   const [draft, setDraft] = useState("");
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -43,43 +49,57 @@ export function OfficeChatPanel({
   };
 
   return (
-    <section aria-label="오피스 공용 채팅" className="office-chat-panel">
+    <section aria-label={t("officeChat.ariaLabel")} className="office-chat-panel">
       <header>
         <div>
           <p className="office-chat-eyebrow">TEAM CHAT</p>
-          <h2>오피스 대화</h2>
+          <h2>{t("officeChat.title")}</h2>
         </div>
         <span className={isConnected ? "office-chat-state connected" : "office-chat-state"}>
-          {isConnected ? "실시간" : "연결 대기"}
+          {isConnected ? t("officeChat.connected") : t("officeChat.waiting")}
         </span>
       </header>
       <div aria-live="polite" className="office-chat-timeline" ref={timelineRef}>
         {messages.length === 0 ? (
-          <p className="office-chat-empty">팀원에게 가볍게 말을 걸어 보세요.</p>
+          <p className="office-chat-empty">{t("officeChat.empty")}</p>
         ) : (
-          messages.map((message) => (
-            <p key={`${message.memberId}-${message.occurredAt}`}>
-              <strong>
-                <span aria-hidden="true" className="office-chat-country-flag">
-                  {memberCountryCodes[message.memberId] === "VN" ? "🇻🇳" : "🇰🇷"}
-                </span>
-                {message.displayName}
-              </strong>
-              <span>{message.text}</span>
-            </p>
-          ))
+          messages.map((message) => {
+            const displayMessage = createOfficeChatDisplayMessage(
+              message,
+              viewerLanguage
+            );
+
+            return (
+              <p key={`${message.memberId}-${message.occurredAt}`}>
+                <strong>
+                  <span aria-hidden="true" className="office-chat-country-flag">
+                    {memberCountryCodes[message.memberId] === "VN" ? "🇻🇳" : "🇰🇷"}
+                  </span>
+                  {message.displayName}
+                </strong>
+                <span>{displayMessage.text}</span>
+                {displayMessage.isTranslated && displayMessage.originalText ? (
+                  <small>
+                    {t("officeChat.originalTextLabel")}: {displayMessage.originalText}
+                  </small>
+                ) : null}
+              </p>
+            );
+          })
         )}
       </div>
       <form onSubmit={submit}>
         <input
-          aria-label="공용 채팅 입력"
+          aria-label={t("officeChat.inputAriaLabel")}
           disabled={!isConnected}
           maxLength={160}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder="팀원에게 메시지 보내기"
+          placeholder={t("officeChat.inputPlaceholder")}
           value={draft}
         />
-        <button disabled={!isConnected || !draft.trim()} type="submit">보내기</button>
+        <button disabled={!isConnected || !draft.trim()} type="submit">
+          {t("officeChat.send")}
+        </button>
       </form>
     </section>
   );

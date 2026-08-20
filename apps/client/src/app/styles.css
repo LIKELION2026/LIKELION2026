@@ -1042,6 +1042,12 @@ button {
   gap: 4px;
 }
 
+.office-chat-timeline small {
+  color: #7c6a5c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .office-chat-country-flag {
   font-family: system-ui, sans-serif;
   font-size: 13px;

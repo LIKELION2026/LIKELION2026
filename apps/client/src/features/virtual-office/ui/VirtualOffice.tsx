@@ -14,6 +14,7 @@ import { createMeetingRoomSectionByOfficeZoneId } from "../../realtime-meeting/m
 import { useMeetingSessionController } from "../../realtime-meeting/model/use-meeting-session-controller";
 import { MeetingRoomOverlay } from "../../realtime-meeting/ui/MeetingRoomOverlay";
 import { OfficeScene } from "../core/office-scene";
+import { createOfficeChatDisplayMessage } from "../model/office-chat-message";
 import { useOfficeConnection } from "../model/office-connection-context";
 import { useOfficeStore } from "../model/office-store";
 import { useOfficeCalendar } from "../model/use-office-calendar";
@@ -125,10 +126,18 @@ export function VirtualOffice(): JSX.Element {
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
   }, []);
-  const handleChatMessage = useCallback((message: OfficeChatMessagePayload) => {
-    setChatMessages((current) => [...current, message].slice(-30));
-    sceneRef.current?.showChatBubble(message.memberId, message.text);
-  }, []);
+  const handleChatMessage = useCallback(
+    (message: OfficeChatMessagePayload) => {
+      const displayMessage = createOfficeChatDisplayMessage(
+        message,
+        session?.member.preferredLanguage
+      );
+
+      setChatMessages((current) => [...current, message].slice(-30));
+      sceneRef.current?.showChatBubble(message.memberId, displayMessage.text);
+    },
+    [session?.member.preferredLanguage]
+  );
   const handleSummonResolved = useCallback(
     (resolution: OfficeSummonResolvedPayload) => {
       if (
@@ -397,6 +406,7 @@ export function VirtualOffice(): JSX.Element {
           messages={chatMessages}
           onMentionConsumed={() => setChatMentionTargetName(null)}
           onSend={sendChatMessage}
+          viewerLanguage={session?.member.preferredLanguage}
         />
       ) : null}
       <OfficeSummonModal

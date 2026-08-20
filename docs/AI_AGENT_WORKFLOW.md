@@ -906,3 +906,14 @@
 - 팀원 검토·수정 내용: 최신 `dev`의 한국어·베트남어 UI 언어 선택 흐름을 유지한 채, 이전 UI 개선 작업을 충돌 해결 과정에서 다시 결합했다. 실제 스타일과 에셋 위치 값은 팀원 브라우저 검토로 추가 보정한다.
 - 검증 결과: Client typecheck와 관련 단위 테스트, Server typecheck 및 서비스 테스트를 실행해 확인한다. 실제 브라우저 화면 검수와 두 사용자 간 출근 상태 동기화는 PR 검토 단계에서 추가 확인이 필요하다.
 - 관련 Issue / PR / Discussion: 별도 Issue 없음 (사용자 요청으로 UI 개선 작업을 하나의 브랜치에서 정리)
+
+### 2026-08-20 - 오피스 공용 채팅 선택 언어별 번역 표시
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 `오피스 대화` 공용 채팅에서 한국어 선택 사용자는 베트남어 메시지를 한국어로, 베트남어 선택 사용자는 한국어 메시지를 베트남어로 볼 수 있게 한다.
+- 입력 맥락: 사용자 요청, Issue #180, `OfficeChatPanel`, `VirtualOffice`, `PresenceGateway`, `packages/shared/src/contracts/socket/office-chat.ts`
+- AI 제안 또는 산출물: `office.chat.message` payload에 `sourceLanguage`와 `translations`를 추가하고, 서버에서 발신자 선택 언어와 메시지 내용 기반으로 한국어·베트남어 원문 언어를 판정해 상대 언어 번역문을 함께 broadcast하도록 했다. 기본 로컬 fallback은 짧은 데모 문장 번역 메모리를 사용하고, `OFFICE_CHAT_TRANSLATION_PROVIDER=gemini` 설정 시 Gemini REST 호출을 사용할 수 있게 분리했다. Client는 `session.member.preferredLanguage` 기준으로 번역문을 우선 표시하고, 번역된 메시지는 원문을 함께 보여 주며 말풍선도 같은 표시문을 사용한다.
+- 팀원 검토·수정 내용: 사용자가 문제 범위를 회의실 자막이 아니라 오피스 공용 채팅으로 정정했고, 처음 언어 선택 기준으로 수신자별 표시 언어가 달라져야 한다고 확정했다. 실제 배포 환경에서 Gemini provider를 켤지와 번역 품질은 팀원 검토가 필요하다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server test` 66건 통과, `node --test --experimental-strip-types apps/client/test/office-chat-message.test.ts apps/client/test/ui-locale.test.ts` 14건 통과, `git diff --check` 통과. `node --test --experimental-strip-types apps/client/test/*.test.ts`는 기존 `avatar-sprite-definition` extensionless import 문제와 기존 `OfficeAvatarActions`/`office-scene` 한국어 하드코딩 검사 항목 때문에 실패했으며, 이번 채팅 변경 파일은 해당 하드코딩 목록에서 제거했다.
+- 관련 Issue / PR / Discussion: Issue #180
