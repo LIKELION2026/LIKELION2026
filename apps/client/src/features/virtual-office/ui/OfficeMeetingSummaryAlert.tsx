@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { JSX } from "react";
+import { CalendarCheck, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const AUTO_DISMISS_MS = 6_000;
@@ -38,7 +39,9 @@ export function OfficeMeetingSummaryAlert({
         onClick={onOpenCalendar}
         type="button"
       >
-        <span aria-hidden="true" className="office-meeting-summary-alert-icon">📅</span>
+        <span aria-hidden="true" className="office-meeting-summary-alert-icon">
+          <CalendarCheck size={20} strokeWidth={2.4} />
+        </span>
         <span className="office-meeting-summary-alert-text">
           <strong>{t("officeMeetingSummaryAlert.title")}</strong>
           <small>{t("officeMeetingSummaryAlert.description")}</small>
@@ -50,7 +53,7 @@ export function OfficeMeetingSummaryAlert({
         onClick={onClose}
         type="button"
       >
-        ×
+        <X aria-hidden="true" size={16} strokeWidth={2.6} />
       </button>
     </div>
   );

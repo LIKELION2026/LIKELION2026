@@ -960,3 +960,14 @@
 - 팀원 검토·수정 내용: 사용자가 문제 범위를 회의실 자막이 아니라 오피스 공용 채팅으로 정정했고, 처음 언어 선택 기준으로 수신자별 표시 언어가 달라져야 한다고 확정했다. 실제 배포 환경에서 Gemini provider를 켤지와 번역 품질은 팀원 검토가 필요하다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server test` 66건 통과, `node --test --experimental-strip-types apps/client/test/office-chat-message.test.ts apps/client/test/ui-locale.test.ts` 14건 통과, `git diff --check` 통과. `node --test --experimental-strip-types apps/client/test/*.test.ts`는 기존 `avatar-sprite-definition` extensionless import 문제와 기존 `OfficeAvatarActions`/`office-scene` 한국어 하드코딩 검사 항목 때문에 실패했으며, 이번 채팅 변경 파일은 해당 하드코딩 목록에서 제거했다.
 - 관련 Issue / PR / Discussion: Issue #180
+
+### 2026-08-21 - 회의 요약 완료 토스트 표시 수정
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: AI 회의 요약 저장 후 오피스에서 요약 도착 알림 토스트가 화면에 보이지 않는 문제를 수정한다.
+- 입력 맥락: 사용자 디버그 요청, `OfficeMeetingSummaryAlert`, `VirtualOffice`, `PresenceGateway`, `MeetingController`
+- AI 제안 또는 산출물: 회의 요약 알림에 누락돼 있던 fixed overlay CSS를 복원해 Phaser canvas 아래로 밀려 잘리지 않게 하고, 알림 아이콘과 닫기 버튼을 Lucide 아이콘으로 교체했다. 서버 테스트에는 `submitSummary`가 calendar update와 summary-ready 이벤트를 발행하는지, `publishMeetingSummaryReady`가 연결된 회의 참가자 소켓에만 알림을 emit하는지 확인하는 회귀 테스트를 추가했다.
+- 팀원 검토·수정 내용: 사용자가 회의 종료 뒤에는 회의 UI가 떠 있지 않다고 정정해, 회의 오버레이 가림 가능성보다 알림 자체의 positioning 누락과 이벤트 발행 경로를 중심으로 수정했다. 실제 브라우저에서 요약 종료 후 토스트 표시 확인은 팀원 환경에서 추가 검토가 필요하다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared build` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server exec node --test -r ts-node/register test/meeting.controller.test.ts test/presence.gateway.test.ts` 12건 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. Client build의 chunk-size warning은 기존 Phaser/LiveKit 번들 크기 경고로 남아 있다. 루트에서 직접 `node --test -r ts-node/register ...`를 실행한 시도는 workspace 의존성 해석 문제로 실패해 패키지 컨텍스트로 재실행했다.
+- 관련 Issue / PR / Discussion: 별도 Issue 없음 (사용자 디버그 요청)

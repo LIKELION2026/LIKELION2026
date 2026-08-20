@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   SOCKET_EVENT_NAMES,
   type OfficeChatMessagePayload,
+  type OfficeMeetingSummaryReadyPayload,
   type OfficeSummonRequestedPayload,
   type OfficeTodosUpdatedPayload
 } from "@likelion2026/shared";
@@ -28,6 +29,48 @@ test("publishTodosUpdated emits an office todo update to the workspace room", ()
       eventName: SOCKET_EVENT_NAMES.OFFICE_TODOS_UPDATED,
       payload,
       roomName: "office:workspace-1"
+    }
+  ]);
+});
+
+test("publishMeetingSummaryReady emits only to connected meeting participants", () => {
+  const gateway = createGateway({
+    findConnectedMember: (memberId: string, teamId: string) => {
+      if (teamId !== "workspace-1") {
+        return null;
+      }
+      if (memberId === "member-1") {
+        return { member: { memberId }, socketId: "socket-1" };
+      }
+      if (memberId === "member-2") {
+        return { member: { memberId }, socketId: "socket-2" };
+      }
+      return null;
+    }
+  } as never);
+  const server = createFakeServer();
+  const eventPayload: OfficeMeetingSummaryReadyPayload = {
+    eventId: "event-1",
+    occurredAt: "2026-08-21T00:00:00.000Z",
+    teamId: "workspace-1"
+  };
+
+  setGatewayServer(gateway, server);
+  gateway.publishMeetingSummaryReady({
+    ...eventPayload,
+    participantMemberIds: ["member-1", "member-offline", "member-2"]
+  });
+
+  assert.deepEqual(server.sent, [
+    {
+      eventName: SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY,
+      payload: eventPayload,
+      roomName: "socket-1"
+    },
+    {
+      eventName: SOCKET_EVENT_NAMES.OFFICE_MEETING_SUMMARY_READY,
+      payload: eventPayload,
+      roomName: "socket-2"
     }
   ]);
 });
