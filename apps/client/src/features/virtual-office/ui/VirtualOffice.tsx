@@ -35,7 +35,6 @@ import { OfficeSummonModal } from "./OfficeSummonModal";
 import { OfficeLoadingScreen } from "./OfficeLoadingScreen";
 import { OfficeAvatarActions } from "./OfficeAvatarActions";
 import { OfficeChatPanel } from "./OfficeChatPanel";
-import { OfficeClockInPrompt } from "./OfficeClockInPrompt";
 
 export function VirtualOffice(): JSX.Element {
   const { i18n, t } = useTranslation();
@@ -56,8 +55,6 @@ export function VirtualOffice(): JSX.Element {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
-  const [isClockInPromptOpen, setIsClockInPromptOpen] = useState(false);
-  const promptedMemberIdRef = useRef<string | null>(null);
   const {
     isPreparingSession,
     isRestoringStoredSession,
@@ -93,6 +90,19 @@ export function VirtualOffice(): JSX.Element {
   });
   const isOnboardingLanguageStepVisible =
     entryPhase === "onboarding" && !hasCompletedOnboardingLanguageStep;
+
+  useEffect(() => {
+    if (!isInsideMeetingRoom) {
+      return;
+    }
+
+    setIsPeoplePanelOpen(false);
+    setIsTodoPanelOpen(false);
+    setIsCalendarOpen(false);
+    setSelectedMemberId(null);
+    setChatMentionTargetName(null);
+    setIsMeetingSummaryAlertVisible(false);
+  }, [isInsideMeetingRoom]);
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -111,19 +121,12 @@ export function VirtualOffice(): JSX.Element {
     return countryCodes;
   }, [effectiveMembers, effectiveSelf]);
   useEffect(() => {
-    if (!session) {
-      promptedMemberIdRef.current = null;
-      setIsClockInPromptOpen(false);
+    if (!session || effectiveSelf?.officePresence?.attendanceStatus !== "checked_out") {
       return;
     }
 
-    if (!effectiveSelf?.officePresence || promptedMemberIdRef.current === session.member.id) {
-      return;
-    }
-
-    promptedMemberIdRef.current = session.member.id;
-    setIsClockInPromptOpen(effectiveSelf.officePresence.attendanceStatus === "checked_out");
-  }, [effectiveSelf?.officePresence, session]);
+    updateAttendance("working");
+  }, [effectiveSelf?.officePresence?.attendanceStatus, session, updateAttendance]);
   const handleSummonRequested = useCallback((request: OfficeSummonRequestedPayload) => {
     setPendingSummon(request);
   }, []);
@@ -342,7 +345,7 @@ export function VirtualOffice(): JSX.Element {
       onPointerDown={releaseTextEntryFocus}
     >
       <div className="office-canvas" ref={containerRef} />
-      {!isOnboardingLanguageStepVisible ? (
+      {!isOnboardingLanguageStepVisible && !isInsideMeetingRoom ? (
         <OfficeHud
           avatarId={session?.member.avatarId}
           connectionState={connectionState}
@@ -360,7 +363,7 @@ export function VirtualOffice(): JSX.Element {
         avatarId={session?.member.avatarId}
         countryCode={session?.member.countryCode}
         controller={todoController}
-        isOpen={isTodoPanelOpen}
+        isOpen={isTodoPanelOpen && !isInsideMeetingRoom}
         memberName={session?.member.name}
         onAttendanceChange={updateAttendance}
         onClose={() => setIsTodoPanelOpen(false)}
@@ -370,13 +373,13 @@ export function VirtualOffice(): JSX.Element {
       />
       <OfficeCalendarModal
         controller={calendarController}
-        isOpen={isCalendarOpen}
+        isOpen={isCalendarOpen && !isInsideMeetingRoom}
         members={effectiveMembers}
         onClose={() => setIsCalendarOpen(false)}
         self={effectiveSelf}
       />
       <OfficeMeetingSummaryAlert
-        isVisible={isMeetingSummaryAlertVisible}
+        isVisible={isMeetingSummaryAlertVisible && !isInsideMeetingRoom}
         onClose={() => setIsMeetingSummaryAlertVisible(false)}
         onOpenCalendar={() => {
           setIsMeetingSummaryAlertVisible(false);
@@ -384,7 +387,7 @@ export function VirtualOffice(): JSX.Element {
         }}
       />
       <OfficePeoplePanel
-        isOpen={isPeoplePanelOpen}
+        isOpen={isPeoplePanelOpen && !isInsideMeetingRoom}
         members={peopleContext}
         onClose={() => setIsPeoplePanelOpen(false)}
         onFocusMember={(context) =>
@@ -395,7 +398,7 @@ export function VirtualOffice(): JSX.Element {
         todoIsLoading={todoController.isLoading}
       />
       <OfficeAvatarActions
-        context={selectedPersonContext}
+        context={isInsideMeetingRoom ? null : selectedPersonContext}
         onClose={() => setSelectedMemberId(null)}
         onFocusMember={(context) => {
           sceneRef.current?.moveLocalAvatarNear(context.member.avatar.x, context.member.avatar.y);
@@ -407,7 +410,7 @@ export function VirtualOffice(): JSX.Element {
         }}
         onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
       />
-      {!isOnboardingLanguageStepVisible ? (
+      {!isOnboardingLanguageStepVisible && !isInsideMeetingRoom ? (
         <OfficeChatPanel
           isConnected={connectionState === "connected"}
           memberCountryCodes={chatMemberCountryCodes}
@@ -424,15 +427,7 @@ export function VirtualOffice(): JSX.Element {
             respondToSummon(pendingSummon.requestId, decision);
           }
         }}
-        request={pendingSummon}
-      />
-      <OfficeClockInPrompt
-        isOpen={isClockInPromptOpen}
-        onClockIn={() => {
-          updateAttendance("working");
-          setIsClockInPromptOpen(false);
-        }}
-        onDefer={() => setIsClockInPromptOpen(false)}
+        request={isInsideMeetingRoom ? null : pendingSummon}
       />
       {isInsideMeetingRoom ? (
         <MeetingRoomOverlay
