@@ -17,9 +17,10 @@ import {
 } from "./avatar-sprite-definition";
 import { removeNearTransparentPixels } from "./avatar-pixel-normalizer";
 import {
-  getCalendarPresenceLabel,
+  getCalendarPresenceTranslationKey,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
+import { i18n } from "../../../shared/i18n";
 import {
   getNearestWalkableOfficePosition,
   isOfficeCollisionDebugEnabled,
@@ -854,7 +855,7 @@ function getAvatarAnimationKey(
 }
 
 function getRemoteLabel(member: OfficeMemberPresence): string {
-  return `${member.displayName}\n${getCalendarPresenceLabel(member)}`;
+  return `${member.displayName}\n${i18n.t(getCalendarPresenceTranslationKey(member))}`;
 }
 
 function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {

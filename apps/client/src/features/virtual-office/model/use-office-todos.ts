@@ -56,7 +56,7 @@ export function useOfficeTodos(
       setPublicTodos(publicResponse.todos);
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : "TODO 정보를 불러오지 못했습니다."
+        requestError instanceof Error ? requestError.message : "officeTodo.requestFailed"
       );
     } finally {
       setIsLoading(false);
@@ -70,7 +70,7 @@ export function useOfficeTodos(
   const createTodo = useCallback(
     async (input: CreateTodoInput) => {
       if (!session) {
-        throw new Error("오피스 세션이 준비되지 않았습니다.");
+        throw new Error("officeSession.required");
       }
 
       await createOfficeTodo(session.member.id, { ...input, guestToken: session.guestToken });
@@ -82,7 +82,7 @@ export function useOfficeTodos(
   const updateTodo = useCallback(
     async (todoId: string, input: UpdateTodoInput) => {
       if (!session) {
-        throw new Error("오피스 세션이 준비되지 않았습니다.");
+        throw new Error("officeSession.required");
       }
 
       await updateOfficeTodo(todoId, { ...input, guestToken: session.guestToken });
@@ -94,7 +94,7 @@ export function useOfficeTodos(
   const deleteTodo = useCallback(
     async (todoId: string) => {
       if (!session) {
-        throw new Error("오피스 세션이 준비되지 않았습니다.");
+        throw new Error("officeSession.required");
       }
 
       await deleteOfficeTodo(todoId, session.guestToken);

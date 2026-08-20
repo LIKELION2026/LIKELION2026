@@ -20,11 +20,21 @@ export const OFFICE_DEFAULT_DESKS = [
   { label: "Vietnam desk 6", positionX: 1350, positionY: 1660, zone: "vietnam-zone" },
 ] as const;
 
+export const OFFICE_MEETING_ZONE_LABEL_KEYS = [
+  "officeMap.meetingZones.mainMeetingRoom",
+  "officeMap.meetingZones.meetingRoom1",
+  "officeMap.meetingZones.meetingRoom2",
+  "officeMap.meetingZones.meetingRoom3",
+] as const;
+
+export type OfficeMeetingZoneLabelKey =
+  (typeof OFFICE_MEETING_ZONE_LABEL_KEYS)[number];
+
 export const OFFICE_MEETING_ZONES = [
   {
     height: 594,
     id: "main-meeting-room",
-    label: "회의실 4",
+    labelKey: "officeMap.meetingZones.mainMeetingRoom",
     width: 1346,
     x: 1383,
     y: 1838,
@@ -32,7 +42,7 @@ export const OFFICE_MEETING_ZONES = [
   {
     height: 373,
     id: "meeting-zone-1",
-    label: "회의실 1",
+    labelKey: "officeMap.meetingZones.meetingRoom1",
     width: 806,
     x: 1064,
     y: 334,
@@ -40,7 +50,7 @@ export const OFFICE_MEETING_ZONES = [
   {
     height: 357,
     id: "meeting-zone-2",
-    label: "회의실 2",
+    labelKey: "officeMap.meetingZones.meetingRoom2",
     width: 448,
     x: 1964,
     y: 325,
@@ -48,7 +58,7 @@ export const OFFICE_MEETING_ZONES = [
   {
     height: 349,
     id: "meeting-zone-3",
-    label: "회의실 3",
+    labelKey: "officeMap.meetingZones.meetingRoom3",
     width: 541,
     x: 2483,
     y: 337,

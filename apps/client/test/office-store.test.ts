@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { OfficeMemberPresence } from "@likelion2026/shared";
 
-import { useOfficeStore } from "../src/features/virtual-office/model/office-store";
+import { useOfficeStore } from "../src/features/virtual-office/model/office-store.ts";
 
 const self: OfficeMemberPresence = {
   avatar: { animation: "idle", direction: "down", x: 192, y: 264 },

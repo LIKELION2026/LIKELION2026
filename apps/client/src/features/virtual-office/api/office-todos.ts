@@ -7,6 +7,13 @@ import type {
 
 import { SERVER_URL } from "../../../shared/config/environment";
 
+export class OfficeTodoRequestError extends Error {
+  constructor() {
+    super("officeTodo.requestFailed");
+    this.name = "OfficeTodoRequestError";
+  }
+}
+
 export async function createOfficeTodo(
   memberId: string,
   request: CreateOfficeTodoRequest
@@ -60,7 +67,7 @@ async function requestOfficeTodo<T>(path: string, init?: RequestInit): Promise<T
   });
 
   if (!response.ok) {
-    throw new Error("TODO 정보를 불러오지 못했습니다.");
+    throw new OfficeTodoRequestError();
   }
 
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);

@@ -4,8 +4,10 @@ import type {
   OfficeCalendarEvent,
   OfficeMemberPresence
 } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
 import { RequestSpinner, useRequestFeedback } from "../../../app/request-feedback";
+import { formatDateTime, type UiLocale, useUiLocale } from "../../../shared/i18n";
 import {
   addDays,
   addMonths,
@@ -27,15 +29,15 @@ interface OfficeCalendarModalProps {
   self: OfficeMemberPresence | null;
 }
 
-const EVENT_TYPES: Array<{ value: CalendarEventType; label: string }> = [
-  { label: "휴가", value: "vacation" },
-  { label: "재택", value: "remote_work" },
-  { label: "부재", value: "absence" },
-  { label: "회의", value: "meeting" },
-  { label: "집중", value: "focus" }
+const EVENT_TYPES: CalendarEventType[] = [
+  "vacation",
+  "remote_work",
+  "absence",
+  "meeting",
+  "focus"
 ];
 
-const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
+const WEEKDAY_INDEXES = [0, 1, 2, 3, 4, 5, 6];
 
 const MEMBER_BADGE_COLORS = [
   "#8b5e3c",
@@ -110,6 +112,8 @@ export function OfficeCalendarModal({
   onClose,
   self
 }: OfficeCalendarModalProps): React.JSX.Element | null {
+  const { t } = useTranslation();
+  const { locale } = useUiLocale();
   const { showError, showSuccess } = useRequestFeedback();
   const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
@@ -139,8 +143,15 @@ export function OfficeCalendarModal({
     return avatarIds;
   }, [members, self]);
   const monthLegend = useMemo(
-    () => getMonthLegend(controller.events, monthDays, memberNames, memberAvatarIds),
-    [controller.events, memberAvatarIds, memberNames, monthDays]
+    () =>
+      getMonthLegend(
+        controller.events,
+        monthDays,
+        memberNames,
+        memberAvatarIds,
+        t("common.teamMember")
+      ),
+    [controller.events, memberAvatarIds, memberNames, monthDays, t]
   );
   const memberColorMap = useMemo(
     () => new Map(monthLegend.map((entry) => [entry.memberId, entry.color])),
@@ -220,7 +231,10 @@ export function OfficeCalendarModal({
     const startsAt = hasTimeRange ? combineDateAndTime(selectedDate, startTime) : startOfDay(selectedDate);
     const endsAt = hasTimeRange ? combineDateAndTime(selectedDate, endTime) : addDays(startsAt, 1);
     if (hasTimeRange && endsAt <= startsAt) {
-      showError(new Error("종료 시간이 시작 시간보다 빨라요."), "종료 시간이 시작 시간보다 빨라요.");
+      showError(
+        new Error("officeCalendar.errors.endBeforeStart"),
+        t("officeCalendar.errors.endBeforeStart")
+      );
       return;
     }
 
@@ -238,9 +252,9 @@ export function OfficeCalendarModal({
       setStartTime("");
       setEndTime("");
       setLocation("");
-      showSuccess("일정을 공유했습니다.");
+      showSuccess(t("officeCalendar.success.saved"));
     } catch (error) {
-      showError(error, "일정을 저장하지 못했습니다. 다시 시도해 주세요.");
+      showError(error, t("officeCalendar.errors.saveFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -250,9 +264,9 @@ export function OfficeCalendarModal({
     setIsSubmitting(true);
     try {
       await controller.deleteEvent(eventId);
-      showSuccess("일정을 삭제했습니다.");
+      showSuccess(t("officeCalendar.success.deleted"));
     } catch (error) {
-      showError(error, "일정을 삭제하지 못했습니다. 다시 시도해 주세요.");
+      showError(error, t("officeCalendar.errors.deleteFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -260,13 +274,13 @@ export function OfficeCalendarModal({
 
   return (
     <div className="cal-backdrop">
-      <section aria-label="협업 보드" aria-modal="true" className="cal-modal" role="dialog">
+      <section aria-label={t("officeCalendar.ariaLabel")} aria-modal="true" className="cal-modal" role="dialog">
         <header className="cal-header">
           <div className="cal-header-title">
             <span aria-hidden="true">📅</span>
-            공유 캘린더
+            {t("officeCalendar.title")}
           </div>
-          <button aria-label="협업 보드 닫기" className="cal-close-button" onClick={onClose} type="button">
+          <button aria-label={t("officeCalendar.close")} className="cal-close-button" onClick={onClose} type="button">
             ×
           </button>
         </header>
@@ -274,28 +288,28 @@ export function OfficeCalendarModal({
         <div className="cal-card">
           <div className="cal-toolbar">
             <div className="cal-nav-buttons">
-              <button aria-label="이전 달 보기" onClick={() => changeMonth(-1)} type="button">‹</button>
-              <button aria-label="다음 달 보기" onClick={() => changeMonth(1)} type="button">›</button>
-              <button className="cal-today-button" onClick={moveToToday} type="button">오늘</button>
+              <button aria-label={t("officeCalendar.previousMonth")} onClick={() => changeMonth(-1)} type="button">‹</button>
+              <button aria-label={t("officeCalendar.nextMonth")} onClick={() => changeMonth(1)} type="button">›</button>
+              <button className="cal-today-button" onClick={moveToToday} type="button">{t("officeCalendar.today")}</button>
             </div>
-            <h3 className="cal-month-title">{formatMonth(visibleMonth)}</h3>
-            <span className="cal-view-badge">월간</span>
+            <h3 className="cal-month-title">{formatMonth(visibleMonth, locale)}</h3>
+            <span className="cal-view-badge">{t("officeCalendar.monthly")}</span>
           </div>
 
           {controller.error ? (
             <div className="office-request-error">
-              <p className="office-panel-error">공유 일정을 불러오지 못했습니다.</p>
+              <p className="office-panel-error">{t("officeCalendar.errors.loadFailed")}</p>
               <button className="office-secondary-button" onClick={() => void controller.refresh()} type="button">
-                다시 시도
+                {t("officeCalendar.retry")}
               </button>
             </div>
           ) : null}
           {controller.isLoading ? (
-            <p className="office-panel-message"><RequestSpinner />일정을 불러오는 중입니다.</p>
+            <p className="office-panel-message"><RequestSpinner />{t("officeCalendar.loading")}</p>
           ) : null}
 
           {monthLegend.length ? (
-            <div className="cal-legend" aria-label="이번 달 일정 참여자 필터">
+            <div className="cal-legend" aria-label={t("officeCalendar.legendFilter")}>
               {visibleLegend.map((entry) => (
                 <LegendBadge
                   entry={entry}
@@ -306,7 +320,9 @@ export function OfficeCalendarModal({
               ))}
               {hasOverflowLegend ? (
                 <button
-                  aria-label={`참여자 ${overflowLegend.length}명 더 보기`}
+                  aria-label={t("officeCalendar.legendMore", {
+                    count: overflowLegend.length
+                  })}
                   className="cal-legend-more"
                   onClick={() => setIsLegendModalOpen(true)}
                   type="button"
@@ -320,14 +336,14 @@ export function OfficeCalendarModal({
           {isLegendModalOpen ? (
             <div className="cal-legend-modal-backdrop" onClick={() => setIsLegendModalOpen(false)}>
               <div
-                aria-label="이번 달 일정 참여자 전체"
+                aria-label={t("officeCalendar.legendAll")}
                 className="cal-legend-modal"
                 onClick={(event) => event.stopPropagation()}
                 role="dialog"
               >
                 <header>
-                  <h3>참여자 {monthLegend.length}명</h3>
-                  <button aria-label="닫기" className="cal-close-button" onClick={() => setIsLegendModalOpen(false)} type="button">
+                  <h3>{t("officeCalendar.ownerCount", { count: monthLegend.length })}</h3>
+                  <button aria-label={t("common.close")} className="cal-close-button" onClick={() => setIsLegendModalOpen(false)} type="button">
                     ×
                   </button>
                 </header>
@@ -347,14 +363,17 @@ export function OfficeCalendarModal({
 
           {filterMemberIds.size ? (
             <button className="cal-legend-clear" onClick={clearFilter} type="button">
-              전체 보기로 되돌리기
+              {t("officeCalendar.resetFilter")}
             </button>
           ) : null}
 
           <div className="cal-weekdays" aria-hidden="true">
-            {WEEKDAY_LABELS.map((label, index) => (
+            {WEEKDAY_INDEXES.map((index) => {
+              const label = formatWeekdayShort(index, locale);
+              return (
               <span className={weekdayClassName(index)} key={label}>{label}</span>
-            ))}
+              );
+            })}
           </div>
 
           <div className="cal-grid" role="grid">
@@ -388,7 +407,7 @@ export function OfficeCalendarModal({
                             className="cal-tag-dot"
                             style={{ background: (ownerId && memberColorMap.get(ownerId)) || FALLBACK_MEMBER_COLOR }}
                           />
-                          {getEventOwnerName(event, memberNames)} · {event.title}
+                          {getEventOwnerName(event, memberNames, t("common.teamMember"))} · {event.title}
                         </span>
                       );
                     })}
@@ -402,15 +421,15 @@ export function OfficeCalendarModal({
 
         <div className="cal-card cal-detail-card">
           <div className="cal-date-block">
-            <p className="cal-date-year">{selectedDate.getFullYear()}년</p>
-            <p className="cal-date-big">{formatBigDate(selectedDate)}</p>
-            <p className="cal-date-weekday">{formatWeekdayLong(selectedDate)}</p>
+            <p className="cal-date-year">{t("officeCalendar.dateYear", { year: selectedDate.getFullYear() })}</p>
+            <p className="cal-date-big">{formatBigDate(selectedDate, locale)}</p>
+            <p className="cal-date-weekday">{formatWeekdayLong(selectedDate, locale)}</p>
           </div>
 
           <div className="cal-detail-list">
             <div className="cal-detail-list-head">
-              <span>시간</span>
-              <span>일정</span>
+              <span>{t("officeCalendar.tableHeadTime")}</span>
+              <span>{t("officeCalendar.tableHeadSchedule")}</span>
             </div>
             {selectedEvents.length ? (
               <ul>
@@ -424,7 +443,7 @@ export function OfficeCalendarModal({
                       style={{ background: (ownerId && memberColorMap.get(ownerId)) || FALLBACK_MEMBER_COLOR }}
                     />
                     <span className="cal-detail-time">
-                      {event.isAllDay ? "종일" : formatTimeRange(event)}
+                      {event.isAllDay ? t("officeCalendar.allDay") : formatTimeRange(event, locale)}
                     </span>
                     <span className="cal-detail-title">
                       <strong>{event.title}</strong>
@@ -447,7 +466,11 @@ export function OfficeCalendarModal({
                       ) : null}
                     </span>
                     <span className="cal-detail-owners">
-                      {getEventOwnerNames(event, memberNames).map((name, index) => {
+                      {getEventOwnerNames(
+                        event,
+                        memberNames,
+                        t("common.teamMember")
+                      ).map((name, index) => {
                         const ownerMemberId = event.participantMemberIds[index] ?? event.createdByMemberId ?? name;
                         return (
                           <span className="cal-owner-badge" key={`${event.id}-${index}`}>
@@ -463,7 +486,9 @@ export function OfficeCalendarModal({
                     </span>
                     {event.createdByMemberId === self?.memberId ? (
                       <button
-                        aria-label={`${event.title} 삭제`}
+                        aria-label={t("officeCalendar.deleteAriaLabel", {
+                          title: event.title
+                        })}
                         className="cal-delete-button"
                         disabled={isSubmitting}
                         onClick={() => void deleteEvent(event.id)}
@@ -477,7 +502,7 @@ export function OfficeCalendarModal({
                 })}
               </ul>
             ) : (
-              <p className="office-panel-message">등록된 일정이 없습니다.</p>
+              <p className="office-panel-message">{t("officeCalendar.empty")}</p>
             )}
 
             <form className="cal-add-form" onSubmit={addEvent}>
@@ -486,21 +511,25 @@ export function OfficeCalendarModal({
                   className="cal-add-title"
                   disabled={isSubmitting}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="예: 베트남 팀과 기획 회의"
+                  placeholder={t("officeCalendar.formTitlePlaceholder")}
                   value={title}
                 />
                 <select
-                  aria-label="일정 종류"
+                  aria-label={t("officeCalendar.eventTypeAriaLabel")}
                   disabled={isSubmitting}
                   onChange={(event) => setEventType(event.target.value as CalendarEventType)}
                   value={eventType}
                 >
-                  {EVENT_TYPES.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+                  {EVENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`officeCalendar.eventTypes.${type}`)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="cal-add-form-row">
                 <input
-                  aria-label="시작 시간"
+                  aria-label={t("officeCalendar.startTime")}
                   disabled={isSubmitting}
                   onChange={(event) => setStartTime(event.target.value)}
                   type="time"
@@ -508,22 +537,22 @@ export function OfficeCalendarModal({
                 />
                 <span aria-hidden="true">~</span>
                 <input
-                  aria-label="종료 시간"
+                  aria-label={t("officeCalendar.endTime")}
                   disabled={isSubmitting}
                   onChange={(event) => setEndTime(event.target.value)}
                   type="time"
                   value={endTime}
                 />
                 <input
-                  aria-label="장소"
+                  aria-label={t("officeCalendar.location")}
                   className="cal-add-location"
                   disabled={isSubmitting}
                   onChange={(event) => setLocation(event.target.value)}
-                  placeholder="장소 (선택)"
+                  placeholder={t("officeCalendar.locationPlaceholder")}
                   value={location}
                 />
                 <button className="cal-add-button" disabled={isSubmitting} type="submit">
-                  {isSubmitting ? <><RequestSpinner />저장 중</> : "일정 추가"}
+                  {isSubmitting ? <><RequestSpinner />{t("officeCalendar.saving")}</> : t("officeCalendar.add")}
                 </button>
               </div>
             </form>
@@ -565,41 +594,58 @@ function weekdayClassName(index: number): string {
   return "";
 }
 
-function formatMonth(value: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", { month: "long", year: "numeric" }).format(value);
+function formatMonth(value: Date, locale: UiLocale): string {
+  return formatDateTime(value, locale, { month: "long", year: "numeric" });
 }
 
-function formatBigDate(value: Date): string {
-  const month = `${value.getMonth() + 1}`.padStart(2, "0");
-  const day = `${value.getDate()}`.padStart(2, "0");
-  return `${month}.${day}`;
+function formatBigDate(value: Date, locale: UiLocale): string {
+  return formatDateTime(value, locale, { day: "2-digit", month: "2-digit" });
 }
 
-function formatWeekdayLong(value: Date): string {
-  return new Intl.DateTimeFormat("ko-KR", { weekday: "long" }).format(value);
+function formatWeekdayShort(weekdayIndex: number, locale: UiLocale): string {
+  const sunday = new Date(Date.UTC(2026, 7, 16 + weekdayIndex));
+  return formatDateTime(sunday, locale, { timeZone: "UTC", weekday: "short" });
 }
 
-function formatTimeRange(event: OfficeCalendarEvent): string {
-  const format = (iso: string) => new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));
+function formatWeekdayLong(value: Date, locale: UiLocale): string {
+  return formatDateTime(value, locale, { weekday: "long" });
+}
+
+function formatTimeRange(event: OfficeCalendarEvent, locale: UiLocale): string {
+  const format = (iso: string) =>
+    formatDateTime(iso, locale, {
+      hour: "2-digit",
+      hour12: false,
+      minute: "2-digit"
+    });
   return `${format(event.startsAt)} - ${format(event.endsAt)}`;
 }
 
-function getEventOwnerName(event: OfficeCalendarEvent, memberNames: Map<string, string>): string {
+function getEventOwnerName(
+  event: OfficeCalendarEvent,
+  memberNames: Map<string, string>,
+  fallbackName: string
+): string {
   const memberId = event.participantMemberIds[0] ?? event.createdByMemberId;
-  return memberId ? memberNames.get(memberId) ?? "팀원" : "팀원";
+  return memberId ? memberNames.get(memberId) ?? fallbackName : fallbackName;
 }
 
-function getEventOwnerNames(event: OfficeCalendarEvent, memberNames: Map<string, string>): string[] {
+function getEventOwnerNames(
+  event: OfficeCalendarEvent,
+  memberNames: Map<string, string>,
+  fallbackName: string
+): string[] {
   const ids = event.participantMemberIds.length ? event.participantMemberIds : [event.createdByMemberId ?? ""];
-  const names = ids.filter(Boolean).map((id) => memberNames.get(id) ?? "팀원");
-  return names.length ? names : ["팀원"];
+  const names = ids.filter(Boolean).map((id) => memberNames.get(id) ?? fallbackName);
+  return names.length ? names : [fallbackName];
 }
 
 function getMonthLegend(
   events: OfficeCalendarEvent[],
   monthDays: Date[],
   memberNames: Map<string, string>,
-  memberAvatarIds: Map<string, string>
+  memberAvatarIds: Map<string, string>,
+  fallbackName: string
 ): Array<{ avatarId: string | undefined; color: string; memberId: string; name: string }> {
   const monthEvents = events.filter((event) =>
     monthDays.some((day) => eventOccursOnDay(event, day))
@@ -609,7 +655,7 @@ function getMonthLegend(
     const ids = event.participantMemberIds.length ? event.participantMemberIds : [event.createdByMemberId];
     for (const id of ids) {
       if (id && !seen.has(id)) {
-        seen.set(id, memberNames.get(id) ?? "팀원");
+        seen.set(id, memberNames.get(id) ?? fallbackName);
       }
     }
   }

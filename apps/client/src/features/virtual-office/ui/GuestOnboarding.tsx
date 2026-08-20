@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, JSX } from "react";
 import type { OfficeAvatarId } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
-import type { GuestProfile } from "../../../shared/lib/development-identity";
+import {
+  getGuestLanguageByCountryCode,
+  type GuestProfile
+} from "../../../shared/lib/development-identity";
+import { useUiLocale } from "../../../shared/i18n";
 import { RequestSpinner } from "../../../app/request-feedback";
 import { getGuestAvatarAvailability } from "../api/get-guest-avatar-availability";
 import { getAvatarSpriteDefinitions } from "../core/avatar-sprite-definition";
@@ -18,12 +23,14 @@ export function GuestOnboarding({
   isSubmitting,
   onSubmit
 }: GuestOnboardingProps): JSX.Element {
+  const { t } = useTranslation();
+  const { locale, options: uiLocaleOptions, setLocale } = useUiLocale();
   const [displayName, setDisplayName] = useState("");
   const [countryCode, setCountryCode] = useState<GuestProfile["countryCode"]>("KR");
   const [availableAvatarIds, setAvailableAvatarIds] = useState<OfficeAvatarId[] | null>(null);
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [hasAvailabilityError, setHasAvailabilityError] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState<OfficeAvatarId | null>(null);
-  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [hasSelectionError, setHasSelectionError] = useState(false);
   const avatarDefinitions = useMemo(() => getAvatarSpriteDefinitions(), []);
 
   const refreshAvatarAvailability = useCallback(async () => {
@@ -35,13 +42,9 @@ export function GuestOnboarding({
           ? currentAvatarId
           : null
       );
-      setAvailabilityError(null);
+      setHasAvailabilityError(false);
     } catch (availabilityRequestError) {
-      setAvailabilityError(
-        availabilityRequestError instanceof Error
-          ? availabilityRequestError.message
-          : "사용 가능한 아바타를 불러오지 못했습니다."
-      );
+      setHasAvailabilityError(true);
     }
   }, []);
 
@@ -57,7 +60,7 @@ export function GuestOnboarding({
     }
 
     if (!selectedAvatarId) {
-      setSelectionError("아바타를 선택하거나 랜덤 선택을 눌러주세요.");
+      setHasSelectionError(true);
       return;
     }
 
@@ -65,7 +68,7 @@ export function GuestOnboarding({
       avatarId: selectedAvatarId,
       countryCode,
       displayName: name,
-      language: countryCode === "KR" ? "ko" : "vi"
+      language: getGuestLanguageByCountryCode(countryCode)
     });
   };
 
@@ -76,20 +79,43 @@ export function GuestOnboarding({
 
     const randomIndex = Math.floor(Math.random() * availableAvatarIds.length);
     setSelectedAvatarId(availableAvatarIds[randomIndex]!);
-    setSelectionError(null);
+    setHasSelectionError(false);
   };
 
   return (
     <div className="guest-onboarding-backdrop" role="presentation">
-      <section aria-labelledby="guest-onboarding-title" className="guest-onboarding">
+      <section
+        aria-label={t("guestOnboarding.ariaLabel")}
+        aria-labelledby="guest-onboarding-title"
+        className="guest-onboarding"
+      >
         <p className="guest-onboarding-eyebrow">GLOBAL OFFICE</p>
-        <h1 id="guest-onboarding-title">함께 일할 오피스에 입장합니다</h1>
+        <h1 id="guest-onboarding-title">{t("guestOnboarding.title")}</h1>
         <p className="guest-onboarding-description">
-          이름, 소속 국가, 사용할 아바타를 선택하면 개인 데스크가 배정됩니다.
+          {t("guestOnboarding.description")}
         </p>
         <form onSubmit={handleSubmit}>
+          <fieldset className="guest-language-fieldset">
+            <legend>{t("guestOnboarding.uiLanguage.legend")}</legend>
+            <div className="guest-language-options">
+              {uiLocaleOptions.map((option) => (
+                <button
+                  aria-label={t("guestOnboarding.uiLanguage.optionAria", {
+                    language: option.label
+                  })}
+                  aria-pressed={locale === option.code}
+                  className={locale === option.code ? "selected" : undefined}
+                  key={option.code}
+                  onClick={() => setLocale(option.code)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <label className="guest-onboarding-label" htmlFor="guest-name">
-            이름
+            {t("guestOnboarding.name.label")}
           </label>
           <input
             autoComplete="name"
@@ -97,12 +123,12 @@ export function GuestOnboarding({
             id="guest-name"
             maxLength={40}
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="오피스에서 사용할 이름"
+            placeholder={t("guestOnboarding.name.placeholder")}
             required
             value={displayName}
           />
           <fieldset className="guest-country-fieldset">
-            <legend>소속 국가</legend>
+            <legend>{t("guestOnboarding.country.legend")}</legend>
             <div className="guest-country-options">
               <button
                 aria-pressed={countryCode === "KR"}
@@ -111,7 +137,7 @@ export function GuestOnboarding({
                 onClick={() => setCountryCode("KR")}
                 type="button"
               >
-                한국
+                {t("guestOnboarding.country.korea")}
               </button>
               <button
                 aria-pressed={countryCode === "VN"}
@@ -120,21 +146,21 @@ export function GuestOnboarding({
                 onClick={() => setCountryCode("VN")}
                 type="button"
               >
-                베트남
+                {t("guestOnboarding.country.vietnam")}
               </button>
             </div>
           </fieldset>
           <fieldset className="guest-avatar-fieldset">
-            <legend>아바타 선택</legend>
+            <legend>{t("guestOnboarding.avatar.legend")}</legend>
             <div className="guest-avatar-heading">
-              <span>이미 사용 중인 아바타는 선택할 수 없습니다.</span>
+              <span>{t("guestOnboarding.avatar.help")}</span>
               <button
                 className="guest-avatar-random"
                 disabled={isSubmitting || !availableAvatarIds?.length}
                 onClick={selectRandomAvatar}
                 type="button"
               >
-                랜덤 선택
+                {t("guestOnboarding.avatar.random")}
               </button>
             </div>
             <div aria-busy={availableAvatarIds === null} className="guest-avatar-options">
@@ -149,7 +175,7 @@ export function GuestOnboarding({
                     key={avatar.id}
                     onClick={() => {
                       setSelectedAvatarId(avatar.id as OfficeAvatarId);
-                      setSelectionError(null);
+                      setHasSelectionError(false);
                     }}
                     type="button"
                   >
@@ -158,18 +184,33 @@ export function GuestOnboarding({
                       className="guest-avatar-preview"
                       style={{ backgroundImage: `url(${avatar.assetPath})` }}
                     />
-                    <span>{avatar.label}</span>
-                    {!isAvailable ? <small>사용 중</small> : null}
+                    <span>{t(avatar.labelKey)}</span>
+                    {!isAvailable ? <small>{t("guestOnboarding.avatar.inUse")}</small> : null}
                   </button>
                 );
               })}
             </div>
-            {availabilityError ? <p className="guest-onboarding-error">{availabilityError}</p> : null}
-            {selectionError ? <p className="guest-onboarding-error">{selectionError}</p> : null}
+            {hasAvailabilityError ? (
+              <p className="guest-onboarding-error">
+                {t("guestOnboarding.errors.avatarAvailability")}
+              </p>
+            ) : null}
+            {hasSelectionError ? (
+              <p className="guest-onboarding-error">
+                {t("guestOnboarding.errors.avatarRequired")}
+              </p>
+            ) : null}
           </fieldset>
           {error ? <p className="guest-onboarding-error">{error}</p> : null}
           <button className="guest-onboarding-submit" disabled={isSubmitting} type="submit">
-            {isSubmitting ? <><RequestSpinner />오피스 준비 중</> : "오피스 입장"}
+            {isSubmitting ? (
+              <>
+                <RequestSpinner />
+                {t("guestOnboarding.submit.submitting")}
+              </>
+            ) : (
+              t("guestOnboarding.submit.ready")
+            )}
           </button>
         </form>
       </section>

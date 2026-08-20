@@ -31,7 +31,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 594,
       id: "main-meeting-room",
-      label: "회의실 4",
+      labelKey: "officeMap.meetingZones.mainMeetingRoom",
       width: 1346,
       x: 1383,
       y: 1838,
@@ -39,7 +39,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 373,
       id: "meeting-zone-1",
-      label: "회의실 1",
+      labelKey: "officeMap.meetingZones.meetingRoom1",
       width: 806,
       x: 1064,
       y: 334,
@@ -47,7 +47,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 357,
       id: "meeting-zone-2",
-      label: "회의실 2",
+      labelKey: "officeMap.meetingZones.meetingRoom2",
       width: 448,
       x: 1964,
       y: 325,
@@ -55,7 +55,7 @@ test("places the meeting interaction zones over configured meeting rooms", () =>
     {
       height: 349,
       id: "meeting-zone-3",
-      label: "회의실 3",
+      labelKey: "officeMap.meetingZones.meetingRoom3",
       width: 541,
       x: 2483,
       y: 337,

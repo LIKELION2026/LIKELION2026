@@ -68,7 +68,7 @@ export function useOfficeCalendar(
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "공유 일정을 불러오지 못했습니다."
+          : "officeCalendar.requestFailed"
       );
     } finally {
       setIsLoading(false);
@@ -81,7 +81,7 @@ export function useOfficeCalendar(
 
   const createEvent = useCallback(async (input: CreateCalendarEventInput) => {
     if (!session) {
-      throw new Error("오피스 세션이 준비되지 않았습니다.");
+      throw new Error("officeSession.required");
     }
 
     await createOfficeCalendarEvent(session.member.id, {
@@ -93,7 +93,7 @@ export function useOfficeCalendar(
 
   const updateEvent = useCallback(async (eventId: string, input: UpdateCalendarEventInput) => {
     if (!session) {
-      throw new Error("오피스 세션이 준비되지 않았습니다.");
+      throw new Error("officeSession.required");
     }
 
     await updateOfficeCalendarEvent(eventId, { ...input, guestToken: session.guestToken });
@@ -102,7 +102,7 @@ export function useOfficeCalendar(
 
   const deleteEvent = useCallback(async (eventId: string) => {
     if (!session) {
-      throw new Error("오피스 세션이 준비되지 않았습니다.");
+      throw new Error("officeSession.required");
     }
 
     await deleteOfficeCalendarEvent(eventId, session.guestToken);
