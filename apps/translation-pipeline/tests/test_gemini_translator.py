@@ -6,7 +6,7 @@
 
 import pytest
 
-from translation_pipeline.errors import TranslationError
+from translation_pipeline.errors import ProviderUnavailableError, TranslationError
 from translation_pipeline.providers.gemini import (
     DEFAULT_MODEL,
     DEFAULT_TIMEOUT_MS,
@@ -109,6 +109,36 @@ def test_failure_is_not_retried(message):
     with pytest.raises(TranslationError):
         translator.translate(REQUEST)
     assert len(translator._client.models.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "429 RESOURCE_EXHAUSTED",
+        "some 429 error",
+        "503 UNAVAILABLE",
+        "504 DEADLINE_EXCEEDED. {'error': {'code': 504}}",
+        "The read operation timed out",
+        "Read timed out.",
+    ],
+)
+def test_transient_errors_are_classified_as_provider_unavailable(message):
+    # FallbackTranslator는 이 구분으로 대체 provider로 넘길지 정한다. 다른
+    # 실패(잘못된 요청, 네트워크 오류 등)와 섞이면 안 된다. 대소문자는
+    # 가리지 않는다 — 실측 로그에 "The read operation timed out"처럼 대문자로
+    # 시작하는 메시지도 있었다.
+    translator = make_translator([RuntimeError(message)])
+
+    with pytest.raises(ProviderUnavailableError):
+        translator.translate(REQUEST)
+
+
+def test_non_transient_errors_are_not_classified_as_provider_unavailable():
+    translator = make_translator([RuntimeError("400 INVALID_ARGUMENT")])
+
+    with pytest.raises(TranslationError) as exc_info:
+        translator.translate(REQUEST)
+    assert not isinstance(exc_info.value, ProviderUnavailableError)
 
 
 def test_default_timeout_matches_the_provider_minimum():

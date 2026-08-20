@@ -25,6 +25,18 @@ class TranslationError(TranslationPipelineError):
     """번역 provider 호출이 실패했거나 쓸 수 있는 결과를 못 받았을 때 발생한다."""
 
 
+class ProviderUnavailableError(TranslationError):
+    """번역 provider가 일시적으로 응답하지 못했을 때 발생한다.
+
+    호출 한도 초과(429), 서버 과부하(503, 504), 응답 지연으로 인한 타임아웃이
+    여기 해당한다. 셋 다 "이 provider가 지금 이 요청에 답할 수 없다"는 같은
+    성격이라 대체 provider로 넘길 가치가 있다.
+
+    다른 실패(잘못된 요청, 빈 응답 등)와는 구분해야 한다. 그런 실패는
+    provider를 바꿔도 다시 실패할 뿐이라 대체 대상이 아니다.
+    """
+
+
 class UnknownParticipantError(TranslationPipelineError):
     """언어를 등록하지 않은 참가자를 조회했을 때 발생한다."""
 

@@ -95,6 +95,8 @@ interface CalendarEventRow {
   is_all_day: boolean;
   location: string | null;
   starts_at: string;
+  summary_ko: string | null;
+  summary_vi: string | null;
   title: string;
   workspace_id: string;
 }
@@ -107,6 +109,9 @@ interface CalendarParticipantRow {
 const DEFAULT_DESKS = OFFICE_DEFAULT_DESKS satisfies ReadonlyArray<
   Pick<OfficeDesk, "label" | "positionX" | "positionY" | "zone">
 >;
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Injectable()
 export class OfficeService {
@@ -358,7 +363,7 @@ export class OfficeService {
         title: request.title.trim(),
         workspace_id: member.workspace_id
       })
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, summary_ko, summary_vi, title, workspace_id")
       .single();
     this.throwIfError(error, "create calendar event");
 
@@ -370,6 +375,69 @@ export class OfficeService {
     return { ...toCalendarEvent(event), participantMemberIds: [memberId] };
   }
 
+  async createMeetingSummaryEvent(request: {
+    candidateMemberIds: string[];
+    endsAt: string;
+    startsAt: string;
+    summaryKo: string;
+    summaryVi: string;
+  }): Promise<OfficeCalendarEvent | null> {
+    // members.id는 uuid 컬럼이라, /meeting-lab 게스트 identity(uuid 형식이 아님)가
+    // 섞인 채로 .in("id", ...)을 날리면 Postgres가 캐스팅에 실패해 쿼리 전체가
+    // 깨진다. 진짜 uuid만 걸러서 조회해야 "진짜 멤버 + 게스트 혼합" 방도 안전하다.
+    const candidateUuids = request.candidateMemberIds.filter((id) => UUID_PATTERN.test(id));
+    if (candidateUuids.length === 0) {
+      return null;
+    }
+
+    const { data, error } = await this.supabase
+      .from("members")
+      .select("id, workspace_id")
+      .in("id", candidateUuids);
+    this.throwIfError(error, "resolve meeting summary participants");
+
+    const resolved = (data ?? []) as Array<{ id: string; workspace_id: string }>;
+    if (resolved.length === 0) {
+      return null;
+    }
+
+    const workspaceId = resolved[0]!.workspace_id;
+    const participantMemberIds = resolved
+      .filter((row) => row.workspace_id === workspaceId)
+      .map((row) => row.id);
+
+    assertCalendarRange(request.startsAt, request.endsAt);
+    const { data: eventData, error: insertError } = await this.supabase
+      .from("calendar_events")
+      .insert({
+        created_by_member_id: null,
+        ends_at: request.endsAt,
+        event_type: "meeting",
+        is_all_day: false,
+        starts_at: request.startsAt,
+        summary_ko: request.summaryKo,
+        summary_vi: request.summaryVi,
+        title: "회의 요약",
+        workspace_id: workspaceId
+      })
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, summary_ko, summary_vi, title, workspace_id")
+      .single();
+    this.throwIfError(insertError, "create meeting summary calendar event");
+
+    const event = eventData as CalendarEventRow;
+    const { error: participantError } = await this.supabase
+      .from("calendar_event_participants")
+      .insert(
+        participantMemberIds.map((memberId) => ({
+          calendar_event_id: event.id,
+          member_id: memberId
+        }))
+      );
+    this.throwIfError(participantError, "add meeting summary participants");
+
+    return { ...toCalendarEvent(event), participantMemberIds };
+  }
+
   async getWorkspaceCalendarEvents(
     workspaceId: string,
     query: GetWorkspaceCalendarEventsQuery
@@ -377,7 +445,7 @@ export class OfficeService {
     assertCalendarRange(query.startsAt, query.endsAt);
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, summary_ko, summary_vi, title, workspace_id")
       .eq("workspace_id", workspaceId)
       .lt("starts_at", query.endsAt)
       .gt("ends_at", query.startsAt)
@@ -430,7 +498,7 @@ export class OfficeService {
       .from("calendar_events")
       .update(updates)
       .eq("id", eventId)
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, summary_ko, summary_vi, title, workspace_id")
       .single();
     this.throwIfError(error, "update calendar event");
     return (await this.withCalendarParticipants([data as CalendarEventRow]))[0];
@@ -614,7 +682,7 @@ export class OfficeService {
   ): Promise<CalendarEventRow> {
     const { data, error } = await this.supabase
       .from("calendar_events")
-      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, title, workspace_id")
+      .select("created_by_member_id, ends_at, event_type, id, is_all_day, location, starts_at, summary_ko, summary_vi, title, workspace_id")
       .eq("id", eventId)
       .maybeSingle();
     this.throwIfError(error, "find calendar event");
@@ -982,6 +1050,8 @@ function toCalendarEvent(row: CalendarEventRow): Omit<OfficeCalendarEvent, "part
     isAllDay: row.is_all_day,
     ...(row.location ? { location: row.location } : {}),
     startsAt: row.starts_at,
+    ...(row.summary_ko ? { summaryKo: row.summary_ko } : {}),
+    ...(row.summary_vi ? { summaryVi: row.summary_vi } : {}),
     title: row.title,
     workspaceId: row.workspace_id
   };

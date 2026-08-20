@@ -13,6 +13,7 @@ from .agent import (
 from .context import DEFAULT_MAX_TURNS, ConversationContext, ConversationTurn
 from .errors import (
     GlossaryError,
+    ProviderUnavailableError,
     TranslationError,
     TranslationPipelineError,
     UnknownParticipantError,
@@ -40,7 +41,12 @@ from .pipeline import (
     TranslationPipeline,
     UtteranceResult,
 )
-from .publisher import SubtitlePublisher, SubtitlePublishError
+from .publisher import (
+    MeetingSummaryPublisher,
+    MeetingSummaryPublishError,
+    SubtitlePublisher,
+    SubtitlePublishError
+)
 from .rooms import (
     DEFAULT_SECTION,
     is_lab_meeting_room,
@@ -57,9 +63,19 @@ from .session import (
 )
 from .stt import AudioSource, MicrophoneStream, RealtimeTranscriber, Utterance
 from .subtitle import SubtitleError, SubtitlePayload, build_subtitle, utc_now_iso
+from .summarizer import (
+    FallbackSummarizer,
+    MeetingSummary,
+    Summarizer,
+    SummaryRequest,
+    build_summary_system_prompt,
+    parse_summary_response
+)
+from .transcript import TranscriptLine, TranscriptRecorder
 from .translator import (
     DEFAULT_HEDGE_AFTER_MS,
     FakeTranslator,
+    FallbackTranslator,
     HedgedTranslator,
     TranslationRequest,
     Translator,
@@ -75,6 +91,8 @@ __all__ = [
     "ConversationContext",
     "ConversationTurn",
     "FakeTranslator",
+    "FallbackSummarizer",
+    "FallbackTranslator",
     "Glossary",
     "GlossaryEntry",
     "GlossaryError",
@@ -86,11 +104,15 @@ __all__ = [
     "DEFAULT_SECTION",
     "DEFAULT_HEDGE_AFTER_MS",
     "DEFAULT_MAX_STALENESS_MS",
+    "MeetingSummary",
+    "MeetingSummaryPublishError",
+    "MeetingSummaryPublisher",
     "MicrophoneStream",
     "ParticipantAudioRunner",
     "ParticipantInfo",
     "ParticipantRegistry",
     "ParticipantWorker",
+    "ProviderUnavailableError",
     "RealtimeTranscriber",
     "SubtitleError",
     "SubtitlePayload",
@@ -98,6 +120,10 @@ __all__ = [
     "SECTION_SLUGS",
     "SessionEvent",
     "SubtitlePublisher",
+    "Summarizer",
+    "SummaryRequest",
+    "TranscriptLine",
+    "TranscriptRecorder",
     "TranslationAgent",
     "TranslationError",
     "TranslationPipeline",
@@ -107,6 +133,8 @@ __all__ = [
     "is_lab_meeting_room",
     "read_participant",
     "build_subtitle",
+    "build_summary_system_prompt",
+    "parse_summary_response",
     "utc_now_iso",
     "TranslationPipelineError",
     "TranslationRequest",
