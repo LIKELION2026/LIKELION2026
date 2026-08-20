@@ -45,8 +45,8 @@ export const resources = {
         title: "함께 일할 오피스에 입장합니다",
         description: "이름, 소속 국가, 사용할 아바타를 선택하면 개인 데스크가 배정됩니다.",
         uiLanguage: {
-          legend: "UI 언어",
-          optionAria: "{{language}}로 UI 언어 변경"
+          legend: "언어 선택 (Chọn ngôn ngữ)",
+          optionAria: "{{language}}로 언어 선택"
         },
         name: {
           label: "이름",
@@ -421,7 +421,7 @@ export const resources = {
           todo: "📋 내 TODO"
         },
         settings: {
-          uiLanguage: "UI 언어"
+          uiLanguage: "언어 선택"
         },
         statusAriaLabel: "내 협업 상태",
         teamName: "Demo Global Team"
@@ -561,8 +561,8 @@ export const resources = {
         title: "Vào văn phòng làm việc chung",
         description: "Chọn tên, quốc gia và avatar để nhận bàn làm việc cá nhân.",
         uiLanguage: {
-          legend: "Ngôn ngữ UI",
-          optionAria: "Đổi ngôn ngữ UI sang {{language}}"
+          legend: "Chọn ngôn ngữ (언어 선택)",
+          optionAria: "Chọn {{language}} làm ngôn ngữ hiển thị"
         },
         name: {
           label: "Tên",
@@ -937,7 +937,7 @@ export const resources = {
           todo: "📋 TODO của tôi"
         },
         settings: {
-          uiLanguage: "Ngôn ngữ UI"
+          uiLanguage: "Chọn ngôn ngữ"
         },
         statusAriaLabel: "Trạng thái cộng tác của tôi",
         teamName: "Demo Global Team"
