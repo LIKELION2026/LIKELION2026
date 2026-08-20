@@ -651,6 +651,11 @@ button {
 }
 
 .office-chat-timeline strong { color: #9a543a; }
+.office-chat-timeline small {
+  color: #7c6a5c;
+  font-size: 11px;
+  line-height: 1.35;
+}
 .office-chat-empty { color: #876144; padding-top: 28px; text-align: center; }
 
 .office-chat-panel form {

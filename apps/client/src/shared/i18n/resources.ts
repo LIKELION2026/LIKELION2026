@@ -402,6 +402,17 @@ export const resources = {
           selected: "선택된 영역"
         }
       },
+      officeChat: {
+        ariaLabel: "오피스 공용 채팅",
+        connected: "실시간",
+        empty: "팀원에게 가볍게 말을 걸어 보세요.",
+        inputAriaLabel: "공용 채팅 입력",
+        inputPlaceholder: "팀원에게 메시지 보내기",
+        originalTextLabel: "원문",
+        send: "보내기",
+        title: "오피스 대화",
+        waiting: "연결 대기"
+      },
       officeHud: {
         ariaLabel: "오피스 상태",
         attendance: {
@@ -917,6 +928,17 @@ export const resources = {
           meeting: "Khu vực họp video",
           selected: "Vùng đã chọn"
         }
+      },
+      officeChat: {
+        ariaLabel: "Trò chuyện chung trong văn phòng",
+        connected: "Trực tiếp",
+        empty: "Hãy gửi lời chào nhẹ nhàng cho đồng đội.",
+        inputAriaLabel: "Nhập trò chuyện chung",
+        inputPlaceholder: "Gửi tin nhắn cho đồng đội",
+        originalTextLabel: "Gốc",
+        send: "Gửi",
+        title: "Trò chuyện văn phòng",
+        waiting: "Chờ kết nối"
       },
       officeHud: {
         ariaLabel: "Trạng thái văn phòng",
