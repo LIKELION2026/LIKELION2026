@@ -111,7 +111,7 @@ export function GuestOnboarding({
       >
         {isLanguageStepComplete ? (
           <>
-            <p className="guest-onboarding-eyebrow">GLOBAL OFFICE</p>
+            <p className="guest-onboarding-eyebrow">Zooffice</p>
             <h1 id="guest-onboarding-title">{t("guestOnboarding.title")}</h1>
             <p className="guest-onboarding-description">
               {t("guestOnboarding.description")}
@@ -120,7 +120,7 @@ export function GuestOnboarding({
         ) : null}
         {!isLanguageStepComplete ? (
           <section aria-labelledby="guest-language-title" className="guest-language-step">
-            <p className="guest-onboarding-eyebrow">GLOBAL OFFICE</p>
+            <p className="guest-onboarding-eyebrow">Zooffice</p>
             <h1 id="guest-language-title">{t("guestOnboarding.uiLanguage.legend")}</h1>
             <p className="guest-language-description">
               {t("guestOnboarding.uiLanguage.description")}

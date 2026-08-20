@@ -45,7 +45,7 @@ function AppContent(): JSX.Element {
       {isOfficeRoute || isCollisionEditorRoute || isAvatarLabRoute ? null : (
         <header className="app-header">
           <NavLink className="brand" to="/office">
-            GLOBAL OFFICE
+            Zooffice
           </NavLink>
           <nav aria-label={t("app.navigationAriaLabel")} className="app-navigation">
             <NavLink to="/office">Office</NavLink>
