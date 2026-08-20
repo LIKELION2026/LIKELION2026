@@ -57,7 +57,7 @@ export class PresenceGateway implements OnGatewayDisconnect {
 
   constructor(
     private readonly presenceService: PresenceService,
-    private readonly officeChatTranslationService = new OfficeChatTranslationService()
+    private readonly officeChatTranslationService: OfficeChatTranslationService
   ) {}
 
   @SubscribeMessage(SOCKET_EVENT_NAMES.OFFICE_SUMMON_REQUEST)
