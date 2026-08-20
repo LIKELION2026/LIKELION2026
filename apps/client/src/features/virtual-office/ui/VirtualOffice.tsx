@@ -47,6 +47,8 @@ export function VirtualOffice(): JSX.Element {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OfficeChatMessagePayload[]>([]);
   const [chatMentionTargetName, setChatMentionTargetName] = useState<string | null>(null);
+  const [hasCompletedOnboardingLanguageStep, setHasCompletedOnboardingLanguageStep] =
+    useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [isMeetingSummaryAlertVisible, setIsMeetingSummaryAlertVisible] = useState(false);
   const [pendingSummon, setPendingSummon] = useState<OfficeSummonRequestedPayload | null>(null);
@@ -83,6 +85,8 @@ export function VirtualOffice(): JSX.Element {
     isRestoringStoredSession,
     isSceneReady
   });
+  const isOnboardingLanguageStepVisible =
+    entryPhase === "onboarding" && !hasCompletedOnboardingLanguageStep;
   const todoController = useOfficeTodos(session);
   const calendarController = useOfficeCalendar(session);
   const effectiveMembers = useMemo(
@@ -138,6 +142,12 @@ export function VirtualOffice(): JSX.Element {
 
   useEffect(() => registerSocketCallbacks(socketCallbacks), [registerSocketCallbacks, socketCallbacks]);
   useMeetingOfficePresence(meetingController.session.status);
+  useEffect(() => {
+    if (entryPhase === "office") {
+      setHasCompletedOnboardingLanguageStep(false);
+    }
+  }, [entryPhase]);
+
   const peopleContext = createPeopleContext(
     effectiveMembers,
     todoController.publicTodos,
@@ -273,18 +283,20 @@ export function VirtualOffice(): JSX.Element {
       aria-label={t("office.ariaLabel")}
     >
       <div className="office-canvas" ref={containerRef} />
-      <OfficeHud
-        avatarId={session?.member.avatarId}
-        connectionState={connectionState}
-        memberCount={effectiveMembers.length}
-        onAttendanceChange={updateAttendance}
-        onOpenCalendar={() => setIsCalendarOpen(true)}
-        onOpenPeople={() => setIsPeoplePanelOpen(true)}
-        onOpenTodo={() => setIsTodoPanelOpen(true)}
-        onStatusChange={updateStatus}
-        selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
-        selfStatus={effectiveSelf?.status}
-      />
+      {!isOnboardingLanguageStepVisible ? (
+        <OfficeHud
+          avatarId={session?.member.avatarId}
+          connectionState={connectionState}
+          memberCount={effectiveMembers.length}
+          onAttendanceChange={updateAttendance}
+          onOpenCalendar={() => setIsCalendarOpen(true)}
+          onOpenPeople={() => setIsPeoplePanelOpen(true)}
+          onOpenTodo={() => setIsTodoPanelOpen(true)}
+          onStatusChange={updateStatus}
+          selfAttendanceStatus={effectiveSelf?.officePresence?.attendanceStatus}
+          selfStatus={effectiveSelf?.status}
+        />
+      ) : null}
       <OfficeTodoPanel
         avatarId={session?.member.avatarId}
         controller={todoController}
@@ -334,13 +346,15 @@ export function VirtualOffice(): JSX.Element {
         }}
         onRequestSummon={(context) => sendSummonRequest(context.member.memberId)}
       />
-      <OfficeChatPanel
-        isConnected={connectionState === "connected"}
-        mentionTargetName={chatMentionTargetName}
-        messages={chatMessages}
-        onMentionConsumed={() => setChatMentionTargetName(null)}
-        onSend={sendChatMessage}
-      />
+      {!isOnboardingLanguageStepVisible ? (
+        <OfficeChatPanel
+          isConnected={connectionState === "connected"}
+          mentionTargetName={chatMentionTargetName}
+          messages={chatMessages}
+          onMentionConsumed={() => setChatMentionTargetName(null)}
+          onSend={sendChatMessage}
+        />
+      ) : null}
       <OfficeSummonModal
         onRespond={(decision) => {
           if (pendingSummon) {
@@ -359,7 +373,9 @@ export function VirtualOffice(): JSX.Element {
       {entryPhase === "onboarding" ? (
         <GuestOnboarding
           error={sessionError}
+          isLanguageStepComplete={hasCompletedOnboardingLanguageStep}
           isSubmitting={isPreparingSession}
+          onLanguageStepComplete={() => setHasCompletedOnboardingLanguageStep(true)}
           onSubmit={prepareSession}
         />
       ) : null}
