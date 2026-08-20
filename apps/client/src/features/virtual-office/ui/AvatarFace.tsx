@@ -1,24 +1,35 @@
 import type { CSSProperties, JSX } from "react";
 
-import { DEFAULT_AVATAR_ID, getAvatarSpriteDefinition } from "../core/avatar-sprite-definition";
+import { getAvatarSpriteDefinition } from "../core/avatar-sprite-definition";
 
 interface AvatarFaceProps {
   avatarId: string | undefined;
   size?: number;
 }
 
-// idle-down 프레임 안에서 캐릭터 그림이 프레임 중앙보다 오른쪽 아래로
-// 치우쳐 있어(원본 스프라이트 시트 문제), 원형 아이콘에 넣을 때만
-// 중앙으로 보정한다. 실측: opaque 영역 중심이 프레임 중심에서 (15.5, 19.5)만큼 벗어남.
-const FACE_CENTER_OFFSET: Record<string, { x: number; y: number }> = {
-  [DEFAULT_AVATAR_ID]: { x: -15.5, y: -19.5 }
+// 각 스프라이트의 idle-down 프레임에서 실제 캐릭터 픽셀의 중심을 기준으로 보정한다.
+// 원본 에셋의 투명 여백이 캐릭터마다 달라, 공통 프레임 안에서 그대로 렌더링하면
+// 하마, 늑대, 소처럼 오른쪽으로 치우쳐 보인다.
+const FACE_CENTER_OFFSETS: Record<string, { x: number; y: number }> = {
+  capybara: { x: 0, y: -13.5 },
+  cat: { x: -15, y: -10.5 },
+  cow: { x: -27, y: -13 },
+  dog: { x: -5.5, y: -15 },
+  eagle: { x: -15.5, y: -19 },
+  hippo: { x: -42, y: -3 },
+  monkey: { x: -6, y: -13.5 },
+  parrot: { x: -10, y: -2.5 },
+  red_panda: { x: -15.5, y: -19.5 },
+  sheep: { x: 1, y: -11 },
+  wolf: { x: -29.5, y: -5 },
+  zebra: { x: 0.5, y: -13.5 }
 };
 
 export function AvatarFace({ avatarId, size = 64 }: AvatarFaceProps): JSX.Element {
   const definition = getAvatarSpriteDefinition(avatarId);
   const frame = definition.frameSources[definition.idleFrameByDirection.down]!;
   const scale = size / frame.width;
-  const centerOffset = FACE_CENTER_OFFSET[definition.id] ?? { x: 0, y: 0 };
+  const centerOffset = FACE_CENTER_OFFSETS[definition.id] ?? { x: 0, y: 0 };
 
   const wrapperStyle: CSSProperties = {
     height: size,

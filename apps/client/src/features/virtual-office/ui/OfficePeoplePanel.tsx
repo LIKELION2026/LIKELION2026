@@ -62,32 +62,34 @@ export function OfficePeoplePanel({
           <p className="office-panel-eyebrow">{t("officePeoplePanel.teamEyebrow")}</p>
           <h2>{t("officePeoplePanel.title")}</h2>
         </div>
-        {members.length === 0 ? (
-          <p className="office-panel-message">{t("officePeoplePanel.empty")}</p>
-        ) : (
-          <ul className="people-row-list">
-            {members.map((context) => (
-              <li key={context.member.memberId}>
-                <button
-                  aria-pressed={selectedContext?.member.memberId === context.member.memberId}
-                  className="people-row"
-                  onClick={() => setSelectedMemberId(context.member.memberId)}
-                  type="button"
-                >
-                  <img alt="" aria-hidden="true" className="people-row-bg" src={`${ASSET_PATH}/row-bg.png`} />
-                  <span className="people-row-flag" aria-hidden="true">
-                    {COUNTRY_FLAGS[context.member.language === "vi" ? "VN" : "KR"]}
-                  </span>
-                  <span className="people-row-name">
-                    {context.member.displayName}
-                    {context.isSelf ? t("common.selfSuffix") : ""}
-                  </span>
-                  <StatusBadge member={context.member} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div className="people-list-scroll-area">
+          {members.length === 0 ? (
+            <p className="office-panel-message">{t("officePeoplePanel.empty")}</p>
+          ) : (
+            <ul className="people-row-list">
+              {members.map((context) => (
+                <li key={context.member.memberId}>
+                  <button
+                    aria-pressed={selectedContext?.member.memberId === context.member.memberId}
+                    className="people-row"
+                    onClick={() => setSelectedMemberId(context.member.memberId)}
+                    type="button"
+                  >
+                    <img alt="" aria-hidden="true" className="people-row-bg" src={`${ASSET_PATH}/row-bg.png`} />
+                    <span className="people-row-flag" aria-hidden="true">
+                      {COUNTRY_FLAGS[context.member.language === "vi" ? "VN" : "KR"]}
+                    </span>
+                    <span className="people-row-name">
+                      {context.member.displayName}
+                      {context.isSelf ? t("common.selfSuffix") : ""}
+                    </span>
+                    <StatusBadge member={context.member} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         {selectedContext ? (
           <MemberProfile
             context={selectedContext}

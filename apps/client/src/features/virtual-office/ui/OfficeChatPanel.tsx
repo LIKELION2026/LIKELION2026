@@ -4,6 +4,7 @@ import type { OfficeChatMessagePayload } from "@likelion2026/shared";
 
 interface OfficeChatPanelProps {
   isConnected: boolean;
+  memberCountryCodes: Readonly<Record<string, "KR" | "VN">>;
   mentionTargetName: string | null;
   messages: OfficeChatMessagePayload[];
   onMentionConsumed: () => void;
@@ -12,6 +13,7 @@ interface OfficeChatPanelProps {
 
 export function OfficeChatPanel({
   isConnected,
+  memberCountryCodes,
   mentionTargetName,
   messages,
   onMentionConsumed,
@@ -57,7 +59,12 @@ export function OfficeChatPanel({
         ) : (
           messages.map((message) => (
             <p key={`${message.memberId}-${message.occurredAt}`}>
-              <strong>{message.displayName}</strong>
+              <strong>
+                <span aria-hidden="true" className="office-chat-country-flag">
+                  {memberCountryCodes[message.memberId] === "VN" ? "🇻🇳" : "🇰🇷"}
+                </span>
+                {message.displayName}
+              </strong>
               <span>{message.text}</span>
             </p>
           ))

@@ -895,3 +895,14 @@
 - 팀원 검토·수정 내용: 기존 입장 모달의 시각 스타일은 유지하고, 언어 선택 버튼을 누르면 바로 나머지 입력 단계로 넘어가도록 구현했다. 사용자가 `codex/` 없는 브랜치명을 요청해 브랜치를 `feat/177-office-entry-language-step`로 바꿨다. 실제 사용자 플로우 최종 확인은 팀원 브라우저 검토가 필요하다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/office-entry-phase.test.ts` 15건 통과, `git diff --check` 통과. 로컬 Vite `/office` 화면에서 언어 선택 전에는 `언어 선택 (Chọn ngôn ngữ)`, `한국어`, `Tiếng Việt`만 보이고 HUD/채팅/이름·국가·아바타 입력이 숨겨지는 것을 확인했다. 한국어가 기본 선택되어 있었고, 한국어 선택 후 기존 입력 폼으로 전환되며 두 카드의 중심이 뷰포트 중심에 맞는 것을 Browser Skill로 확인했다. 언어 선택 카드 확대 후 카드 620px 폭, 버튼 68px 높이, 중앙 정렬 유지를 확인했다.
 - 관련 Issue / PR / Discussion: Issue #177
+
+### 2026-08-20 - 픽셀 오피스 상호작용 UI 정비
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 팀원이 상태·TODO·피플 목록·채팅을 한 화면에서 읽고 조작할 때 발생하던 시각적 불일치와 입력 포커스 문제를 줄인다.
+- 입력 맥락: 사용자 제공 화면 캡처, 기존 픽셀 디자인 토큰, `GuestOnboarding`, `OfficeHud`, `OfficePeoplePanel`, `OfficeTodoPanel`, `OfficeChatPanel`, `VirtualOffice`
+- AI 제안 또는 산출물: 아바타 선택 카드와 국가 선택에 같은 픽셀 프레임·플래그·아바타 미리보기를 적용하고, HUD 상태 선택을 카드형 메뉴로 교체했다. 피플 목록은 목록 영역만 스크롤되고 선택한 구성원 정보와 액션은 하단에 고정되도록 정리했다. TODO·채팅 입력 중에는 이동 키를 막고, 다른 UI나 오피스 배경을 누르면 입력 포커스를 해제해 이동을 바로 재개한다. 퇴근 상태로 재접속한 팀원에게는 출근 여부를 먼저 확인한다.
+- 팀원 검토·수정 내용: 최신 `dev`의 한국어·베트남어 UI 언어 선택 흐름을 유지한 채, 이전 UI 개선 작업을 충돌 해결 과정에서 다시 결합했다. 실제 스타일과 에셋 위치 값은 팀원 브라우저 검토로 추가 보정한다.
+- 검증 결과: Client typecheck와 관련 단위 테스트, Server typecheck 및 서비스 테스트를 실행해 확인한다. 실제 브라우저 화면 검수와 두 사용자 간 출근 상태 동기화는 PR 검토 단계에서 추가 확인이 필요하다.
+- 관련 Issue / PR / Discussion: 별도 Issue 없음 (사용자 요청으로 UI 개선 작업을 하나의 브랜치에서 정리)
