@@ -1546,6 +1546,13 @@ button {
   transform: translateY(2px);
 }
 
+.people-close-button img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
 .people-panel-header {
   padding: 20px 62px 12px 28px;
 }
@@ -1601,6 +1608,20 @@ button {
   justify-content: space-between;
 }
 
+.std-title-text,
+.std-status-title-text {
+  color: #4a2f1e;
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.std-status-title-text {
+  font-size: 15px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
 .std-title-img {
   height: auto;
   width: 160px;
@@ -1615,7 +1636,19 @@ button {
 .std-save-button {
   background: transparent;
   border: 0;
-  padding: 0;
+  color: #4a2f1e;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: 11px;
+  gap: 4px;
+  line-height: 1;
+  padding: 6px;
+  white-space: nowrap;
+}
+
+.std-save-icon {
+  height: 16px;
+  width: 16px;
 }
 
 .std-save-button img {
@@ -1718,12 +1751,27 @@ button {
 }
 
 .std-status-button {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: 10px;
+  color: #4a2f1e;
+  display: flex;
+  font-family: inherit;
+  font-size: 11px;
+  gap: 6px;
+  justify-content: center;
+  line-height: 1.1;
+  min-height: 42px;
   padding: 0;
   position: relative;
   transition: transform 0.05s ease, filter 0.05s ease;
+}
+
+.std-status-button-icon {
+  flex-shrink: 0;
+  height: 20px;
+  width: 20px;
 }
 
 .std-status-button img {
@@ -3115,6 +3163,13 @@ button {
   margin-bottom: 7px;
 }
 
+.guest-name-guide {
+  color: #795b43;
+  font-size: 10px;
+  line-height: 1.45;
+  margin: -2px 0 8px;
+}
+
 .guest-onboarding input {
   background: #fff8ed;
   border: 2px solid #8a5f3d;
@@ -3138,6 +3193,141 @@ button {
   border: 0;
   margin: 16px 0 0;
   padding: 0;
+}
+
+.guest-language-step {
+  margin: 0 auto;
+  max-width: 520px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.guest-language-step .guest-onboarding-eyebrow {
+  margin-bottom: 10px;
+}
+
+.guest-language-step h1 {
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.guest-language-description {
+  color: #795b43;
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 12px auto 20px;
+  max-width: 420px;
+}
+
+.guest-language-options {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guest-language-options button {
+  align-items: center;
+  background: #fff7e9;
+  border: 2px solid #9b7656;
+  border-radius: 8px;
+  box-shadow: 0 3px 0 #b88c63;
+  color: #5d402d;
+  display: flex;
+  font-family: inherit;
+  font-weight: 700;
+  gap: 12px;
+  justify-content: flex-start;
+  min-height: 82px;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.guest-language-options button.selected {
+  background: #f5c48c;
+  border-color: #9a4c32;
+  box-shadow: 0 3px 0 #743c2a;
+}
+
+.guest-language-options button:hover {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+.guest-language-options button:active {
+  box-shadow: none;
+  transform: translateY(3px);
+}
+
+.guest-language-flag {
+  font-family: system-ui, sans-serif;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.guest-language-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.guest-language-copy strong {
+  font-size: 14px;
+}
+
+.guest-language-copy small {
+  color: #795b43;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Galmuri is used for Korean pixel styling but lacks reliable Vietnamese glyph coverage. */
+html[lang="vi"] .guest-onboarding,
+html[lang="vi"] .people-panel,
+html[lang="vi"] .std-panel,
+html[lang="vi"] .office-hud {
+  font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html[lang="vi"] .std-panel {
+  max-width: 500px;
+  width: min(calc(100% - 32px), 500px);
+}
+
+html[lang="vi"] .std-status-button {
+  font-size: 10px;
+  gap: 4px;
+  min-height: 50px;
+  padding: 4px 3px;
+  white-space: nowrap;
+}
+
+html[lang="vi"] .std-status-button-icon {
+  height: 18px;
+  width: 18px;
+}
+
+html[lang="vi"] .people-panel-header {
+  padding-right: 76px;
+}
+
+html[lang="vi"] .people-panel-header h2 {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+html[lang="vi"] .people-row {
+  gap: 7px;
+  padding-inline: 16px;
+}
+
+html[lang="vi"] .people-status-badge {
+  font-size: 9px;
+  gap: 4px;
+  padding: 5px 7px;
+}
+
+html[lang="vi"] .people-row-name {
+  font-size: 11px;
 }
 
 .guest-avatar-fieldset {

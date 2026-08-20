@@ -119,9 +119,13 @@ export function GuestOnboarding({
           </>
         ) : null}
         {!isLanguageStepComplete ? (
-          <fieldset className="guest-language-fieldset">
-            <legend>{t("guestOnboarding.uiLanguage.legend")}</legend>
-            <div className="guest-language-options">
+          <section aria-labelledby="guest-language-title" className="guest-language-step">
+            <p className="guest-onboarding-eyebrow">GLOBAL OFFICE</p>
+            <h1 id="guest-language-title">{t("guestOnboarding.uiLanguage.legend")}</h1>
+            <p className="guest-language-description">
+              {t("guestOnboarding.uiLanguage.description")}
+            </p>
+            <div aria-label={t("guestOnboarding.uiLanguage.legend")} className="guest-language-options" role="group">
               {uiLocaleOptions.map((option) => (
                 <button
                   aria-label={t("guestOnboarding.uiLanguage.optionAria", {
@@ -133,16 +137,23 @@ export function GuestOnboarding({
                   onClick={() => handleLanguageSelect(option.code)}
                   type="button"
                 >
-                  {option.label}
+                  <span aria-hidden="true" className="guest-language-flag">
+                    {option.code === "ko" ? "🇰🇷" : "🇻🇳"}
+                  </span>
+                  <span className="guest-language-copy">
+                    <strong>{option.label}</strong>
+                    <small>{t(`guestOnboarding.uiLanguage.hint.${option.code}`)}</small>
+                  </span>
                 </button>
               ))}
             </div>
-          </fieldset>
+          </section>
         ) : (
           <form onSubmit={handleSubmit}>
             <label className="guest-onboarding-label" htmlFor="guest-name">
               {t("guestOnboarding.name.label")}
             </label>
+            <p className="guest-name-guide">{t("guestOnboarding.name.guide")}</p>
             <input
               autoComplete="name"
               disabled={isSubmitting}
