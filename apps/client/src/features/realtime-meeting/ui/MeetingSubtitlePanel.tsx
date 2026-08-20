@@ -1,6 +1,8 @@
 import type { JSX } from "react";
 import type { SubtitleCreatedPayload } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
+import { formatDateTime, type UiLocale, useUiLocale } from "../../../shared/i18n";
 import type { MeetingSubtitleStatus } from "../model/use-meeting-subtitles";
 
 interface MeetingSubtitlePanelProps {
@@ -9,19 +11,14 @@ interface MeetingSubtitlePanelProps {
   subtitles: SubtitleCreatedPayload[];
 }
 
-const SUBTITLE_STATUS_LABELS: Record<MeetingSubtitleStatus, string> = {
-  disconnected: "연결 종료",
-  failed: "오류",
-  idle: "대기",
-  loading: "연결 중",
-  subscribed: "수신 중"
-};
-
 export function MeetingSubtitlePanel({
   errorMessage,
   status,
   subtitles
 }: MeetingSubtitlePanelProps): JSX.Element | null {
+  const { t } = useTranslation();
+  const { locale } = useUiLocale();
+
   if (status === "idle" && subtitles.length === 0) {
     return null;
   }
@@ -30,15 +27,15 @@ export function MeetingSubtitlePanel({
     <section className="meeting-subtitle-panel" aria-live="polite">
       <div className="meeting-subtitle-panel-header">
         <div>
-          <span>Subtitle Mock</span>
-          <strong>실시간 자막</strong>
+          <span>{t("meetingSubtitles.subtitleMock")}</span>
+          <strong>{t("meetingSubtitles.title")}</strong>
         </div>
         <span className={`meeting-subtitle-state ${status}`}>
-          {SUBTITLE_STATUS_LABELS[status]}
+          {t(`meetingSubtitles.status.${status}`)}
         </span>
       </div>
       {errorMessage ? (
-        <p className="meeting-subtitle-error">{errorMessage}</p>
+        <p className="meeting-subtitle-error">{translateMaybeKey(t, errorMessage)}</p>
       ) : null}
       {subtitles.length > 0 ? (
         <div className="meeting-subtitle-list">
@@ -57,10 +54,10 @@ export function MeetingSubtitlePanel({
                   {subtitle.translatedLanguage}
                 </span>
                 <time dateTime={subtitle.occurredAt}>
-                  {formatSubtitleTime(subtitle.occurredAt)}
+                  {formatSubtitleTime(subtitle.occurredAt, locale)}
                 </time>
                 <span className="meeting-subtitle-finality">
-                  {subtitle.isFinal ? "확정" : "임시"}
+                  {subtitle.isFinal ? t("meetingSubtitles.final") : t("meetingSubtitles.partial")}
                 </span>
               </header>
               <p className="meeting-subtitle-source">{subtitle.sourceText}</p>
@@ -72,23 +69,30 @@ export function MeetingSubtitlePanel({
         </div>
       ) : (
         <div className="meeting-subtitle-empty">
-          아직 표시할 자막이 없습니다.
+          {t("meetingSubtitles.empty")}
         </div>
       )}
     </section>
   );
 }
 
-function formatSubtitleTime(occurredAt: string): string {
+function formatSubtitleTime(occurredAt: string, locale: UiLocale): string {
   const date = new Date(occurredAt);
 
   if (Number.isNaN(date.getTime())) {
     return "";
   }
 
-  return date.toLocaleTimeString([], {
+  return formatDateTime(date, locale, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
   });
+}
+
+function translateMaybeKey(
+  t: (key: string) => string,
+  value: string
+): string {
+  return /^[a-z][\w-]*(?:\.[\w-]+)+$/.test(value) ? t(value) : value;
 }

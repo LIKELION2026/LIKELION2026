@@ -184,7 +184,7 @@ async function loadInitialSubtitles(
     const response = await listMockSubtitles(roomName);
 
     if (response.updateStrategy !== SUBTITLE_UPDATE_STRATEGY) {
-      throw new Error("지원하지 않는 자막 업데이트 방식입니다.");
+      throw new Error("meetingErrors.unsupportedSubtitleUpdate");
     }
 
     setStateIfMounted((currentState) => ({
@@ -201,7 +201,7 @@ async function loadInitialSubtitles(
       errorMessage:
         error instanceof Error
           ? error.message
-          : "자막 목록을 불러오지 못했습니다.",
+          : "meetingErrors.subtitlesLoadFailed",
       status:
         currentState.status === "subscribed" ? currentState.status : "failed"
     }));

@@ -18,7 +18,7 @@ export {
 
 export interface MeetingRoomSection {
   id: MeetingRoomSectionId;
-  label: string;
+  labelKey: string;
   roomName: string;
 }
 
@@ -42,7 +42,7 @@ export function createMeetingRoomSection(
 
   return {
     id: sectionId,
-    label: metadata.label,
+    labelKey: metadata.labelKey,
     roomName: createLabMeetingRoomName(metadata.roomSlug, date)
   };
 }

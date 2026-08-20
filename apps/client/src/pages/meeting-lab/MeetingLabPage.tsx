@@ -4,12 +4,9 @@ import {
   MEETING_PARTICIPANT_COUNTRIES,
   type MeetingParticipantCountry
 } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
-import type { MeetingDevicePreflightStatus } from "../../features/realtime-meeting/model/device-preflight";
 import { resolveMeetingRoomSection } from "../../features/realtime-meeting/model/meeting-room-section";
-import {
-  type LiveKitMeetingSessionStatus
-} from "../../features/realtime-meeting/model/use-livekit-meeting-session";
 import {
   useMeetingSessionController
 } from "../../features/realtime-meeting/model/use-meeting-session-controller";
@@ -24,33 +21,11 @@ import {
   getDevelopmentIdentity,
   saveDevelopmentProfile
 } from "../../shared/lib/development-identity";
-
-const COUNTRY_OPTION_LABELS: Record<MeetingParticipantCountry, string> = {
-  kr: "한국",
-  vn: "베트남"
-};
-
-const PREFLIGHT_STATUS_LABELS: Record<MeetingDevicePreflightStatus, string> = {
-  checking: "확인 중",
-  "device-unavailable": "장치 없음",
-  idle: "확인 전",
-  "permission-denied": "권한 거부",
-  ready: "입장 가능",
-  "security-unavailable": "보안 연결 필요"
-};
-
-const MEETING_SESSION_STATUS_LABELS: Record<LiveKitMeetingSessionStatus, string> =
-  {
-    connected: "연결됨",
-    connecting: "연결 중",
-    disconnected: "연결 종료",
-    failed: "연결 실패",
-    idle: "대기 중",
-    publishing: "트랙 게시 중",
-    reconnecting: "재연결 중"
-  };
+import { formatDateTime, useUiLocale } from "../../shared/i18n";
 
 export function MeetingLabPage(): JSX.Element {
+  const { t } = useTranslation();
+  const { locale } = useUiLocale();
   const initialIdentity = useMemo(getDevelopmentIdentity, []);
   const roomSection = useMemo(
     () => resolveMeetingRoomSection(window.location.search),
@@ -107,9 +82,13 @@ export function MeetingLabPage(): JSX.Element {
       setDisplayName(savedProfile.displayName);
       setParticipantCountry(savedProfile.participantCountry);
       setMessage(
-        `${response.roomName} 회의방에 연결했습니다. 토큰 만료 시각: ${new Date(
-          response.expiresAt
-        ).toLocaleTimeString()}`
+        t("meetingLab.connectedMessage", {
+          expiresAt: formatDateTime(response.expiresAt, locale, {
+            hour: "2-digit",
+            minute: "2-digit"
+          }),
+          roomName: response.roomName
+        })
       );
       return;
     }
@@ -120,11 +99,11 @@ export function MeetingLabPage(): JSX.Element {
   return (
     <section className="meeting-lab-page">
       <div className="meeting-lab-card">
-        <h1>Meeting Lab</h1>
-        <p>LiveKit 입장 정보와 회의 섹션을 확인합니다.</p>
+        <h1>{t("meetingLab.title")}</h1>
+        <p>{t("meetingLab.description")}</p>
         <form className="meeting-lab-form" onSubmit={handleSubmit}>
           <label>
-            사용자 이름
+            {t("meetingLab.form.userName")}
             <input
               autoComplete="name"
               maxLength={40}
@@ -134,7 +113,7 @@ export function MeetingLabPage(): JSX.Element {
             />
           </label>
           <label>
-            국가
+            {t("meetingLab.country")}
             <select
               onChange={(event) =>
                 setParticipantCountry(
@@ -145,26 +124,30 @@ export function MeetingLabPage(): JSX.Element {
             >
               {MEETING_PARTICIPANT_COUNTRIES.map((country) => (
                 <option key={country} value={country}>
-                  {COUNTRY_OPTION_LABELS[country]}
+                  {t(
+                    country === "vn"
+                      ? "guestOnboarding.country.vietnam"
+                      : "guestOnboarding.country.korea"
+                  )}
                 </option>
               ))}
             </select>
           </label>
           <div className="meeting-room-preview">
-            <span>회의 섹션</span>
-            <strong>{roomSection.label}</strong>
+            <span>{t("meetingLab.meetingSection")}</span>
+            <strong>{t(roomSection.labelKey)}</strong>
             <code>{roomSection.roomName}</code>
           </div>
           <div className="meeting-device-preflight" aria-live="polite">
             <div className="meeting-device-preflight-row">
               <div>
                 <span className="meeting-device-preflight-label">
-                  카메라/마이크
+                  {t("meetingDevicePreflight.cameraMicrophone")}
                 </span>
                 <strong
                   className={`meeting-device-status ${devicePreflight.status}`}
                 >
-                  {PREFLIGHT_STATUS_LABELS[devicePreflight.status]}
+                  {t(`meetingDevicePreflight.status.${devicePreflight.status}`)}
                 </strong>
               </div>
               <button
@@ -173,14 +156,16 @@ export function MeetingLabPage(): JSX.Element {
                 onClick={handleDevicePreflight}
                 type="button"
               >
-                {isCheckingDevices ? "확인 중" : "장치 확인"}
+                {isCheckingDevices
+                  ? t("meetingDevicePreflight.checkingButton")
+                  : t("meetingDevicePreflight.check")}
               </button>
             </div>
-            <p>{devicePreflight.message}</p>
+            <p>{t(devicePreflight.messageKey)}</p>
             {devicePreflight.status === "ready" ? (
               <div className="meeting-device-counts">
-                <span>Camera {devicePreflight.videoInputCount}</span>
-                <span>Mic {devicePreflight.audioInputCount}</span>
+                <span>{t("meetingLab.deviceCounts.camera", { count: devicePreflight.videoInputCount })}</span>
+                <span>{t("meetingLab.deviceCounts.mic", { count: devicePreflight.audioInputCount })}</span>
               </div>
             ) : null}
           </div>
@@ -189,7 +174,7 @@ export function MeetingLabPage(): JSX.Element {
             disabled={isSessionBusy}
             type="submit"
           >
-            {isSessionBusy ? "회의 연결 중" : "회의 연결"}
+            {isSessionBusy ? t("meetingLab.form.connecting") : t("meetingLab.form.connect")}
           </button>
         </form>
         <MeetingMediaStage
@@ -213,24 +198,24 @@ export function MeetingLabPage(): JSX.Element {
         />
         <div className="meeting-session-status" aria-live="polite">
           <div>
-            <span>LiveKit 상태</span>
+            <span>{t("meetingLab.liveKitStatus")}</span>
             <strong className={`meeting-session-state ${session.status}`}>
-              {MEETING_SESSION_STATUS_LABELS[session.status]}
+              {t(`meetingSessionStatus.${session.status}`)}
             </strong>
           </div>
           {session.roomName ? <code>{session.roomName}</code> : null}
           {session.participantIdentity ? (
-            <p>참가자 ID: {session.participantIdentity}</p>
+            <p>{t("meetingLab.participantId", { participantId: session.participantIdentity })}</p>
           ) : null}
           {session.status === "connected" ? (
             <div className="meeting-device-counts">
-              <span>Published camera {session.videoTrackCount}</span>
-              <span>Published mic {session.audioTrackCount}</span>
-              <span>Remote participants {session.remoteParticipantCount}</span>
+              <span>{t("meetingLab.publishedCounts.camera", { count: session.videoTrackCount })}</span>
+              <span>{t("meetingLab.publishedCounts.mic", { count: session.audioTrackCount })}</span>
+              <span>{t("meetingLab.publishedCounts.remoteParticipants", { count: session.remoteParticipantCount })}</span>
             </div>
           ) : null}
           {session.errorMessage ? (
-            <p className="meeting-session-error">{session.errorMessage}</p>
+            <p className="meeting-session-error">{translateMaybeKey(t, session.errorMessage)}</p>
           ) : null}
           {session.status === "connected" || session.status === "reconnecting" ? (
             <button
@@ -241,17 +226,24 @@ export function MeetingLabPage(): JSX.Element {
               }}
               type="button"
             >
-              회의 나가기
+              {t("meetingLab.leave")}
             </button>
           ) : null}
         </div>
         {message ? <div className="result-message">{message}</div> : null}
         {error || meetingController.errorMessage ? (
           <div className="error-message">
-            {error ?? meetingController.errorMessage}
+            {translateMaybeKey(t, error ?? meetingController.errorMessage ?? "")}
           </div>
         ) : null}
       </div>
     </section>
   );
+}
+
+function translateMaybeKey(
+  t: (key: string, options?: Record<string, unknown>) => string,
+  value: string
+): string {
+  return /^[a-z][\w-]*(?:\.[\w-]+)+$/.test(value) ? t(value) : value;
 }
