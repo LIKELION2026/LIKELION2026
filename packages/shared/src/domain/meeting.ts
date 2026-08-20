@@ -12,25 +12,25 @@ export const MEETING_ROOM_SECTION_IDS = [
 export type MeetingRoomSectionId = (typeof MEETING_ROOM_SECTION_IDS)[number];
 
 export interface MeetingRoomSectionMetadata {
-  label: string;
+  labelKey: string;
   roomSlug: string;
 }
 
 export const MEETING_ROOM_SECTION_METADATA = {
   "meeting-room": {
-    label: "Meeting Room",
+    labelKey: "meetingRoomSections.main",
     roomSlug: "meeting-room",
   },
   "meeting-room-1": {
-    label: "Meeting Room 1",
+    labelKey: "meetingRoomSections.room1",
     roomSlug: "meeting-room-1",
   },
   "meeting-room-2": {
-    label: "Meeting Room 2",
+    labelKey: "meetingRoomSections.room2",
     roomSlug: "meeting-room-2",
   },
   "meeting-room-3": {
-    label: "Meeting Room 3",
+    labelKey: "meetingRoomSections.room3",
     roomSlug: "meeting-room-3",
   },
 } as const satisfies Record<MeetingRoomSectionId, MeetingRoomSectionMetadata>;

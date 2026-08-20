@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { JSX, PointerEvent as ReactPointerEvent } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   OFFICE_DEFAULT_DESKS,
   OFFICE_MEETING_ZONES,
@@ -43,6 +44,7 @@ const MAP_DISPLAY_HEIGHT = Math.round(
 const HANDLE_SIZE = 24;
 
 export function OfficeCollisionEditor(): JSX.Element {
+  const { t } = useTranslation();
   const [areas, setAreas] = useState<OfficeCollisionArea[]>(() =>
     OFFICE_COLLISION_AREAS.map((area) => ({ ...area })),
   );
@@ -261,32 +263,34 @@ export function OfficeCollisionEditor(): JSX.Element {
     <section className="collision-editor-page">
       <header className="collision-editor-header">
         <div>
-          <p className="collision-editor-eyebrow">DEVELOPMENT TOOL</p>
-          <h1>오피스 맵 편집기</h1>
-          <p>충돌 영역, 화상회의 구역, 팀원의 초기 자리를 한 화면에서 조정하세요.</p>
+          <p className="collision-editor-eyebrow">{t("officeCollisionEditor.developmentTool")}</p>
+          <h1>{t("officeCollisionEditor.title")}</h1>
+          <p>{t("officeCollisionEditor.description")}</p>
         </div>
         <div className="collision-editor-actions">
           <Link className="collision-editor-link" to="/office?debugCollisions=1">
-            오피스에서 확인
+            {t("officeCollisionEditor.checkInOffice")}
           </Link>
           <button className="collision-editor-button" onClick={resetAreas} type="button">
-            초기화
+            {t("officeCollisionEditor.reset")}
           </button>
           <button className="collision-editor-button collision-editor-button-primary" onClick={() => void copyAreas()} type="button">
-            {copyState === "copied" ? "복사됨" : "JSON 복사"}
+            {copyState === "copied"
+              ? t("officeCollisionEditor.copied")
+              : t("officeCollisionEditor.copyJson")}
           </button>
         </div>
       </header>
 
       <div className="collision-editor-layout">
-        <aside className="collision-editor-sidebar" aria-label="충돌 영역 목록">
+        <aside className="collision-editor-sidebar" aria-label={t("officeCollisionEditor.areaListAriaLabel")}>
           <div className="collision-editor-sidebar-heading">
             <div>
-              <p>영역 목록</p>
-              <strong>{areas.length}개</strong>
+              <p>{t("officeCollisionEditor.areaList")}</p>
+              <strong>{t("officeCollisionEditor.areaCount", { count: areas.length })}</strong>
             </div>
             <button className="collision-editor-add-button" onClick={addArea} type="button">
-              영역 추가
+              {t("officeCollisionEditor.addArea")}
             </button>
           </div>
 
@@ -306,15 +310,15 @@ export function OfficeCollisionEditor(): JSX.Element {
           </div>
 
           {selectedArea ? (
-            <section className="collision-editor-properties" aria-label="선택한 충돌 영역 속성">
+            <section className="collision-editor-properties" aria-label={t("officeCollisionEditor.selectedAreaAriaLabel")}>
               <div className="collision-editor-properties-heading">
-                <h2>선택한 영역</h2>
+                <h2>{t("officeCollisionEditor.selectedArea")}</h2>
                 <button className="collision-editor-delete-button" onClick={deleteSelectedArea} type="button">
-                  삭제
+                  {t("officeCollisionEditor.delete")}
                 </button>
               </div>
               <label>
-                식별자
+                {t("officeCollisionEditor.id")}
                 <input
                   onChange={(event) => {
                     const nextId = event.target.value.trim().replaceAll(/\s+/g, "-");
@@ -356,14 +360,14 @@ export function OfficeCollisionEditor(): JSX.Element {
             </section>
           ) : null}
 
-          <section className="collision-editor-configuration" aria-label="화상회의 구역 설정">
+          <section className="collision-editor-configuration" aria-label={t("officeCollisionEditor.meetingZoneSettingsAriaLabel")}>
             <div className="collision-editor-properties-heading">
               <div>
-                <p>화상회의 구역</p>
-                <strong>{meetingZones.length}개</strong>
+                <p>{t("officeCollisionEditor.meetingZoneSettings")}</p>
+                <strong>{t("officeCollisionEditor.areaCount", { count: meetingZones.length })}</strong>
               </div>
               <button className="collision-editor-add-button" onClick={addMeetingZone} type="button">
-                구역 추가
+                {t("officeCollisionEditor.addZone")}
               </button>
             </div>
             <div className="collision-editor-area-list collision-editor-meeting-list">
@@ -378,7 +382,7 @@ export function OfficeCollisionEditor(): JSX.Element {
                   }}
                   type="button"
                 >
-                  <strong>{zone.label}</strong>
+                  <strong>{t(zone.labelKey)}</strong>
                   <span>{`${zone.x}, ${zone.y} / ${zone.width} x ${zone.height}`}</span>
                 </button>
               ))}
@@ -386,25 +390,25 @@ export function OfficeCollisionEditor(): JSX.Element {
             {selectedMeetingZone ? (
               <div className="collision-editor-meeting-properties">
                 <div className="collision-editor-properties-heading">
-                  <strong>선택한 회의 구역</strong>
+                  <strong>{t("officeCollisionEditor.selectedMeetingZone")}</strong>
                   <button
                     className="collision-editor-delete-button"
                     onClick={deleteSelectedMeetingZone}
                     type="button"
                   >
-                    삭제
+                    {t("officeCollisionEditor.delete")}
                   </button>
                 </div>
                 <label>
-                  이름
+                  {t("officeCollisionEditor.label")}
                   <input
                     onChange={(event) =>
                       updateMeetingZone(selectedMeetingZone.id, {
                         ...selectedMeetingZone,
-                        label: event.target.value,
+                        labelKey: event.target.value,
                       })
                     }
-                    value={selectedMeetingZone.label}
+                    value={selectedMeetingZone.labelKey}
                   />
                 </label>
                 <div className="collision-editor-number-grid">
@@ -430,16 +434,18 @@ export function OfficeCollisionEditor(): JSX.Element {
                 </div>
               </div>
             ) : null}
-            <small>파란 구역은 가구 충돌과 겹칠 수 있으며, 드래그로 위치와 크기를 조정합니다.</small>
+            <small>{t("officeCollisionEditor.blueZoneHelp")}</small>
           </section>
 
-          <section className="collision-editor-configuration" aria-label="초기 자리 설정">
+          <section className="collision-editor-configuration" aria-label={t("officeCollisionEditor.deskSettings")}>
             <div className="collision-editor-properties-heading">
               <div>
-                <p>초기 자리</p>
-                <strong>{desks.length}개</strong>
+                <p>{t("officeCollisionEditor.deskSettings")}</p>
+                <strong>{t("officeCollisionEditor.areaCount", { count: desks.length })}</strong>
               </div>
-              <span className="collision-editor-tone-badge collision-editor-tone-badge-desk">시작</span>
+              <span className="collision-editor-tone-badge collision-editor-tone-badge-desk">
+                {t("officeCollisionEditor.startBadge")}
+              </span>
             </div>
             <div className="collision-editor-desk-list">
               {desks.map((desk) => (
@@ -482,26 +488,26 @@ export function OfficeCollisionEditor(): JSX.Element {
                 </fieldset>
               ))}
             </div>
-            <small>초록 마커는 새 팀원의 생성·복원 기준 자리입니다.</small>
+            <small>{t("officeCollisionEditor.deskMarkerHelp")}</small>
           </section>
         </aside>
 
         <div className="collision-editor-canvas-panel">
           <div className="collision-editor-legend">
-            <span><i className="collision-editor-legend-area" /> 충돌 영역</span>
-            <span><i className="collision-editor-legend-selected" /> 선택된 영역</span>
-            <span><i className="collision-editor-legend-meeting" /> 화상회의 구역</span>
-            <span><i className="collision-editor-legend-desk" /> 초기 자리</span>
-            <span>충돌·회의 구역: 드래그 이동 · 모서리 드래그 크기 조정</span>
+            <span><i className="collision-editor-legend-area" /> {t("officeCollisionEditor.legend.area")}</span>
+            <span><i className="collision-editor-legend-selected" /> {t("officeCollisionEditor.legend.selected")}</span>
+            <span><i className="collision-editor-legend-meeting" /> {t("officeCollisionEditor.legend.meeting")}</span>
+            <span><i className="collision-editor-legend-desk" /> {t("officeCollisionEditor.legend.desk")}</span>
+            <span>{t("officeCollisionEditor.legend.help")}</span>
           </div>
           <div className="collision-editor-map-viewport">
             <div
               className="collision-editor-map-stage"
               style={{ height: MAP_DISPLAY_HEIGHT, width: MAP_DISPLAY_WIDTH }}
             >
-              <img alt="오피스 맵" draggable={false} src={OFFICE_MAP.assetPath} />
+              <img alt={t("officeCollisionEditor.mapAlt")} draggable={false} src={OFFICE_MAP.assetPath} />
               <svg
-                aria-label="충돌 영역 편집 캔버스"
+                aria-label={t("officeCollisionEditor.canvasAriaLabel")}
                 className="collision-editor-map-overlay"
                 onPointerCancel={endPointerInteraction}
                 onPointerMove={handlePointerMove}
@@ -526,7 +532,7 @@ export function OfficeCollisionEditor(): JSX.Element {
                         x={zone.x + 18}
                         y={zone.y + 42}
                       >
-                        {zone.label}
+                        {t(zone.labelKey)}
                       </text>
                       {isSelected
                         ? getResizeHandlePositions(zone).map(({ handle, x, y }) => (

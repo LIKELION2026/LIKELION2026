@@ -27,7 +27,7 @@ export interface AvatarSpriteDefinition {
   frameSources: AvatarFrameSource[];
   id: string;
   idleFrameByDirection: Record<AvatarDirection, number>;
-  label: string;
+  labelKey: `avatar.labels.${OfficeAvatarId}`;
   scale: number;
   sitAssetPath: string;
   sitFramesByDirection: Record<AvatarDirection, number[]>;
@@ -44,21 +44,6 @@ const createFrameSources = (sourceFrame: AvatarSourceFrame): AvatarFrameSource[]
     getAvatarFrameSource(frame, sourceFrame),
   );
 
-const AVATAR_LABELS: Record<OfficeAvatarId, string> = {
-  capybara: "카피바라",
-  cat: "고양이",
-  cow: "소",
-  dog: "강아지",
-  eagle: "독수리",
-  hippo: "하마",
-  monkey: "원숭이",
-  parrot: "앵무새",
-  red_panda: "레드판다",
-  sheep: "양",
-  wolf: "늑대",
-  zebra: "얼룩말",
-};
-
 function createAvatarSpriteDefinition(
   id: OfficeAvatarId,
 ): AvatarSpriteDefinition {
@@ -70,7 +55,7 @@ function createAvatarSpriteDefinition(
     frameSources: createFrameSources(layout.sourceFrame),
     id,
     idleFrameByDirection: { down: 0, left: 2, right: 2, up: 1 },
-    label: AVATAR_LABELS[id],
+    labelKey: `avatar.labels.${id}`,
     scale: layout.scale,
     sitAssetPath: `/assets/${id}_sit.png`,
     sitFramesByDirection: {

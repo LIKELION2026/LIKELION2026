@@ -7,9 +7,10 @@ export type MeetingTranslationAvailabilityStatus =
   | "unavailable";
 
 export interface MeetingTranslationAvailability {
-  description: string;
+  descriptionKey: string;
+  errorMessage?: string;
   status: MeetingTranslationAvailabilityStatus;
-  title: string;
+  titleKey: string;
 }
 
 interface CreateMeetingTranslationAvailabilityInput {
@@ -25,32 +26,32 @@ export function createMeetingTranslationAvailability({
 }: CreateMeetingTranslationAvailabilityInput): MeetingTranslationAvailability {
   if (!isEnabled) {
     return {
-      description: "일반 채팅은 계속 사용할 수 있습니다.",
+      descriptionKey: "meetingTranslationAvailability.off.description",
       status: "off",
-      title: "AI 번역 꺼짐"
+      titleKey: "meetingTranslationAvailability.off.title"
     };
   }
 
   if (errorMessage || subtitleStatus === "failed") {
     return {
-      description:
-        errorMessage ?? "자막 서버 연결을 확인한 뒤 다시 시도해 주세요.",
+      descriptionKey: "meetingTranslationAvailability.unavailable.description",
+      errorMessage,
       status: "unavailable",
-      title: "AI 번역 연결 실패"
+      titleKey: "meetingTranslationAvailability.unavailable.title"
     };
   }
 
   if (subtitleStatus === "subscribed") {
     return {
-      description: "상대방이 말하면 번역이 채팅과 하단 자막에 표시됩니다.",
+      descriptionKey: "meetingTranslationAvailability.ready.description",
       status: "ready",
-      title: "AI 번역 대기 중"
+      titleKey: "meetingTranslationAvailability.ready.title"
     };
   }
 
   return {
-    description: "회의방 자막 채널을 준비하고 있습니다.",
+    descriptionKey: "meetingTranslationAvailability.connecting.description",
     status: "connecting",
-    title: "AI 번역 연결 중"
+    titleKey: "meetingTranslationAvailability.connecting.title"
   };
 }

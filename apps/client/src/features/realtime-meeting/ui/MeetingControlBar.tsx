@@ -10,6 +10,7 @@ import {
   VideoOff,
   type LucideIcon
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import {
   createCameraControlState,
@@ -53,6 +54,7 @@ export function MeetingControlBar({
   onMicrophoneToggle,
   onTranslationToggle
 }: MeetingControlBarProps): JSX.Element {
+  const { t } = useTranslation();
   const microphone = createMicrophoneControlState({
     canControlMedia,
     isEnabled: isMicrophoneEnabled,
@@ -75,11 +77,19 @@ export function MeetingControlBar({
   const CameraIcon = camera.pressed ? Video : VideoOff;
   const ExpandedViewIcon = expandedView.pressed ? Minimize2 : Maximize2;
   const TranslationIcon = translation.pressed ? Globe : GlobeOff;
+  const microphoneLabel = t(microphone.labelKey);
+  const microphoneStatus = t(microphone.statusKey);
+  const cameraLabel = t(camera.labelKey);
+  const cameraStatus = t(camera.statusKey);
+  const expandedViewLabel = t(expandedView.labelKey);
+  const expandedViewStatus = t(expandedView.statusKey);
+  const translationLabel = t(translation.labelKey);
+  const translationStatus = t(translation.statusKey);
 
   return (
-    <div aria-label="회의 컨트롤" className="meeting-control-bar" role="toolbar">
+    <div aria-label={t("meetingControls.toolbarAriaLabel")} className="meeting-control-bar" role="toolbar">
       <button
-        aria-label={`${microphone.label}. ${microphone.statusText}`}
+        aria-label={`${microphoneLabel}. ${microphoneStatus}`}
         aria-pressed={microphone.pressed}
         className={getControlButtonClassName({
           isOff: !microphone.pressed,
@@ -87,13 +97,13 @@ export function MeetingControlBar({
         })}
         disabled={microphone.disabled}
         onClick={onMicrophoneToggle}
-        title={microphone.statusText}
+        title={microphoneStatus}
         type="button"
       >
         <ControlIcon icon={MicrophoneIcon} />
       </button>
       <button
-        aria-label={`${camera.label}. ${camera.statusText}`}
+        aria-label={`${cameraLabel}. ${cameraStatus}`}
         aria-pressed={camera.pressed}
         className={getControlButtonClassName({
           isOff: !camera.pressed,
@@ -101,13 +111,13 @@ export function MeetingControlBar({
         })}
         disabled={camera.disabled}
         onClick={onCameraToggle}
-        title={camera.statusText}
+        title={cameraStatus}
         type="button"
       >
         <ControlIcon icon={CameraIcon} />
       </button>
       <button
-        aria-label={`${expandedView.label}. ${expandedView.statusText}`}
+        aria-label={`${expandedViewLabel}. ${expandedViewStatus}`}
         aria-pressed={expandedView.pressed}
         className={getControlButtonClassName({
           isActive: expandedView.pressed,
@@ -116,13 +126,13 @@ export function MeetingControlBar({
         })}
         disabled={expandedView.disabled}
         onClick={onExpandedViewToggle}
-        title={expandedView.statusText}
+        title={expandedViewStatus}
         type="button"
       >
         <ControlIcon icon={ExpandedViewIcon} />
       </button>
       <button
-        aria-label={`${translation.label}. ${translation.statusText}`}
+        aria-label={`${translationLabel}. ${translationStatus}`}
         aria-pressed={translation.pressed}
         className={getControlButtonClassName({
           isOff: !translation.pressed,
@@ -130,7 +140,7 @@ export function MeetingControlBar({
         })}
         disabled={translation.disabled}
         onClick={onTranslationToggle}
-        title={translation.statusText}
+        title={translationStatus}
         type="button"
       >
         <ControlIcon icon={TranslationIcon} />

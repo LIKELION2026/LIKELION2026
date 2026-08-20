@@ -11,6 +11,7 @@ import {
   type MeetingTranslationLanguageCode,
   type MeetingTranslationPreference
 } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
 import {
   validateMeetingTranslationPreferenceDraft,
@@ -40,6 +41,7 @@ export function MeetingTranslationPreferenceModal({
   onSave,
   preference
 }: MeetingTranslationPreferenceModalProps): JSX.Element {
+  const { t } = useTranslation();
   const [sourceLanguage, setSourceLanguage] =
     useState<MeetingTranslationLanguageCode>(preference.sourceLanguage);
   const [targetLanguage, setTargetLanguage] =
@@ -65,11 +67,11 @@ export function MeetingTranslationPreferenceModal({
         role="dialog"
       >
         <header>
-          <p>AI TRANSLATION</p>
-          <h2 id="meeting-translation-title">번역 언어 설정</h2>
+          <p>{t("meetingTranslation.eyebrow")}</p>
+          <h2 id="meeting-translation-title">{t("meetingTranslation.title")}</h2>
         </header>
         <p className="meeting-translation-modal-description">
-          저장한 이후부터 생성되는 AI 번역만 채팅과 하단 자막에 표시됩니다.
+          {t("meetingTranslation.description")}
         </p>
         <form
           onSubmit={(event) => {
@@ -82,7 +84,7 @@ export function MeetingTranslationPreferenceModal({
           }}
         >
           <label>
-            나의 언어
+            {t("meetingTranslation.sourceLanguage")}
             <select
               disabled={isSaving}
               onChange={(event) => {
@@ -105,7 +107,7 @@ export function MeetingTranslationPreferenceModal({
             </select>
           </label>
           <label>
-            상대방에게 보여줄 언어
+            {t("meetingTranslation.targetLanguage")}
             <select
               disabled={isSaving}
               onChange={(event) => {
@@ -129,18 +131,18 @@ export function MeetingTranslationPreferenceModal({
           </label>
           {!validation.ok ? (
             <p className="meeting-translation-modal-error">
-              {validation.message}
+              {translateMaybeKey(t, validation.message)}
             </p>
           ) : null}
           {errorMessage ? (
-            <p className="meeting-translation-modal-error">{errorMessage}</p>
+            <p className="meeting-translation-modal-error">{translateMaybeKey(t, errorMessage)}</p>
           ) : null}
           <footer>
             <button disabled={isSaving} onClick={onClose} type="button">
-              취소
+              {t("meetingTranslation.cancel")}
             </button>
             <button disabled={!validation.ok || isSaving} type="submit">
-              {isSaving ? "저장 중" : "AI 번역 켜기"}
+              {isSaving ? t("meetingTranslation.saving") : t("meetingTranslation.save")}
             </button>
           </footer>
         </form>
@@ -151,4 +153,11 @@ export function MeetingTranslationPreferenceModal({
 
 function stopKeyboardPropagation(event: KeyboardEvent<HTMLElement>): void {
   event.stopPropagation();
+}
+
+function translateMaybeKey(
+  t: (key: string) => string,
+  value: string
+): string {
+  return /^[a-z][\w-]*(?:\.[\w-]+)+$/.test(value) ? t(value) : value;
 }

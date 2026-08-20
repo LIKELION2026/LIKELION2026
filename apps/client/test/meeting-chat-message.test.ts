@@ -15,7 +15,7 @@ import {
 
 test("validates empty and over-limit meeting chat text", () => {
   assert.deepEqual(validateMeetingChatText("   "), {
-    message: "메시지를 입력해 주세요.",
+    message: "meetingChat.validation.empty",
     ok: false,
     reason: "empty"
   });
@@ -26,7 +26,7 @@ test("validates empty and over-limit meeting chat text", () => {
   assert.deepEqual(
     validateMeetingChatText("가".repeat(MEETING_CHAT_MAX_TEXT_LENGTH + 1)),
     {
-      message: `채팅은 ${MEETING_CHAT_MAX_TEXT_LENGTH}자까지 보낼 수 있습니다.`,
+      message: "meetingChat.validation.tooLong",
       ok: false,
       reason: "too-long"
     }

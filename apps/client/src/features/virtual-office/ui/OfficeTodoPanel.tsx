@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { AttendanceStatus, MemberStatus, TodoStatus } from "@likelion2026/shared";
+import { Building2, DoorOpen, Home, Moon, Save } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { OfficeTodoController } from "../model/use-office-todos";
 import { RequestSpinner, useRequestFeedback } from "../../../app/request-feedback";
@@ -17,18 +20,23 @@ interface OfficeTodoPanelProps {
   selfStatus: MemberStatus | undefined;
 }
 
-const TODO_STATUS_LABELS: Record<TodoStatus, string> = {
-  blocked: "도움 필요",
-  done: "완료",
-  in_progress: "진행 중",
-  planned: "예정"
-};
-
 const TODO_STATUSES: TodoStatus[] = ["planned", "in_progress", "done", "blocked"];
 
 const ASSET_PATH = "/assets/status-todo";
 type Workplace = "home" | "office";
 type StatusChoice = Workplace | "away" | "leave";
+type StatusChoiceIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
+const STATUS_CHOICES: Array<{
+  icon: StatusChoiceIcon;
+  translationKey: string;
+  value: StatusChoice;
+}> = [
+  { icon: Home, translationKey: "officeTodoPanel.statusChoices.home", value: "home" },
+  { icon: Building2, translationKey: "officeTodoPanel.statusChoices.office", value: "office" },
+  { icon: DoorOpen, translationKey: "officeTodoPanel.statusChoices.away", value: "away" },
+  { icon: Moon, translationKey: "officeTodoPanel.statusChoices.leave", value: "leave" }
+];
 
 export function OfficeTodoPanel({
   avatarId,
@@ -40,6 +48,7 @@ export function OfficeTodoPanel({
   selfAttendanceStatus,
   selfStatus
 }: OfficeTodoPanelProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   const { showError, showSuccess } = useRequestFeedback();
   const [isPublic, setIsPublic] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,10 +113,10 @@ export function OfficeTodoPanel({
       await controller.createTodo({ isPublic, title: nextTitle });
       setTitle("");
       setIsPublic(true);
-      showSuccess("TODO를 저장했습니다.");
+      showSuccess(t("officeTodoPanel.todoSaveSuccess"));
     } catch (error) {
-      setWriteError("TODO를 저장하지 못했습니다. 다시 시도해 주세요.");
-      showError(error, "TODO를 저장하지 못했습니다. 다시 시도해 주세요.");
+      setWriteError(t("officeTodoPanel.todoSaveError"));
+      showError(error, t("officeTodoPanel.todoSaveError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -121,10 +130,10 @@ export function OfficeTodoPanel({
     setWriteError(null);
     try {
       await controller.updateTodo(todoId, input);
-      showSuccess("TODO를 업데이트했습니다.");
+      showSuccess(t("officeTodoPanel.todoUpdateSuccess"));
     } catch (error) {
-      setWriteError("TODO를 수정하지 못했습니다. 다시 시도해 주세요.");
-      showError(error, "TODO를 수정하지 못했습니다. 다시 시도해 주세요.");
+      setWriteError(t("officeTodoPanel.todoUpdateError"));
+      showError(error, t("officeTodoPanel.todoUpdateError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -135,29 +144,31 @@ export function OfficeTodoPanel({
     setWriteError(null);
     try {
       await controller.deleteTodo(todoId);
-      showSuccess("TODO를 삭제했습니다.");
+      showSuccess(t("officeTodoPanel.todoDeleteSuccess"));
     } catch (error) {
-      setWriteError("TODO를 삭제하지 못했습니다. 다시 시도해 주세요.");
-      showError(error, "TODO를 삭제하지 못했습니다. 다시 시도해 주세요.");
+      setWriteError(t("officeTodoPanel.todoDeleteError"));
+      showError(error, t("officeTodoPanel.todoDeleteError"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <aside aria-label="상태 변경 및 내 업무" className="std-panel">
+    <aside aria-label={t("officeTodoPanel.ariaLabel")} className="std-panel">
       <header className="std-header">
-        <img alt="상태변경 / 투두" className="std-title-img" src={`${ASSET_PATH}/panel-title.png`} />
+        <h2 className="std-title-text">{t("officeTodoPanel.title")}</h2>
         <div className="std-header-actions">
           <button
+            aria-label={t("officeTodoPanel.save")}
             className="std-save-button"
             disabled={isSubmitting || (!hasPendingStatusChange && !title.trim())}
             form="std-todo-form"
             type="submit"
           >
-            <img alt="저장" src={`${ASSET_PATH}/save-button.png`} />
+            <Save aria-hidden="true" className="std-save-icon" />
+            <span>{t("officeTodoPanel.save")}</span>
           </button>
-          <button aria-label="닫기" className="office-icon-button" onClick={onClose} type="button">
+          <button aria-label={t("officeTodoPanel.close")} className="office-icon-button" onClick={onClose} type="button">
             ×
           </button>
         </div>
@@ -174,55 +185,37 @@ export function OfficeTodoPanel({
         <div className="std-status-card">
           <img alt="" aria-hidden="true" className="std-status-card-bg" src={`${ASSET_PATH}/status-box-bg.png`} />
           <div className="std-status-card-content">
-            <img alt="상태변경" className="std-status-title-img" src={`${ASSET_PATH}/status-title.png`} />
+            <h3 className="std-status-title-text">{t("officeTodoPanel.statusTitle")}</h3>
             <div className="std-status-grid">
-              <button
-                aria-label="재택"
-                aria-pressed={activeChoice === "home"}
-                className={`std-status-button ${activeChoice === "home" ? "active" : ""}`}
-                onClick={() => chooseStatus("home")}
-                type="button"
-              >
-                <img alt="" src={`${ASSET_PATH}/button-home.png`} />
-              </button>
-              <button
-                aria-label="사무실"
-                aria-pressed={activeChoice === "office"}
-                className={`std-status-button ${activeChoice === "office" ? "active" : ""}`}
-                onClick={() => chooseStatus("office")}
-                type="button"
-              >
-                <img alt="" src={`${ASSET_PATH}/button-office.png`} />
-              </button>
-              <button
-                aria-label="자리비움"
-                aria-pressed={activeChoice === "away"}
-                className={`std-status-button ${activeChoice === "away" ? "active" : ""}`}
-                onClick={() => chooseStatus("away")}
-                type="button"
-              >
-                <img alt="" src={`${ASSET_PATH}/button-away.png`} />
-              </button>
-              <button
-                aria-label="퇴근"
-                aria-pressed={activeChoice === "leave"}
-                className={`std-status-button ${activeChoice === "leave" ? "active" : ""}`}
-                onClick={() => chooseStatus("leave")}
-                type="button"
-              >
-                <img alt="" src={`${ASSET_PATH}/button-leave.png`} />
-              </button>
+              {STATUS_CHOICES.map((choice) => {
+                const Icon = choice.icon;
+                const label = t(choice.translationKey);
+
+                return (
+                  <button
+                    aria-label={label}
+                    aria-pressed={activeChoice === choice.value}
+                    className={`std-status-button ${activeChoice === choice.value ? "active" : ""}`}
+                    key={choice.value}
+                    onClick={() => chooseStatus(choice.value)}
+                    type="button"
+                  >
+                    <Icon aria-hidden="true" className="std-status-button-icon" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
             <form id="std-todo-form" onSubmit={submitTodo}>
               <div className="std-input-frame">
                 <img alt="" aria-hidden="true" className="std-input-bg" src={`${ASSET_PATH}/input-bg.png`} />
                 <input
-                  aria-label="오늘 진행할 업무"
+                  aria-label={t("officeTodoPanel.inputAriaLabel")}
                   className="std-input"
                   disabled={isSubmitting}
                   maxLength={160}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="오늘 진행할 업무를 적어주세요"
+                  placeholder={t("officeTodoPanel.inputPlaceholder")}
                   value={title}
                 />
               </div>
@@ -234,7 +227,7 @@ export function OfficeTodoPanel({
                   onChange={(event) => setIsPublic(event.target.checked)}
                   type="checkbox"
                 />
-                팀에 공개하기
+                {t("officeTodoPanel.publicToTeam")}
               </label>
             </form>
           </div>
@@ -251,23 +244,30 @@ export function OfficeTodoPanel({
               onClick={() => void controller.refresh()}
               type="button"
             >
-              {controller.isLoading ? <><RequestSpinner />다시 불러오는 중</> : "다시 시도"}
+              {controller.isLoading ? (
+                <>
+                  <RequestSpinner />
+                  {t("officeTodoPanel.retrying")}
+                </>
+              ) : (
+                t("officeTodoPanel.retry")
+              )}
             </button>
           ) : null}
         </div>
       ) : null}
 
-      <section aria-label="내 TODO 목록" className="std-todo-card">
+      <section aria-label={t("officeTodoPanel.listAriaLabel")} className="std-todo-card">
         <img alt="" aria-hidden="true" className="std-todo-card-bg" src={`${ASSET_PATH}/todo-box-dotted.png`} />
         <div className="std-todo-card-content">
           <div className="std-todo-scroll">
           {controller.isLoading ? (
-            <p className="office-panel-message"><RequestSpinner />TODO 정보를 불러오는 중입니다.</p>
+            <p className="office-panel-message"><RequestSpinner />{t("officeTodoPanel.loading")}</p>
           ) : null}
           {!controller.isLoading && controller.ownTodos.length === 0 ? (
             <div className="std-todo-empty">
               <img alt="TODO" src={`${ASSET_PATH}/todo-empty.png`} />
-              <p>아직 작성한 TODO가 없습니다.</p>
+              <p>{t("officeTodoPanel.empty")}</p>
             </div>
           ) : (
             <ul className="std-todo-list">
@@ -276,7 +276,7 @@ export function OfficeTodoPanel({
                   <div className="std-todo-item-head">
                     <p>{todo.title}</p>
                     <button
-                      aria-label={`${todo.title} 삭제`}
+                      aria-label={t("officeTodoPanel.todoDeleteAriaLabel", { title: todo.title })}
                       className="std-todo-delete-button"
                       disabled={isSubmitting}
                       onClick={() => void deleteTodo(todo.id)}
@@ -287,7 +287,7 @@ export function OfficeTodoPanel({
                   </div>
                   <div className="office-todo-controls">
                     <select
-                      aria-label={`${todo.title} 상태`}
+                      aria-label={t("officeTodoPanel.statusAriaLabel", { title: todo.title })}
                       disabled={isSubmitting}
                       onChange={(event) =>
                         void updateTodo(todo.id, { status: event.target.value as TodoStatus })
@@ -296,7 +296,7 @@ export function OfficeTodoPanel({
                     >
                       {TODO_STATUSES.map((status) => (
                         <option key={status} value={status}>
-                          {TODO_STATUS_LABELS[status]}
+                          {t(`todoStatus.${status}`)}
                         </option>
                       ))}
                     </select>
@@ -308,7 +308,7 @@ export function OfficeTodoPanel({
                         onChange={(event) => void updateTodo(todo.id, { isPublic: event.target.checked })}
                         type="checkbox"
                       />
-                      공개
+                      {t("officeTodoPanel.public")}
                     </label>
                   </div>
                 </li>

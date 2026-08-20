@@ -23,7 +23,7 @@ export async function createMeetingToken(
       message?: string | string[];
     } | null;
     const message = Array.isArray(body?.message) ? body.message.join(", ") : body?.message;
-    throw new Error(message ?? "회의 토큰을 만들지 못했습니다.");
+    throw new Error(message ?? "meetingErrors.tokenCreateFailed");
   }
 
   return (await response.json()) as CreateMeetingTokenResponse;

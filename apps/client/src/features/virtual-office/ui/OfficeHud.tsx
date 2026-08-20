@@ -1,9 +1,7 @@
-import {
-  MEMBER_STATUS_LABELS,
-  type AttendanceStatus,
-  type MemberStatus
-} from "@likelion2026/shared";
+import { type AttendanceStatus, type MemberStatus } from "@likelion2026/shared";
+import { useTranslation } from "react-i18next";
 
+import { useUiLocale } from "../../../shared/i18n";
 import { OFFICE_STATUS_OPTIONS, type OfficeConnectionState } from "../model/office-store";
 import { AvatarFace } from "./AvatarFace";
 
@@ -32,17 +30,20 @@ export function OfficeHud({
   selfAttendanceStatus,
   selfStatus
 }: OfficeHudProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const { locale, options: uiLocaleOptions, setLocale } = useUiLocale();
+
   return (
     <div className="office-hud">
-      <section className="hud-panel" aria-label="오피스 상태">
+      <section className="hud-panel" aria-label={t("officeHud.ariaLabel")}>
         <header className="hud-header">
           <AvatarFace avatarId={avatarId} size={56} />
           <div className="hud-header-text">
-            <p className="hud-title">Demo Global Team</p>
-            <p className="hud-meta">현재 오피스 {memberCount}명</p>
+            <p className="hud-title">{t("officeHud.teamName")}</p>
+            <p className="hud-meta">{t("officeHud.memberCount", { count: memberCount })}</p>
             <div className="connection-state">
               <span className={`connection-dot ${connectionState}`} />
-              {getConnectionLabel(connectionState)}
+              {t(`officeHud.connection.${connectionState}`)}
             </div>
           </div>
         </header>
@@ -55,43 +56,49 @@ export function OfficeHud({
           }
           type="button"
         >
-          {selfAttendanceStatus === "working" ? "🌙 퇴근하기" : "🏢 출근하기"}
+          {selfAttendanceStatus === "working"
+            ? t("officeHud.attendance.checkOut")
+            : t("officeHud.attendance.checkIn")}
         </button>
         <select
-          aria-label="내 협업 상태"
+          aria-label={t("officeHud.statusAriaLabel")}
           className="status-control"
           onChange={(event) => onStatusChange(event.target.value as MemberStatus)}
           value={selfStatus ?? "available"}
         >
           {OFFICE_STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
-              {MEMBER_STATUS_LABELS[status]}
+              {t(`memberStatus.${status}`)}
             </option>
           ))}
         </select>
+        <label className="hud-locale-control" htmlFor="office-ui-locale">
+          <span>{t("officeHud.settings.uiLanguage")}</span>
+          <select
+            className="hud-locale-select"
+            id="office-ui-locale"
+            onChange={(event) => setLocale(event.target.value as typeof locale)}
+            value={locale}
+          >
+            {uiLocaleOptions.map((option) => (
+              <option key={option.code} value={option.code}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="hud-nav">
           <button className="office-secondary-button" onClick={onOpenPeople} type="button">
-            👥 피플 목록
+            {t("officeHud.navigation.people")}
           </button>
           <button className="office-secondary-button" onClick={onOpenTodo} type="button">
-            📋 내 TODO
+            {t("officeHud.navigation.todo")}
           </button>
           <button className="office-secondary-button" onClick={onOpenCalendar} type="button">
-            📅 협업 보드
+            {t("officeHud.navigation.calendar")}
           </button>
         </div>
       </section>
     </div>
   );
-}
-
-function getConnectionLabel(state: OfficeConnectionState): string {
-  const labels: Record<OfficeConnectionState, string> = {
-    connected: "오피스 연결됨",
-    connecting: "오피스 연결 중",
-    disconnected: "오피스 연결 끊김",
-    reconnecting: "오피스 재연결 중"
-  };
-
-  return labels[state];
 }

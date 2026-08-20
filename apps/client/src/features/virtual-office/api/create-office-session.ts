@@ -7,6 +7,19 @@ import { SERVER_URL } from "../../../shared/config/environment";
 
 const GUEST_TOKEN_STORAGE_KEY = "virtual-office.guest-token";
 
+export type OfficeSessionErrorReason =
+  | "avatarInUse"
+  | "network"
+  | "noAvailableAvatar"
+  | "prepareFailed";
+
+export class OfficeSessionRequestError extends Error {
+  constructor(readonly reason: OfficeSessionErrorReason) {
+    super(reason);
+    this.name = "OfficeSessionRequestError";
+  }
+}
+
 export async function createOrRestoreOfficeSession(
   request: Omit<CreateGuestOfficeSessionRequest, "guestToken">
 ): Promise<GuestOfficeSessionResponse> {
@@ -20,15 +33,33 @@ export async function createOrRestoreOfficeSession(
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { message?: string } | null;
     if (body?.message === "This avatar is already in use") {
-      throw new Error("방금 다른 팀원이 선택했어요. 다른 아바타를 골라주세요.");
+      throw new OfficeSessionRequestError("avatarInUse");
     }
     if (body?.message === "No available avatar remains in this office") {
-      throw new Error("현재 선택 가능한 아바타가 없습니다.");
+      throw new OfficeSessionRequestError("noAvailableAvatar");
     }
-    throw new Error("오피스 세션을 준비하지 못했습니다.");
+    throw new OfficeSessionRequestError("prepareFailed");
   }
 
   const session = (await response.json()) as GuestOfficeSessionResponse;
   window.localStorage.setItem(GUEST_TOKEN_STORAGE_KEY, session.guestToken);
   return session;
+}
+
+export function getOfficeSessionErrorReason(
+  error: unknown
+): OfficeSessionErrorReason {
+  if (error instanceof OfficeSessionRequestError) {
+    return error.reason;
+  }
+
+  if (
+    error instanceof Error &&
+    (error.message.includes("Failed to fetch") ||
+      error.message.includes("NetworkError"))
+  ) {
+    return "network";
+  }
+
+  return "prepareFailed";
 }

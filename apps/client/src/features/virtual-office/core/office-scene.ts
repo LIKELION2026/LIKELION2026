@@ -23,10 +23,11 @@ import {
   getAvatarSpriteLayoutForVariant,
 } from "./avatar-sprite-layout";
 import {
-  getCalendarPresenceLabel,
+  getCalendarPresenceTranslationKey,
   getCalendarPresenceTone,
   shouldDimCalendarPresence,
 } from "../model/calendar-presence";
+import { i18n } from "../../../shared/i18n";
 import {
   getNearestWalkableOfficePosition,
   isOfficeCollisionDebugEnabled,
@@ -1301,7 +1302,7 @@ function getAvatarStatusStyle(tone: string): {
 }
 
 function getAvatarStatusText(member: OfficeMemberPresence): string {
-  return `● ${getCalendarPresenceLabel(member)}`;
+  return `● ${i18n.t(getCalendarPresenceTranslationKey(member))}`;
 }
 
 function getRemoteAvatarAlpha(member: OfficeMemberPresence): number {

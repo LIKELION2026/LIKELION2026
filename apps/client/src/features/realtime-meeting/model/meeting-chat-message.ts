@@ -61,7 +61,7 @@ export function validateMeetingChatText(
 
   if (!text) {
     return {
-      message: "메시지를 입력해 주세요.",
+      message: "meetingChat.validation.empty",
       ok: false,
       reason: "empty"
     };
@@ -69,7 +69,7 @@ export function validateMeetingChatText(
 
   if (text.length > MEETING_CHAT_MAX_TEXT_LENGTH) {
     return {
-      message: `채팅은 ${MEETING_CHAT_MAX_TEXT_LENGTH}자까지 보낼 수 있습니다.`,
+      message: "meetingChat.validation.tooLong",
       ok: false,
       reason: "too-long"
     };

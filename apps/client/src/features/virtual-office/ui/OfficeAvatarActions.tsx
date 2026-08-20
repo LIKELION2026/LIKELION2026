@@ -1,7 +1,11 @@
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { PeopleContextMember } from "../model/people-context";
-import { getCalendarPresenceLabel, getCalendarPresenceTone } from "../model/calendar-presence";
+import {
+  getCalendarPresenceTone,
+  getCalendarPresenceTranslationKey
+} from "../model/calendar-presence";
 import { AvatarFace } from "./AvatarFace";
 
 interface OfficeAvatarActionsProps {
@@ -19,6 +23,8 @@ export function OfficeAvatarActions({
   onMessageMember,
   onRequestSummon
 }: OfficeAvatarActionsProps): JSX.Element | null {
+  const { t } = useTranslation();
+
   if (!context || context.isSelf) {
     return null;
   }
@@ -34,7 +40,9 @@ export function OfficeAvatarActions({
         <div>
           <p className="avatar-actions-eyebrow">TEAMMATE</p>
           <h2>{member.displayName}</h2>
-          <span className={`avatar-actions-status tone-${tone}`}>{getCalendarPresenceLabel(member)}</span>
+          <span className={`avatar-actions-status tone-${tone}`}>
+            {t(getCalendarPresenceTranslationKey(member))}
+          </span>
         </div>
       </div>
       <div className="avatar-actions-buttons">

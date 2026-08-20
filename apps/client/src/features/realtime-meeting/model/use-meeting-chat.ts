@@ -272,7 +272,7 @@ export function useMeetingChat({
         senderIdentity: localParticipantIdentity ?? "local",
         senderName: localParticipantIdentity
           ? getParticipantName(localParticipantIdentity)
-          : "나",
+          : "local",
         text: validation.text
       });
 
@@ -293,7 +293,7 @@ export function useMeetingChat({
 
       if (!failedMessage) {
         return {
-          message: "재시도할 메시지를 찾지 못했습니다.",
+          message: "meetingChat.errors.retryNotFound",
           ok: false
         };
       }
@@ -380,10 +380,10 @@ function getUnavailableMessage(
   sessionStatus: LiveKitMeetingSessionStatus
 ): string {
   if (sessionStatus === "reconnecting") {
-    return "재연결 중에는 채팅 전송을 잠시 멈춥니다.";
+    return "meetingChat.help.reconnecting";
   }
 
-  return "회의 연결이 완료된 뒤 채팅을 보낼 수 있습니다.";
+  return "meetingChat.help.unavailable";
 }
 
 function createOccurredAtFromTimestamp(timestamp: number | undefined): string {
@@ -399,5 +399,5 @@ function createOccurredAtFromTimestamp(timestamp: number | undefined): string {
 function getMeetingChatErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
-    : "채팅 메시지를 처리하지 못했습니다.";
+    : "meetingChat.errors.generic";
 }
