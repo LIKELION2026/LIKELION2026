@@ -895,3 +895,14 @@
 - 팀원 검토·수정 내용: 기존 입장 모달의 시각 스타일은 유지하고, 언어 선택 버튼을 누르면 바로 나머지 입력 단계로 넘어가도록 구현했다. 사용자가 `codex/` 없는 브랜치명을 요청해 브랜치를 `feat/177-office-entry-language-step`로 바꿨다. 실제 사용자 플로우 최종 확인은 팀원 브라우저 검토가 필요하다.
 - 검증 결과: `corepack pnpm --filter @likelion2026/client typecheck` 통과, `node --test --experimental-strip-types apps/client/test/ui-locale.test.ts apps/client/test/development-identity.test.ts apps/client/test/office-entry-phase.test.ts` 15건 통과, `git diff --check` 통과. 로컬 Vite `/office` 화면에서 언어 선택 전에는 `언어 선택 (Chọn ngôn ngữ)`, `한국어`, `Tiếng Việt`만 보이고 HUD/채팅/이름·국가·아바타 입력이 숨겨지는 것을 확인했다. 한국어가 기본 선택되어 있었고, 한국어 선택 후 기존 입력 폼으로 전환되며 두 카드의 중심이 뷰포트 중심에 맞는 것을 Browser Skill로 확인했다. 언어 선택 카드 확대 후 카드 620px 폭, 버튼 68px 높이, 중앙 정렬 유지를 확인했다.
 - 관련 Issue / PR / Discussion: Issue #177
+
+### 2026-08-20 - 오피스 공용 채팅 선택 언어별 번역 표시
+
+- 담당자: 사용자 검토 예정
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 오피스 `오피스 대화` 공용 채팅에서 한국어 선택 사용자는 베트남어 메시지를 한국어로, 베트남어 선택 사용자는 한국어 메시지를 베트남어로 볼 수 있게 한다.
+- 입력 맥락: 사용자 요청, Issue #180, `OfficeChatPanel`, `VirtualOffice`, `PresenceGateway`, `packages/shared/src/contracts/socket/office-chat.ts`
+- AI 제안 또는 산출물: `office.chat.message` payload에 `sourceLanguage`와 `translations`를 추가하고, 서버에서 발신자 선택 언어와 메시지 내용 기반으로 한국어·베트남어 원문 언어를 판정해 상대 언어 번역문을 함께 broadcast하도록 했다. 기본 로컬 fallback은 짧은 데모 문장 번역 메모리를 사용하고, `OFFICE_CHAT_TRANSLATION_PROVIDER=gemini` 설정 시 Gemini REST 호출을 사용할 수 있게 분리했다. Client는 `session.member.preferredLanguage` 기준으로 번역문을 우선 표시하고, 번역된 메시지는 원문을 함께 보여 주며 말풍선도 같은 표시문을 사용한다.
+- 팀원 검토·수정 내용: 사용자가 문제 범위를 회의실 자막이 아니라 오피스 공용 채팅으로 정정했고, 처음 언어 선택 기준으로 수신자별 표시 언어가 달라져야 한다고 확정했다. 실제 배포 환경에서 Gemini provider를 켤지와 번역 품질은 팀원 검토가 필요하다.
+- 검증 결과: `corepack pnpm --filter @likelion2026/shared typecheck` 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/server typecheck` 통과, `corepack pnpm --filter @likelion2026/server test` 66건 통과, `node --test --experimental-strip-types apps/client/test/office-chat-message.test.ts apps/client/test/ui-locale.test.ts` 14건 통과, `git diff --check` 통과. `node --test --experimental-strip-types apps/client/test/*.test.ts`는 기존 `avatar-sprite-definition` extensionless import 문제와 기존 `OfficeAvatarActions`/`office-scene` 한국어 하드코딩 검사 항목 때문에 실패했으며, 이번 채팅 변경 파일은 해당 하드코딩 목록에서 제거했다.
+- 관련 Issue / PR / Discussion: Issue #180

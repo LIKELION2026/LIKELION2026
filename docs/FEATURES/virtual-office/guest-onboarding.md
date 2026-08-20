@@ -37,7 +37,8 @@ flowchart LR
 - 손상되었거나 지원하지 않는 저장값은 한국어로 fallback한다.
 - UI 언어 변경은 `document.documentElement.lang`과 localStorage에 즉시 반영한다.
 - UI 언어는 `GuestProfile.countryCode`, `GuestProfile.language`, 회의 `meeting.translation-preference`와 분리한다. 국가 선택이나 회의 번역 언어 변경은 UI 언어를 덮어쓰지 않는다.
-- 사용자가 작성한 이름, TODO, 캘린더 제목, 채팅 원문은 UI 언어 변경으로 자동 번역하지 않는다.
+- 사용자가 작성한 이름, TODO, 캘린더 제목은 UI 언어 변경으로 자동 번역하지 않는다.
+- 공용 오피스 채팅은 입장 시 선택한 언어를 기준으로 한국어·베트남어 상대 언어 번역문을 우선 표시하며, 원문은 함께 유지한다.
 
 ## 오류 상태
 
