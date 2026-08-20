@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import {
   type LocalMovementCommand,
+  type OfficeMeetingZoneId,
   type OfficeMemberPresence,
   type PresenceMovePayload,
 } from "@likelion2026/shared";
@@ -51,7 +52,7 @@ const AVATAR_POSITION_MARGIN = 48;
 interface OfficeSceneCallbacks {
   initialAvatar: OfficeSceneBootstrap;
   onLocalMovement: (payload: LocalMovementCommand) => void;
-  onMeetingRoomState: (isInside: boolean) => void;
+  onMeetingRoomState: (zoneId: OfficeMeetingZoneId | null) => void;
   onReady: () => void;
 }
 
@@ -79,7 +80,7 @@ export class OfficeScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private direction: PresenceMovePayload["direction"] = "down";
   private isFollowingLocalAvatar = true;
-  private inMeetingRoom = false;
+  private activeMeetingZoneId: OfficeMeetingZoneId | null = null;
   private isSitting = false;
   private localAvatarId: string = DEFAULT_AVATAR_ID;
   private player!: Phaser.Physics.Arcade.Sprite;
@@ -502,20 +503,21 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   private updateMeetingRoomState(): void {
-    const isInside = OFFICE_MAP_MEETING_ZONES.some(
+    const meetingZone = OFFICE_MAP_MEETING_ZONES.find(
       (zone) =>
         this.player.x >= zone.x &&
         this.player.x <= zone.x + zone.width &&
         this.player.y >= zone.y &&
         this.player.y <= zone.y + zone.height,
     );
+    const nextMeetingZoneId = meetingZone?.id ?? null;
 
-    if (isInside === this.inMeetingRoom) {
+    if (nextMeetingZoneId === this.activeMeetingZoneId) {
       return;
     }
 
-    this.inMeetingRoom = isInside;
-    this.callbacks.onMeetingRoomState(isInside);
+    this.activeMeetingZoneId = nextMeetingZoneId;
+    this.callbacks.onMeetingRoomState(nextMeetingZoneId);
   }
 
   private updateRemoteAvatars(): void {
