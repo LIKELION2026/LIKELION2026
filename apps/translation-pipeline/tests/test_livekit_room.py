@@ -194,7 +194,6 @@ def test_the_audio_source_is_closed_when_detached():
         await asyncio.sleep(0.01)
 
         await runner.detach("guest-kr-1")
-        await asyncio.sleep(0.01)
         return audio.closed
 
     assert asyncio.run(scenario()) is True

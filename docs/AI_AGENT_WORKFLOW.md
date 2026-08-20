@@ -800,3 +800,13 @@
 - 팀원 검토·수정 내용: 사용자가 요청한 네 가지 화면 개선을 하나의 범위로 확정했다. `1.00`은 저장소 전체의 문자열·숫자 포맷·영상 UI를 검색했지만 앱에서 생성하는 코드가 없어 브라우저 영상 속도 확장 프로그램이 주입한 표시로 추정했다. 이후 사용자가 `-`, `+` 버튼으로 `0.9~1.1`이 바뀐다고 재현 정보를 제공해, 회의 영상 영역에 한정해 해당 주입 UI를 숨기는 방식으로 변경했다.
 - 검증 결과: 관련 Client Node 테스트 17건 통과, `corepack pnpm --filter @likelion2026/client typecheck` 통과, `corepack pnpm --filter @likelion2026/client build` 통과, `git diff --check` 통과. 추가 사이드바 레이아웃 조정 뒤 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 영상 속도 컨트롤 숨김과 확대 전 타일 크기 조정 뒤에도 `corepack pnpm --filter @likelion2026/client typecheck`, `corepack pnpm --filter @likelion2026/client build`, `git diff --check`를 다시 실행해 통과했다. 빌드의 chunk-size warning은 기존과 같은 비차단 경고다. Browser Skill 런타임 연결 오류로 실제 회의 화면 수동 확인은 수행하지 못했으며, 두 브라우저 영상·음성 송수신은 사람이 추가 확인해야 한다.
 - 관련 Issue / PR / Discussion: Issue #156
+
+### 2026-08-20 - 6인 회의 성능 최적화 1차와 측정 절차 문서화
+
+- 사용한 Agent / Skill: Codex / Project Workflow Skill
+- 사용 목적: 지도, LiveKit RTC, 채팅, AI 번역 자막이 동시에 동작하는 Meeting Room의 6인 P0 성능 리스크를 줄이고, 수동 부하 검증 절차를 고정한다.
+- 입력 맥락: Issue #135, 의존 Issue #131~#134 결과물, `useLiveKitMeetingSession`, `MeetingParticipantVideoTile`, `useMeetingSubtitles`, `meeting-chat-message`, Translation Agent room runner
+- AI 제안 또는 산출물: LiveKit `adaptiveStream: true` 복구, 720p/15fps camera capture/publish 정책, 기본 화면 participant strip 6명 렌더 예산, expanded view의 strip/grid 중복 video attach 제거, camera/mic OFF publication media element 제외, participant tile memo 비교 함수, 채팅/자막 화면 보관 100개 상한, subtitleId+revision 기반 자막 교체 모델, Translation Agent detach task await 보강, `PERFORMANCE.md` 측정 절차 문서화
+- 팀원 검토·수정 내용: 사용자가 #135 기준 새 브랜치를 요청했고, 브랜치명은 `codex/` 없이 만들어야 한다고 지시했다. 실제 6인 Chrome 부하 측정은 현재 작업 환경에서 수행하지 못하므로 문서에 `미측정`으로 남기고 수동 측정 항목을 분리했다.
+- 검증 결과: 작업 중 관련 Client Node 테스트, Client typecheck, translation-pipeline pytest를 실행해 확인한다. 6명/5분 수동 부하 검증과 DevTools/LiveKit stats 캡처는 아직 수행하지 않았다.
+- 관련 Issue / PR / Discussion: Issue #135
