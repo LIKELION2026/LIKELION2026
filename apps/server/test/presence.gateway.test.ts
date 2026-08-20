@@ -9,9 +9,10 @@ import {
 } from "@likelion2026/shared";
 
 import { PresenceGateway } from "../src/modules/presence/presence.gateway";
+import { OfficeChatTranslationService } from "../src/modules/presence/office-chat-translation.service";
 
 test("publishTodosUpdated emits an office todo update to the workspace room", () => {
-  const gateway = new PresenceGateway({} as never);
+  const gateway = createGateway({} as never);
   const server = createFakeServer();
   const payload: OfficeTodosUpdatedPayload = {
     memberId: "member-1",
@@ -32,7 +33,7 @@ test("publishTodosUpdated emits an office todo update to the workspace room", ()
 });
 
 test("handleOfficeChatSend relays a trimmed message only to the sender workspace", async () => {
-  const gateway = new PresenceGateway({
+  const gateway = createGateway({
     getConnection: (socketId: string) =>
       socketId === "socket-sender"
         ? {
@@ -63,7 +64,7 @@ test("handleOfficeChatSend relays a trimmed message only to the sender workspace
 });
 
 test("handleOfficeChatSend attaches Korean translations for Vietnamese office chat", async () => {
-  const gateway = new PresenceGateway({
+  const gateway = createGateway({
     getConnection: () => ({
       member: {
         displayName: "Linh",
@@ -86,7 +87,7 @@ test("handleOfficeChatSend attaches Korean translations for Vietnamese office ch
 });
 
 test("handleOfficeChatSend detects Vietnamese text even when the sender selected Korean", async () => {
-  const gateway = new PresenceGateway({
+  const gateway = createGateway({
     getConnection: () => ({
       member: {
         displayName: "민지",
@@ -109,7 +110,7 @@ test("handleOfficeChatSend detects Vietnamese text even when the sender selected
 });
 
 test("handleOfficeChatSend rejects blank and oversized messages", async () => {
-  const gateway = new PresenceGateway({
+  const gateway = createGateway({
     getConnection: () => ({
       member: { displayName: "민지", language: "ko", memberId: "member-sender" },
       teamId: "workspace-1"
@@ -129,7 +130,7 @@ test("handleOfficeChatSend rejects blank and oversized messages", async () => {
 });
 
 test("handleOfficeSummonRequest sends the requester identity to the selected teammate", () => {
-  const gateway = new PresenceGateway({
+  const gateway = createGateway({
     findConnectedMember: (memberId: string, teamId: string) =>
       memberId === "member-target" && teamId === "workspace-1"
         ? {
@@ -180,7 +181,7 @@ test("accepted summon resolves with the requester's latest position", () => {
       return null;
     }
   };
-  const gateway = new PresenceGateway(presenceService as never);
+  const gateway = createGateway(presenceService as never);
   const server = createFakeServer();
   setGatewayServer(gateway, server);
 
@@ -246,6 +247,10 @@ function createFakeServer(): {
 
 function asSocket(client: { id: string }) {
   return client as never;
+}
+
+function createGateway(presenceService: never): PresenceGateway {
+  return new PresenceGateway(presenceService, new OfficeChatTranslationService());
 }
 
 function setGatewayServer(
