@@ -1,20 +1,96 @@
 # Zooffice
 
-Zooffice는 한국과 베트남처럼 서로 다른 국가의 팀원이 함께 일할 때 발생하는 업무 상태, 일정, 언어 장벽의 불확실성을 줄이는 AI 기반 가상 협업 오피스입니다.
-
-[![Zooffice IR Deck](docs/IRDeck/main.png)](docs/IRDeck/경북대학교_안녕하세요어른사자입니다.pdf)
-
-
-
-## 소개
-
-원격 글로벌 협업에서는 상대가 지금 일하는 중인지, 회의 중인지, 자리를 비운 것인지 바로 알기 어렵습니다. 휴가나 재택 일정이 늦게 공유되면 의존 작업이 멈추고, 한국어·베트남어 회의에서는 핵심 결정과 요청 사항이 다르게 이해될 수 있습니다.
+> 한국과 베트남처럼 서로 다른 국가의 팀원이 함께 일할 때 생기는 업무 상태, 일정, 언어 장벽의 불확실성을 줄이는 AI 기반 가상 협업 오피스입니다.
 
 Zooffice는 팀원을 감시하는 도구가 아니라, 팀원이 직접 공유한 상태, 오늘의 TODO, 부재 일정, 회의 맥락을 하나의 가상 오피스에서 확인하게 해 다음 행동을 더 빠르게 결정하도록 돕는 서비스입니다.
 
+## 시연 영상
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=6OGslOJb0W4">
+    <img src="https://img.youtube.com/vi/6OGslOJb0W4/maxresdefault.jpg" alt="Zooffice 시연 영상" width="900">
+  </a>
+</p>
+
+## 화면 미리보기
+
+### Global Office
+
+<p align="center">
+  <img src="docs/assets/readme/main-office.png" alt="Global Office 메인 화면" width="900">
+</p>
+
+### 입장 흐름
+
+<table>
+  <tr>
+    <th>언어 선택</th>
+    <th>입장 정보와 아바타 선택</th>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/readme/language-selection-feature.png" alt="언어 선택 화면" width="430"></td>
+    <td><img src="docs/assets/readme/guest-onboarding-feature.png" alt="입장 정보와 아바타 선택 화면" width="430"></td>
+  </tr>
+</table>
+
+### 협업 액션
+
+<table>
+  <tr>
+    <th>피플 목록과 프로필</th>
+    <th>찾아가기와 불러오기</th>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/readme/people-panel-feature.png" alt="피플 목록과 팀원 프로필 화면" width="430"></td>
+    <td><img src="docs/assets/readme/summon-actions-feature.png" alt="찾아가기와 불러오기 액션 화면" width="430"></td>
+  </tr>
+</table>
+
+### 업무와 일정
+
+<table>
+  <tr>
+    <th>상태 변경과 TODO</th>
+    <th>공유 캘린더</th>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/readme/status-todo-feature.png" alt="상태 변경과 TODO 화면" width="430"></td>
+    <td><img src="docs/assets/readme/shared-calendar-feature.png" alt="공유 캘린더 화면" width="430"></td>
+  </tr>
+</table>
+
+### 오피스 대화
+
+<p align="center">
+  <img src="docs/assets/readme/office-chat-feature.png" alt="오피스 대화 화면" width="680">
+</p>
+
+## 주요 문서
+
+<p align="center">
+  <a href="docs/IRDeck/경북대학교_안녕하세요어른사자입니다.pdf">
+    <img src="docs/IRDeck/main.png" alt="Zooffice IR Deck 표지" width="760">
+  </a>
+</p>
+
+| 구분 | 문서 | 읽는 때 |
+| --- | --- | --- |
+| 발표 자료 | [Zooffice IR Deck](docs/IRDeck/경북대학교_안녕하세요어른사자입니다.pdf) | 서비스 스토리와 발표 흐름을 빠르게 볼 때 |
+| 제품 정의 | [PRD](docs/PRD.md) | 문제 정의, MVP 범위, 데모 성공 기준을 확인할 때 |
+| 구조 | [프로젝트 구조](docs/STRUCTURE.md), [구조 가이드](docs/PROJECT_STRUCTURE_GUIDE.md) | monorepo 책임과 폴더 경계를 맞출 때 |
+| 기능 | [실시간 회의](docs/FEATURES/realtime-meeting/README.md), [가상 오피스 시나리오](docs/FEATURES/virtual-office/user-scenarios.md), [공유 캘린더](docs/FEATURES/virtual-office/shared-calendar.md) | 화면별 사용자 흐름과 구현 범위를 확인할 때 |
+| 디자인 | [Figma 디자인 시안](https://www.figma.com/design/XNMBF9IXkhkotGr6EoiW4J/LIKELION2026?node-id=0-1&t=YCqArq9kmUsJeycy-1), [Notion 팀 워크스페이스](https://rainbow-board-5a0.notion.site/3a63fc0908698096be0aca667596e18e) | 디자인 시안과 팀 자료를 함께 볼 때 |
+| 협업 | [작업 규칙](docs/CONVENTIONS.md), [AI Agent 작업 기록](docs/AI_AGENT_WORKFLOW.md) | 팀 규칙과 AI 활용 기록을 확인할 때 |
+
+## 팀원
+
+<p align="center">
+  <img src="docs/assets/readme/team.jpg" alt="안녕하세요어른사자입니다 팀원 소개" width="900">
+</p>
+
 ## 핵심 기능
 
-- 아바타 기반 가상 오피스 입장
+- 아바타 기반 Global Office 입장
 - 팀원 상태와 위치 실시간 공유
 - 오늘의 TODO 작성 및 공개 TODO 확인
 - 휴가, 재택, 회의, 집중 작업을 포함한 팀 공유 캘린더
@@ -63,35 +139,62 @@ Zooffice는 팀원을 감시하는 도구가 아니라, 팀원이 직접 공유�
 - Socket 이벤트 이름과 payload 계약
 - 오피스, TODO, 캘린더, 회의, 자막, 채팅 계약 분리
 
+## 데모 시나리오
+
+1. 사용자는 UI 언어를 선택하고 이름, 국가, 아바타를 설정해 Global Office에 입장합니다.
+2. 피플 목록에서 팀원을 검색하고 현재 상태와 공개 TODO를 확인합니다.
+3. 공유 캘린더에서 휴가, 회의, 재택 등 협업에 영향을 주는 일정을 확인합니다.
+4. 찾아가기 또는 불러오기로 팀원과 대화 진입점을 만듭니다.
+5. 회의실에 입장해 LiveKit 회의에 연결하고 한국어·베트남어 자막 흐름을 확인합니다.
+6. 회의 요약을 제출하면 캘린더의 회의 이벤트로 남습니다.
+
+## 향후 계획
+
+- 실제 STT·번역 파이프라인과 회의 자막 연결 강화
+- AI 회의 요약의 사용자 검토·수정 흐름 고도화
+- TODO 초안 생성과 일정 충돌 알림
+- 한국어·베트남어 문구 원어민 검수
+- 파일럿 팀 대상 사용성 검증과 협업 지표 수집
+
 ## 기술 스택
 
 ### Frontend
 
-- React
-- TypeScript
-- Vite
-- Phaser
-- Socket.IO Client
-- LiveKit Components
-- Zustand
-- i18next, react-i18next
-- lucide-react
+<p>
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=FFFFFF" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=FFFFFF" alt="Vite">
+  <img src="https://img.shields.io/badge/Phaser-1B1B1B?style=for-the-badge&logo=phaser&logoColor=FFFFFF" alt="Phaser">
+  <img src="https://img.shields.io/badge/Zustand-443E38?style=for-the-badge" alt="Zustand">
+  <img src="https://img.shields.io/badge/i18next-26A69A?style=for-the-badge&logo=i18next&logoColor=FFFFFF" alt="i18next">
+</p>
 
-### Backend
+### Backend & Realtime
 
-- NestJS
-- TypeScript
-- Socket.IO
-- LiveKit Server SDK
-- Supabase
-- class-validator
-- Node.js test runner
+<p>
+  <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=FFFFFF" alt="NestJS">
+  <img src="https://img.shields.io/badge/Socket.IO-010101?style=for-the-badge&logo=socketdotio&logoColor=FFFFFF" alt="Socket.IO">
+  <img src="https://img.shields.io/badge/LiveKit-111827?style=for-the-badge&logo=livekit&logoColor=FFFFFF" alt="LiveKit">
+  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=0F172A" alt="Supabase">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=FFFFFF" alt="Node.js">
+</p>
+
+### AI & Translation
+
+<p>
+  <img src="https://img.shields.io/badge/Gemini-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=FFFFFF" alt="Gemini">
+  <img src="https://img.shields.io/badge/OpenAI-111111?style=for-the-badge&logo=openai&logoColor=FFFFFF" alt="OpenAI">
+  <img src="https://img.shields.io/badge/Deepgram-13EF93?style=for-the-badge&logo=deepgram&logoColor=0B1220" alt="Deepgram">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=FFFFFF" alt="Python">
+</p>
 
 ### Workspace
 
-- pnpm workspace
-- TypeScript shared package
-- Client / Server / Shared monorepo 구조
+<p>
+  <img src="https://img.shields.io/badge/pnpm_workspace-F69220?style=for-the-badge&logo=pnpm&logoColor=FFFFFF" alt="pnpm workspace">
+  <img src="https://img.shields.io/badge/Shared_Package-3178C6?style=for-the-badge&logo=typescript&logoColor=FFFFFF" alt="TypeScript shared package">
+  <img src="https://img.shields.io/badge/Monorepo-24292F?style=for-the-badge&logo=git&logoColor=FFFFFF" alt="Monorepo">
+</p>
 
 ## 프로젝트 구조
 
@@ -105,14 +208,13 @@ docs/             제품 기획, 기능 문서, 실행 가이드, 협업 기록
 ## 시작하기
 
 ```bash
+corepack enable
 pnpm install
 pnpm dev:server
 pnpm dev:client
 ```
 
 Client는 기본적으로 `http://localhost:5173`, Server는 `http://localhost:4000`에서 실행합니다.
-
-자세한 로컬 실행 절차는 [Client 로컬 실행 가이드](docs/RUNBOOKS/client-local.md)와 [Server 로컬 실행 가이드](docs/RUNBOOKS/server-local.md)를 참고합니다.
 
 ## 환경 변수
 
@@ -150,64 +252,11 @@ OFFICE_CHAT_TRANSLATION_TIMEOUT_MS=10000
 
 ## 주요 명령어
 
-```bash
-pnpm typecheck
-pnpm build
-pnpm test:server
-pnpm smoke:meeting-subtitle
-pnpm smoke:livekit-room
-pnpm smoke:livekit-webhook
-```
-
-## 데모 시나리오
-
-1. 사용자는 UI 언어를 선택하고 이름, 국가, 아바타를 설정해 Global Office에 입장합니다.
-2. 피플 목록에서 팀원을 검색하고 현재 상태와 공개 TODO를 확인합니다.
-3. 공유 캘린더에서 휴가, 회의, 재택 등 협업에 영향을 주는 일정을 확인합니다.
-4. 찾아가기 또는 불러오기로 팀원과 대화 진입점을 만듭니다.
-5. 회의실에 입장해 LiveKit 회의에 연결하고 한국어·베트남어 자막 흐름을 확인합니다.
-6. 회의 요약을 제출하면 캘린더의 회의 이벤트로 남습니다.
-
-## 화면
-
-### Global Office
-
-<img src="docs/assets/readme/main-office.png" alt="Global Office 메인 화면" width="900">
-
-### 주요 UI
-
-| 언어 선택 | 입장 정보와 아바타 선택 |
+| 명령어 | 용도 |
 | --- | --- |
-| <img src="docs/assets/readme/language-selection.png" alt="언어 선택 화면" width="420"> | <img src="docs/assets/readme/guest-onboarding.png" alt="입장 정보와 아바타 선택 화면" width="420"> |
-
-| 피플 목록 | 찾아가기와 불러오기 |
-| --- | --- |
-| <img src="docs/assets/readme/people-panel.png" alt="피플 목록 화면" width="360"> | <img src="docs/assets/readme/summon-actions.png" alt="찾아가기와 불러오기 액션 화면" width="360"> |
-
-| 상태 변경과 TODO | 공유 캘린더 |
-| --- | --- |
-| <img src="docs/assets/readme/status-todo.png" alt="상태 변경과 TODO 화면" width="360"> | <img src="docs/assets/readme/shared-calendar.png" alt="공유 캘린더 화면" width="420"> |
-
-| 오피스 대화 |
-| --- |
-| <img src="docs/assets/readme/office-chat.png" alt="오피스 대화 화면" width="360"> |
-
-## 주요 문서
-- [Figma 디자인 시안](https://www.figma.com/design/XNMBF9IXkhkotGr6EoiW4J/LIKELION2026?node-id=0-1&t=YCqArq9kmUsJeycy-1)
-- [Notion 팀 워크스페이스](https://rainbow-board-5a0.notion.site/3a63fc0908698096be0aca667596e18e)
-- [PRD](docs/PRD.md)
-- [프로젝트 구조](docs/STRUCTURE.md)
-- [작업 규칙](docs/CONVENTIONS.md)
-- [Client 로컬 실행](docs/RUNBOOKS/client-local.md)
-- [Server 로컬 실행](docs/RUNBOOKS/server-local.md)
-- [실시간 회의 기능 문서](docs/FEATURES/realtime-meeting/README.md)
-- [가상 오피스 기능 문서](docs/FEATURES/virtual-office/user-scenarios.md)
-- [AI Agent 작업 기록](docs/AI_AGENT_WORKFLOW.md)
-
-## 향후 계획
-
-- 실제 STT·번역 파이프라인과 회의 자막 연결 강화
-- AI 회의 요약의 사용자 검토·수정 흐름 고도화
-- TODO 초안 생성과 일정 충돌 알림
-- 한국어·베트남어 문구 원어민 검수
-- 파일럿 팀 대상 사용성 검증과 협업 지표 수집
+| `pnpm typecheck` | Shared, Client, Server 타입 검증 |
+| `pnpm build` | 전체 workspace production build |
+| `pnpm test:server` | Server 단위 테스트 실행 |
+| `pnpm smoke:meeting-subtitle` | 회의 자막 smoke 검증 |
+| `pnpm smoke:livekit-room` | LiveKit room smoke 검증 |
+| `pnpm smoke:livekit-webhook` | LiveKit webhook smoke 검증 |
